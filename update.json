@@ -1,10 +1,14 @@
 {
-  "enabled": false,
-  "versionName": "5.1",
-  "versionCode": 13,
+  "enabled": true,
+  "versionName": "5.2.0",
+  "versionCode": 14,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-06",
-  "downloadUrl": "",
-  "sha256": "",
-  "releaseNotes": []
+  "tagName": "v5.2.0",
+  "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
+  "sha256": "e4509290bb7a16ae951aea2e38272312fa0bf43c316eccda5a01fe1b20982829",
+  "releaseNotes": [
+    "إضافة التحديث التلقائي الآمن للتطبيق",
+    "تحسينات عامة وإصلاح بعض الأخطاء"
+  ]
 }
