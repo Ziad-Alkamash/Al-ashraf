@@ -1,14 +1,14 @@
 {
   "enabled": true,
-  "versionName": "5.5.0",
-  "versionCode": 27,
+  "versionName": "5.5.1",
+  "versionCode": 28,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-06",
-  "tagName": "v5.5.0",
+  "tagName": "v5.5.1",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "7b81d61c8359a786de31315baf426b4f0325fcc657972381d73af7cf59f462a0",
+  "sha256": "1c45d6738e9c9d34ae6e2767e4121ae655009ef6cf57b025a599e5ee105aa5b0",
   "releaseNotes": [
-    "ترجمة رسالة بطاقة متابعة الختمة الجماعية إلى اللغات التسع",
-    "إضافة اللون البني الدافئ إلى علامات أرقام الآيات في المصحف بالوضع الفاتح"
+    "تحديث رسالة ظهور أحدث إصدار في صفحة التحقق من التحديثات",
+    "تصغير خطوط نافذة تنزيل التحديث لتصبح أوضح على الهاتف"
   ]
 }
