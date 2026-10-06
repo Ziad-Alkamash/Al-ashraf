@@ -64,11 +64,12 @@ jobs:
       - name: Configure this repository's public update manifest URL
         run: node tools/configure-update-config.mjs
 
-      - name: Install Android SDK platform and signing tools
+      - name: Verify preinstalled Android SDK and expose signing tools
         run: |
           set -euo pipefail
-          sdkmanager --licenses < <(yes) >/dev/null
-          sdkmanager --sdk_root="$ANDROID_HOME" "platforms;android-36" "build-tools;36.0.0"
+          test -d "$ANDROID_HOME/platforms/android-36" || { echo 'Android SDK platform 36 is missing from the hosted runner.'; exit 1; }
+          test -x "$ANDROID_HOME/build-tools/36.0.0/apksigner" || { echo 'Android build-tools 36.0.0 are missing from the hosted runner.'; exit 1; }
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
 
       - name: Sync Capacitor Android assets and plugins
         run: npx cap sync android
