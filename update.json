@@ -1,14 +1,14 @@
 {
   "enabled": true,
-  "versionName": "5.5.1",
-  "versionCode": 28,
+  "versionName": "5.5.2",
+  "versionCode": 29,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-06",
-  "tagName": "v5.5.1",
+  "tagName": "v5.5.2",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "1c45d6738e9c9d34ae6e2767e4121ae655009ef6cf57b025a599e5ee105aa5b0",
+  "sha256": "4d16b488f28b7815f539d767968c9ce35f60285a75aeb808dee252f156670eeb",
   "releaseNotes": [
-    "تحديث رسالة ظهور أحدث إصدار في صفحة التحقق من التحديثات",
-    "تصغير خطوط نافذة تنزيل التحديث لتصبح أوضح على الهاتف"
+    "إظهار نافذة اختيار الموقع فوق صفحة القبلة",
+    "تقليل الفراغ العلوي وتنسيق التاريخين وتحديث رسم الكعبة في نافذة القبلة"
   ]
 }
