@@ -1615,6 +1615,16 @@ body.theme-night #app-header[class*="page-color-"] #header-juz {
 #app-header #btn-header-bookmark path {
   fill: url(#home-icon-grad) !important;
 }
+/* في الوضع الفاتح، أيقونتا البحث والعلامة المرجعية تطابقان لون أرقام الآيات
+   في المصحف. نعيد لون مسار العلامة نفسه لأن تدرج home-icon-grad أعلى من
+   خاصية color على الزر. الوضع الداكن يحتفظ بالتدرج الذهبي الحالي. */
+body:not(.theme-night) #app-header #btn-header-search,
+body:not(.theme-night) #app-header #btn-header-bookmark {
+  color: #96683F;
+}
+body:not(.theme-night) #app-header #btn-header-bookmark path {
+  fill: #96683F !important;
+}
 /* الأيقونة بقت مصمتة (fill) بدل مجوفة، وأعرض شوية من نسخة البار السفلي —
    نديها مساحة أفقية أكبر شوية جوه الزرار الدائري (38×38) عشان الاتساع
    الإضافي في شكل الأيقونة يبان بوضوح من غير ما ياخد مساحة رأسية زيادة */
