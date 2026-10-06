@@ -8078,15 +8078,15 @@
   };
 
   var UPDATE_PAGE_EXTRA = {
-    ar: { 'update.app_name':'المصحف الأشرف','update.open_source_licenses':'تراخيص المصادر المفتوحة','update.licenses_intro':'يستخدم التطبيق المكونات مفتوحة المصدر التالية وتراخيصها.' },
-    fa: { 'update.app_name':'مصحف الاشرف','update.open_source_licenses':'مجوزهای متن‌باز','update.licenses_intro':'این برنامه از مؤلفه‌های متن‌باز و مجوزهای زیر استفاده می‌کند.' },
-    en: { 'update.app_name':'Al-Ashraf Mushaf','update.open_source_licenses':'Open source licenses','update.licenses_intro':'This app uses the following open-source components and licenses.' },
-    fr: { 'update.app_name':'Mushaf Al-Ashraf','update.open_source_licenses':'Licences open source','update.licenses_intro':'Cette application utilise les composants open source et licences suivants.' },
-    tr: { 'update.app_name':'Al-Ashraf Mushaf','update.open_source_licenses':'Açık kaynak lisansları','update.licenses_intro':'Bu uygulama aşağıdaki açık kaynak bileşenlerini ve lisanslarını kullanır.' },
-    ur: { 'update.app_name':'المصحف الاشرف','update.open_source_licenses':'اوپن سورس لائسنس','update.licenses_intro':'یہ ایپ درج ذیل اوپن سورس اجزا اور لائسنس استعمال کرتی ہے۔' },
-    id: { 'update.app_name':'Mushaf Al-Ashraf','update.open_source_licenses':'Lisensi sumber terbuka','update.licenses_intro':'Aplikasi ini menggunakan komponen sumber terbuka dan lisensi berikut.' },
-    ru: { 'update.app_name':'Мусхаф Аль-Ашраф','update.open_source_licenses':'Лицензии открытого ПО','update.licenses_intro':'В приложении используются следующие компоненты с открытым исходным кодом и лицензии.' },
-    es: { 'update.app_name':'Mushaf Al-Ashraf','update.open_source_licenses':'Licencias de código abierto','update.licenses_intro':'Esta aplicación utiliza los siguientes componentes de código abierto y sus licencias.' }
+    ar: { 'update.app_name':'المصحف الأشرف','update.idle_title':'التحقق من التحديثات','update.idle_message':'يتم التحقق من أحدث إصدار للتطبيق.' },
+    fa: { 'update.app_name':'مصحف الاشرف','update.idle_title':'بررسی به‌روزرسانی','update.idle_message':'نسخه جدید برنامه بررسی می‌شود.' },
+    en: { 'update.app_name':'Al-Ashraf Mushaf','update.idle_title':'App updates','update.idle_message':'Check whether a newer app version is available.' },
+    fr: { 'update.app_name':'Mushaf Al-Ashraf','update.idle_title':'Mise à jour de l’application','update.idle_message':'Vérifiez si une version plus récente est disponible.' },
+    tr: { 'update.app_name':'Al-Ashraf Mushaf','update.idle_title':'Uygulama güncellemeleri','update.idle_message':'Daha yeni bir uygulama sürümü olup olmadığını kontrol edin.' },
+    ur: { 'update.app_name':'المصحف الاشرف','update.idle_title':'ایپ کی اپ ڈیٹس','update.idle_message':'دیکھیں کہ ایپ کا نیا ورژن دستیاب ہے یا نہیں۔' },
+    id: { 'update.app_name':'Mushaf Al-Ashraf','update.idle_title':'Pembaruan aplikasi','update.idle_message':'Periksa apakah versi aplikasi yang lebih baru tersedia.' },
+    ru: { 'update.app_name':'Мусхаф Аль-Ашраф','update.idle_title':'Обновления приложения','update.idle_message':'Проверьте, доступна ли более новая версия приложения.' },
+    es: { 'update.app_name':'Mushaf Al-Ashraf','update.idle_title':'Actualizaciones de la aplicación','update.idle_message':'Comprueba si hay una versión más reciente disponible.' }
   };
 
   // Missing labels used by dynamically rendered Quran/Sunnah subpages.

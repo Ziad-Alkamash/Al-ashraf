@@ -20528,14 +20528,7 @@ body.theme-night .update-check-status-card[data-state="latest"] .update-check-st
   font-size: 14px;
 }
 .update-check-new-version strong { direction: ltr; unicode-bidi: isolate; }
-.update-check-content {
-  display: flex;
-  width: min(100%, 440px);
-  margin: 0 auto;
-  flex: 0 0 auto;
-  flex-direction: column;
-  gap: 12px;
-}
+.update-check-content { width: min(100%, 440px); margin: 0 auto; flex: 0 0 auto; }
 .update-check-actions { margin: 0; }
 .update-check-primary {
   width: 100%;
@@ -20546,42 +20539,6 @@ body.theme-night .update-check-status-card[data-state="latest"] .update-check-st
   box-shadow: none;
 }
 body.theme-night .update-check-primary { color: #111; background: #d4d4d4; }
-.update-check-licenses {
-  width: min(100%, 400px);
-  min-height: 54px;
-  margin: 0 auto;
-  border: 0;
-  border-radius: 999px;
-  color: #202124;
-  background: #e5e5e7;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
-}
-body.theme-night .update-check-licenses { color: #f4f4f4; background: #333336; }
-.update-license-dialog {
-  width: min(90vw, 520px);
-  max-height: min(76vh, 680px);
-  padding: 24px;
-  overflow: auto;
-  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
-  border-radius: 24px;
-  color: var(--ap-ink);
-  background: var(--ap-bg);
-  font-family: var(--ap-font);
-  box-shadow: 0 22px 70px #0005;
-}
-.update-license-dialog::backdrop { background: #0009; backdrop-filter: blur(4px); }
-.update-license-dialog h2 { margin: 0 0 8px; font-size: 21px; }
-.update-license-dialog p { line-height: 1.6; color: var(--ap-ink-2); }
-.update-license-dialog ul { display: grid; gap: 7px; margin: 18px 0; padding: 0; list-style: none; }
-.update-license-dialog li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, currentColor 6%, transparent); font-size: 13px; }
-.update-license-dialog li strong { color: var(--section-accent, #777f59); direction: ltr; }
-.update-license-references { display: flex; gap: 16px; }
-.update-license-references a { color: var(--section-accent, #777f59); }
-.update-license-dialog > button { width: 100%; min-height: 46px; border: 0; border-radius: 999px; color: #fff; background: #777f59; font: inherit; font-weight: 800; }
-body.theme-night .update-license-dialog > button { color: #111; background: #c9cdb2; }
 
 /* صف قارئ (الصورة 2) */
 .ap-row {

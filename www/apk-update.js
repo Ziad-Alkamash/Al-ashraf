@@ -5,19 +5,19 @@
   const LAST_CHECK_KEY = 'alashraf:apk-update:last-check';
   const LATER_KEY = 'alashraf:apk-update:later-until';
   const CHECK_INTERVAL = 60 * 60 * 1000;
-  const RESUME_INTERVAL = 5 * 60 * 1000;
   let updateDialog = null;
   let currentUpdate = null;
   let installedVersionName = '';
   let isForced = false;
   let checking = false;
-  let lastCheckAt = 0;
   let progressListener = null;
   let state = 'idle';
   let apkReady = false;
   let apkReadyVersionCode = 0;
   let homeReady = false;
   let pendingDialogTimer = null;
+  let activeCheckPromise = null;
+  let installedAppInfoCache = null;
 
   function uiText(key, fallback) {
     const i18n = window.appI18n;
@@ -40,16 +40,36 @@
   }
 
   async function getInstalledAppInfo(plugin) {
+    if (installedAppInfoCache) return installedAppInfoCache;
+    const validInfo = (value) => {
+      const versionCode = Number(value?.versionCode);
+      const versionName = String(value?.versionName || '').trim();
+      return Number.isSafeInteger(versionCode) && versionCode > 0 && versionName
+        ? { versionCode, versionName }
+        : null;
+    };
+
+    // On Android, package metadata is the source of truth and is available
+    // offline. Do not make the screen wait for a WebView asset/network read.
+    if (plugin?.getAppInfo) {
+      try {
+        const nativeInfo = validInfo(await withTimeout(plugin.getAppInfo(), 1800));
+        if (nativeInfo) return (installedAppInfoCache = nativeInfo);
+      } catch (_) {}
+    }
+
+    const bundledInfo = validInfo(window.AlAshrafBundledVersion);
+    if (bundledInfo) return bundledInfo;
+
     try {
-      const response = await withTimeout(fetch('./app-version.json', { cache: 'no-store' }), 3000);
+      const response = await withTimeout(fetch('./app-version.json?ts=' + Date.now(), { cache: 'no-store' }), 1500);
       if (response.ok) {
-        const bundled = await response.json();
-        const versionCode = Number(bundled?.versionCode);
-        const versionName = String(bundled?.versionName || '');
-        if (Number.isSafeInteger(versionCode) && versionCode > 0 && versionName) return { versionCode, versionName };
+        const info = validInfo(await response.json());
+        if (info) return (installedAppInfoCache = info);
       }
     } catch (_) {}
-    return plugin?.getAppInfo ? withTimeout(plugin.getAppInfo(), 8000) : null;
+    installedAppInfoCache = validInfo(window.AlAshrafBundledVersion);
+    return installedAppInfoCache;
   }
 
   function showPendingUpdateDialog() {
@@ -68,9 +88,9 @@
 
   async function readJson(url) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
+    const timer = setTimeout(() => controller.abort(), 5000);
     try {
-      const response = await fetch(url, { cache: 'no-store', redirect: 'error', signal: controller.signal });
+      const response = await withTimeout(fetch(url, { cache: 'no-store', redirect: 'error', signal: controller.signal }), 5500);
       if (!response.ok) throw new Error('manifest-unavailable');
       return await response.json();
     } finally {
@@ -291,56 +311,62 @@
   }
 
   async function checkForUpdate(forceNetwork, showDialog) {
-    if (checking || !Core) return { status: 'error' };
+    if (!Core) return { status: 'error' };
+    if (checking && activeCheckPromise) {
+      return withTimeout(activeCheckPromise, 11000).catch(() => ({ status: 'error' }));
+    }
     const cap = window.Capacitor;
     const plugin = getPlugin();
     if (!cap || cap.getPlatform?.() !== 'android' || !plugin) return { status: 'unsupported' };
     const now = Date.now();
-    if (forceNetwork && now - lastCheckAt < RESUME_INTERVAL) {
-      if (currentUpdate) return { status: 'available', manifest: currentUpdate.manifest, currentVersion: installedVersionName };
-      return { status: 'error' };
-    }
     const last = Number(storageGet(localStorage, LAST_CHECK_KEY) || 0);
     if (!forceNetwork && last > 0 && now - last < CHECK_INTERVAL) {
       return { status: 'skipped' };
     }
     checking = true;
-    lastCheckAt = now;
-    try {
-      const configResponse = await withTimeout(fetch('./update-config.json', { cache: 'no-store' }), 10000);
-      if (!configResponse.ok) return { status: 'error' };
-      const config = await configResponse.json();
-      const parsedUrl = Core.parseManifestUrl(config?.manifestUrl);
-      if (!parsedUrl) return { status: 'error' };
-      const manifest = await readJson(config.manifestUrl);
-      if (!Core.isValidManifest(manifest, parsedUrl.ownerRepo)) return { status: 'error' };
-      const installed = await getInstalledAppInfo(plugin);
-      const installedVersionCode = Number(installed?.versionCode);
-      installedVersionName = String(installed?.versionName || '');
-      const decision = Core.getUpdateDecision(installedVersionCode, manifest, parsedUrl.ownerRepo);
-      storageSet(localStorage, LAST_CHECK_KEY, String(Date.now()));
+    const operation = (async () => {
+      try {
+        const configResponse = await withTimeout(fetch('./update-config.json?ts=' + Date.now(), { cache: 'no-store' }), 3000);
+        if (!configResponse.ok) return { status: 'error' };
+        const config = await configResponse.json();
+        const parsedUrl = Core.parseManifestUrl(config?.manifestUrl);
+        if (!parsedUrl) return { status: 'error' };
+        const manifest = await readJson(config.manifestUrl);
+        if (!Core.isValidManifest(manifest, parsedUrl.ownerRepo)) return { status: 'error' };
+        const installed = await getInstalledAppInfo(plugin);
+        const installedVersionCode = Number(installed?.versionCode);
+        installedVersionName = String(installed?.versionName || window.AlAshrafBundledVersion?.versionName || '');
+        if (!Number.isSafeInteger(installedVersionCode) || installedVersionCode < 1) return { status: 'error', currentVersion: installedVersionName };
+        const decision = Core.getUpdateDecision(installedVersionCode, manifest, parsedUrl.ownerRepo);
+        storageSet(localStorage, LAST_CHECK_KEY, String(Date.now()));
 
-      if (!decision.available) {
-        currentUpdate = null;
-        storageRemove(localStorage, LATER_KEY);
-        if (isForced && updateDialog) {
-          updateDialog.remove();
-          updateDialog = null;
-          isForced = false;
-          state = 'idle';
+        if (!decision.available) {
+          currentUpdate = null;
+          storageRemove(localStorage, LATER_KEY);
+          if (isForced && updateDialog) {
+            updateDialog.remove();
+            updateDialog = null;
+            isForced = false;
+            state = 'idle';
+          }
+          return { status: 'latest', currentVersion: installedVersionName };
         }
-        return { status: 'latest', currentVersion: installedVersionName };
+        const laterUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
+        if (laterUntil > Date.now() && !forceNetwork) return { status: 'snoozed', currentVersion: installedVersionName };
+        currentUpdate = { manifest, ownerRepo: parsedUrl.ownerRepo };
+        isForced = decision.forced;
+        if (showDialog !== false) showPendingUpdateDialog();
+        return { status: 'available', manifest, currentVersion: installedVersionName };
+      } catch (_) {
+        // Keep the user informed when a bounded network request fails.
+        return { status: 'error', currentVersion: installedVersionName };
       }
-      const laterUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
-      if (laterUntil > Date.now() && !forceNetwork) return { status: 'snoozed', currentVersion: installedVersionName };
-      currentUpdate = { manifest, ownerRepo: parsedUrl.ownerRepo };
-      isForced = decision.forced;
-      if (showDialog !== false) showPendingUpdateDialog();
-      return { status: 'available', manifest, currentVersion: installedVersionName };
-    } catch (_) {
-      // Update checks are deliberately silent when GitHub or the network is unavailable.
-      return { status: 'error' };
+    })();
+    activeCheckPromise = operation;
+    try {
+      return await operation;
     } finally {
+      if (activeCheckPromise === operation) activeCheckPromise = null;
       checking = false;
     }
   }
@@ -351,18 +377,17 @@
       if (!window.Capacitor || window.Capacitor.getPlatform?.() !== 'android') return '';
       try {
         const installed = await getInstalledAppInfo(plugin);
-        installedVersionName = String(installed?.versionName || '');
+        installedVersionName = String(installed?.versionName || window.AlAshrafBundledVersion?.versionName || '');
         return installedVersionName;
       } catch (_) {
         return '';
       }
     },
     checkNow: async () => {
-      for (let attempt = 0; checking && attempt < 24; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 250));
+      if (checking && activeCheckPromise) {
+        const currentResult = await withTimeout(activeCheckPromise, 11000).catch(() => ({ status: 'error' }));
+        if (currentResult.status !== 'skipped') return currentResult;
       }
-      if (checking) return { status: 'error' };
-      lastCheckAt = 0;
       return checkForUpdate(true, false);
     },
     downloadUpdate: async () => {
@@ -373,8 +398,109 @@
     }
   };
 
+  // صفحة معلومات الإصدار لها متحكم واحد مستقل. تعرض رقم نسخة Android أولًا،
+  // ثم تبدأ الفحص عند فتح الصفحة، وكل طلب شبكة له حد زمني صريح.
+  function initUpdateInfoPage() {
+    const overlay = document.getElementById('update-check-overlay');
+    const card = document.getElementById('update-check-status-card');
+    const title = document.getElementById('update-check-status-title');
+    const message = document.getElementById('update-check-status-message');
+    const currentVersion = document.getElementById('update-check-current-version');
+    const newVersionBlock = document.getElementById('update-check-new-version-block');
+    const newVersion = document.getElementById('update-check-new-version');
+    const action = document.getElementById('btn-update-check-action');
+    if (!overlay || !card || !title || !message || !currentVersion || !action) return;
+
+    let requestId = 0;
+    let viewState = 'idle';
+    let currentName = String(window.AlAshrafBundledVersion?.versionName || '');
+    currentVersion.textContent = currentName || '—';
+
+    const render = (nextState, overrides = {}) => {
+      viewState = nextState;
+      card.dataset.state = nextState;
+      const titleKey = `update.${nextState}_title`;
+      const messageKey = `update.${nextState}_message`;
+      const titleFallbacks = {
+        idle: 'التحقق من التحديثات', checking: 'جارٍ التحقق', available: 'يتوفر تحديث جديد',
+        latest: 'تم تثبيت أحدث إصدار', error: 'تعذر التحقق من التحديث',
+        unsupported: 'التحديث غير متاح هنا', installing: 'جارٍ تجهيز التحديث'
+      };
+      const messageFallbacks = {
+        idle: 'يتم التحقق من أحدث إصدار للتطبيق.', checking: 'لحظات ونتأكد من أحدث إصدار.',
+        available: 'يوجد إصدار أحدث جاهز للتنزيل.', latest: 'لا يتوفر إصدار جديد، أنت الآن على أحدث إصدار.',
+        error: 'تعذر الاتصال بخدمة التحديث. تحقق من الإنترنت ثم أعد المحاولة.',
+        unsupported: 'يمكن فحص التحديثات من تطبيق Android المثبت.',
+        installing: 'سيبدأ تنزيل التحديث والتحقق منه الآن.'
+      };
+      title.textContent = overrides.title || uiText(titleKey, titleFallbacks[nextState] || titleFallbacks.error);
+      message.textContent = overrides.message || uiText(messageKey, messageFallbacks[nextState] || messageFallbacks.error);
+      if (overrides.current) currentName = overrides.current;
+      currentVersion.textContent = currentName || '—';
+      if (newVersionBlock) newVersionBlock.classList.toggle('hidden', nextState !== 'available');
+      if (newVersion && overrides.latest) newVersion.textContent = overrides.latest;
+      action.classList.toggle('hidden', ['checking', 'latest', 'unsupported', 'installing'].includes(nextState));
+      action.disabled = nextState === 'checking' || nextState === 'installing';
+      action.dataset.action = nextState === 'available' ? 'install' : 'check';
+      const actionKey = nextState === 'available' ? 'update.download_button' : nextState === 'idle' ? 'update.check_button' : 'update.check_again';
+      action.textContent = uiText(actionKey, nextState === 'available' ? 'تنزيل التحديث' : 'تحقق مرة أخرى');
+    };
+
+    render('idle');
+    const check = async () => {
+      const id = ++requestId;
+      const bundled = String(window.AlAshrafBundledVersion?.versionName || '');
+      currentName = currentName || bundled;
+      render('checking');
+      const updater = window.AlAshrafApkUpdater;
+      if (!updater?.checkNow) {
+        render('unsupported');
+        return;
+      }
+      try {
+        const installedName = await withTimeout(updater.getInstalledVersion(), 2000).catch(() => '');
+        if (id !== requestId) return;
+        currentName = String(installedName || bundled || currentName || '');
+        currentVersion.textContent = currentName || '—';
+        const result = await withTimeout(updater.checkNow(), 11500).catch(() => ({ status: 'error' }));
+        if (id !== requestId) return;
+        const resolvedName = String(result?.currentVersion || currentName || bundled || '');
+        if (result?.status === 'available') {
+          render('available', { current: resolvedName, latest: result.manifest?.versionName || '' });
+        } else if (result?.status === 'latest') {
+          render('latest', { current: resolvedName });
+        } else if (result?.status === 'unsupported') {
+          render('unsupported', { current: resolvedName });
+        } else {
+          render('error', { current: resolvedName });
+        }
+      } catch (_) {
+        if (id === requestId) render('error');
+      }
+    };
+
+    window.addEventListener('alashraf:update-screen-open', check);
+    window.addEventListener('alashraf:update-screen-close', () => { requestId += 1; });
+    window.appI18n?.onLanguageChange?.(() => render(viewState));
+    action.addEventListener('click', async () => {
+      if (action.dataset.action !== 'install') {
+        check();
+        return;
+      }
+      const id = ++requestId;
+      render('installing');
+      try {
+        const installed = await withTimeout(window.AlAshrafApkUpdater?.downloadUpdate?.(), 180000).catch(() => false);
+        if (id === requestId && !installed) render('error');
+      } catch (_) {
+        if (id === requestId) render('error');
+      }
+    });
+  }
+
   function start() {
     if (!Core) return;
+    initUpdateInfoPage();
     const postponedUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
     if (postponedUntil - Date.now() > CHECK_INTERVAL) storageRemove(localStorage, LATER_KEY);
     const checkIfDue = () => checkForUpdate(false);
