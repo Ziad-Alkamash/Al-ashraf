@@ -13793,12 +13793,20 @@
     const closeUpdateCheck = $('#btn-close-update-check');
     const runUpdateCheck = async () => {
       const requestId = ++updateCheckRequest;
+      let timedOut = false;
+      const checkDeadline = setTimeout(() => {
+        if (requestId !== updateCheckRequest) return;
+        timedOut = true;
+        updateCheckView = { state: 'error', current: updateCheckView.current || '', latest: '' };
+        renderUpdateCheck();
+      }, 15000);
       updateCheckView = { state: 'checking', current: '', latest: '' };
       renderUpdateCheck();
       const updater = window.AlAshrafApkUpdater;
       if (!updater?.checkNow) {
         updateCheckView = { state: 'unsupported', current: '', latest: '' };
         renderUpdateCheck();
+        clearTimeout(checkDeadline);
         return;
       }
       let currentVersion = '';
@@ -13807,19 +13815,19 @@
         if (versionPromise) {
           currentVersion = await Promise.race([
             versionPromise,
-            new Promise((resolve) => setTimeout(() => resolve(''), 9000))
+            new Promise((resolve) => setTimeout(() => resolve(''), 3000))
           ]) || '';
         }
-        if (requestId !== updateCheckRequest) return;
+        if (requestId !== updateCheckRequest || timedOut) return;
         if (currentVersion) {
           updateCheckView.current = currentVersion;
           renderUpdateCheck();
         }
         const result = await Promise.race([
           updater.checkNow(),
-          new Promise((resolve) => setTimeout(() => resolve({ status: 'error' }), 25000))
+          new Promise((resolve) => setTimeout(() => resolve({ status: 'error' }), 12000))
         ]);
-        if (requestId !== updateCheckRequest) return;
+        if (requestId !== updateCheckRequest || timedOut) return;
         if (result?.status === 'available') {
           updateCheckView = { state: 'available', current: result.currentVersion || currentVersion, latest: result.manifest?.versionName || '' };
         } else if (result?.status === 'latest') {
@@ -13830,8 +13838,10 @@
           updateCheckView = { state: 'error', current: currentVersion, latest: '' };
         }
       } catch (_) {
-        if (requestId !== updateCheckRequest) return;
+        if (requestId !== updateCheckRequest || timedOut) return;
         updateCheckView = { state: 'error', current: currentVersion, latest: '' };
+      } finally {
+        clearTimeout(checkDeadline);
       }
       if (requestId === updateCheckRequest) renderUpdateCheck();
     };
