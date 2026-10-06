@@ -143,7 +143,7 @@ public class ApkUpdaterPlugin extends Plugin {
         executor.execute(() -> {
             File partial = null;
             try {
-                File dir = new File(getContext().getNoBackupFilesDir(), "apk-updates");
+                File dir = new File(getContext().getFilesDir(), "apk-updates");
                 if (!dir.exists() && !dir.mkdirs()) throw new UpdateException("تعذر تجهيز مساحة التحديث", "STORAGE_FAILED");
                 File apk = new File(dir, APK_NAME);
                 partial = new File(dir, APK_NAME + ".part");
@@ -224,7 +224,7 @@ public class ApkUpdaterPlugin extends Plugin {
             validateApk(apk, expectedVersionCode);
             Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", apk);
             Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
-            intent.setData(uri);
+            intent.setDataAndType(uri, "application/vnd.android.package-archive");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
             intent.putExtra(Intent.EXTRA_RETURN_RESULT, true);

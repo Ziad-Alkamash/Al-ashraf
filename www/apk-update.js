@@ -346,7 +346,10 @@
         showBackgroundReadyToast(
           uiText('update.download_ready', 'اكتمل تنزيل التحديث وأصبح جاهزًا للتثبيت.'),
           uiText('update.install_now', 'التثبيت الآن'),
-          () => renderDialog(currentUpdate.manifest, isForced)
+          () => {
+            renderDialog(currentUpdate.manifest, isForced);
+            handleInstallClick();
+          }
         );
         return;
       }
