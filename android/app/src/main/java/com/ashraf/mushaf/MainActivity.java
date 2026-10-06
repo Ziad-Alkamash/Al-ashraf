@@ -158,6 +158,7 @@ public class MainActivity extends BridgeActivity {
         // واجهة WebView لأن سكربت الختمة الجماعية يُحمّل بعد إنشاء الـ Activity.
         dispatchKhatmaInvite(getIntent());
         dispatchWidgetNavigation(getIntent());
+        dispatchUpdateNotification(getIntent());
     }
 
     /**
@@ -214,14 +215,25 @@ public class MainActivity extends BridgeActivity {
         setIntent(intent);
         dispatchKhatmaInvite(intent);
         dispatchWidgetNavigation(intent);
-        if (intent != null && intent.getBooleanExtra("open_update_ready", false)) {
-            intent.removeExtra("open_update_ready");
-            inviteHandler.postDelayed(() -> {
-                WebView webView = getBridge() != null ? getBridge().getWebView() : null;
-                if (webView != null) webView.evaluateJavascript(
-                    "window.__ashrafUpdateReadyPending=true;window.dispatchEvent(new Event('alashraf:update-download-notification-tap'))", null);
-            }, 300);
-        }
+        dispatchUpdateNotification(intent);
+    }
+
+    private void dispatchUpdateNotification(Intent intent) {
+        if (intent == null || !intent.getBooleanExtra("open_update_ready", false)) return;
+        intent.removeExtra("open_update_ready");
+        final int[] attempts = {0};
+        Runnable[] deliver = new Runnable[1];
+        deliver[0] = () -> {
+            if (isFinishing() || isDestroyed()) return;
+            WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+            if (webView == null) {
+                if (++attempts[0] < 40) inviteHandler.postDelayed(deliver[0], 250);
+                return;
+            }
+            webView.evaluateJavascript(
+                "window.__ashrafUpdateReadyPending=true;window.dispatchEvent(new Event('alashraf:update-download-notification-tap'))", null);
+        };
+        inviteHandler.postDelayed(deliver[0], 300);
     }
 
     private void dispatchWidgetNavigation(Intent intent) {
