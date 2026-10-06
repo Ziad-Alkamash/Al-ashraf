@@ -1,0 +1,76 @@
+حط صورة كل قارئ هنا بنفس اسم الـ id بتاعه بالظبط (بحروف صغيرة، والنقطة زي ما هي)
+وبصيغة jpg أو png، الكود بيدور بالترتيب ده: id.jpg ثم id.png، ولو مفيش صورة خالص بيرجع لأيقونة السماعة تلقائيًا من غير ما يبوظ حاجة.
+
+أسماء الملفات المطلوبة (بنفس الترتيب الأبجدي الموجود في RECITERS داخل quran-api.js):
+
+ar.shaatree.jpg                → أبو بكر الشاطري                [موجودة]
+ar.ahmedajamy.jpg              → أحمد العجمي                    [موجودة]
+ar.hudhaify.jpg                 → الحذيفي                        [موجودة]
+ar.islamsobhi.jpg              → إسلام صبحي                     [موجودة]
+ar.badralturki.jpg             → بدر التركي                     [موجودة]
+ar.saadalghamdi.jpg            → سعد الغامدي                    [موجودة]
+ar.saoodshuraym.jpg            → سعود الشريم                    [موجودة]
+ar.abdulbasitmurattal.jpg      → عبد الباسط عبد الصمد (مرتل)     [موجودة]
+ar.abdurrahmaansudais.jpg      → عبد الرحمن السديس              [موجودة]
+ar.abdullahbasfar.jpg          → عبد الله بصفر                   [موجودة]
+ar.alijaber.jpg                → علي جابر                        [موجودة]
+ar.faresabbad.jpg              → فارس عباد                       [موجودة]
+ar.mahermuaiqly.jpg            → ماهر المعيقلي                   [موجودة]
+ar.mohamedtablawi.jpg          → محمد الطبلاوي                   [موجودة]
+ar.muhammadayyoub.jpg          → محمد أيوب                       [موجودة]
+ar.muhammadjibreel.jpg         → محمد جبريل                      [موجودة]
+ar.minshawi.jpg                → محمد صديق المنشاوي              [موجودة]
+ar.husary.jpg                  → محمود خليل الحصري               [موجودة]
+ar.mahmoudalialbanna.jpg       → محمود علي البنا                 [موجودة]
+ar.alafasy.jpg                 → مشاري العفاسي                   [موجودة]
+ar.nasseralqatami.jpg          → ناصر القطامي                    [موجودة]
+ar.haithamaldukhain.jpg        → هيثم الدخين                     [موجودة]
+ar.yasseraldosari.jpg          → ياسر الدوسري                    [موجودة]
+
+ملاحظة: تم استكمال الصور التي كانت معلّمة [ناقصة] في القائمة أعلاه وإضافتها محليًا.
+
+
+صور قراء إضافية (تم ربطها بالاسم في app.js):
+
+way2quran-yassin-al-jazairi.jpg — ياسين الجزائري — https://way2quran.com/ar/reciters/yassin-al-jazairi
+way2quran-mustafa-al-lahouni.jpg — مصطفى اللاهوني — https://way2quran.com/ar/reciters/mustafa-al-lahouni
+way2quran-ahmed-abdelrazek-nasr.jpg — أحمد عبد الرازق نصر — https://way2quran.com/ar/reciters/ahmed-nasr
+way2quran-saleh-al-ansari.jpg — صالح الأنصاري — https://way2quran.com/ar/reciters/saleh-al-ansari
+way2quran-younes-aswiles.jpg — يونس اسويلص — https://way2quran.com/fr/reciters/younes-souilass
+quranpro-omar-al-darweez.png — عمر الدريويز — https://quran-pro.com/reciter/omar-al-darweez
+quranpro-noreen-mohamed-siddiq.jpg — نورين محمد صديق — https://quran-pro.com/reciter/noreen-mohamed-siddiq
+soundcloud-muhammad-dibirov.jpg — محمد ديبيروف (الصورة الشخصية للحساب الرسمي) — https://soundcloud.com/muhammaddibirov/surah-annajm
+soundcloud-hamza-boudib.jpg — حمزة بوديب (الصورة الشخصية للحساب الرسمي) — https://soundcloud.com/hamza-boudib/guugwetgsig5
+
+
+صور القراء الأساسيين التي استُكملت:
+ar.shaatree.jpg — أبو بكر الشاطري — https://way2quran.com/ar/reciters/abu-bakr-al-shatri
+ar.hudhaify.jpg — الحذيفي — https://way2quran.com/ar/reciters/ahmed-ali-al-hudhaifi
+ar.abdullahbasfar.jpg — عبد الله بصفر — https://way2quran.com/ar/reciters/abdullah-basfar
+ar.alijaber.jpg — علي جابر — https://way2quran.com/ar/reciters/ali-jaber
+ar.mohamedtablawi.jpg — محمد الطبلاوي — https://way2quran.com/ar/reciters/muhammad-mahmoud-al-tablawi
+ar.muhammadayyoub.jpg — محمد أيوب — https://way2quran.com/ar/reciters/mohamed-ayoub
+ar.muhammadjibreel.jpg — محمد جبريل — https://way2quran.com/ar/reciters/muhammad-jibril
+ar.mahmoudalialbanna.jpg — محمود علي البنا — https://way2quran.com/ar/reciters/mahmoud-ali-al-banna
+ar.nasseralqatami.jpg — ناصر القطامي — https://way2quran.com/ar/reciters/naser-al-katamy
+
+مصادر المصاحف الكاملة التي أُضيفت الآن إلى RECITERS وCUSTOM_SURAH_AUDIO (كل رابط على المسار التالي يستخدم ملفًا مباشرًا: /001.mp3 إلى /114.mp3):
+محمد البراك — https://way2quran.com/ar/reciters/mohamed-albarak — ملفات https://media.way2quran.com/mohamed-albarak/hafs-an-asim/001.mp3 … 114.mp3
+حسن محمد صالح — حفص — https://way2quran.com/ar/reciters/hassan-saleh — ملفات https://media.way2quran.com/hassan-saleh/hafs-an-asim/001.mp3 … 114.mp3
+بندر بليلة — https://way2quran.com/ar/reciters/bandar-balila — ملفات https://media.way2quran.com/bandar-balila/hafs-an-asim/001.mp3 … 114.mp3
+عبد الله كامل — https://way2quran.com/ar/reciters/abdullah-kamel — ملفات https://media.way2quran.com/abdullah-kamel/hafs-an-asim/001.mp3 … 114.mp3
+أحمد عبد الرازق نصر — https://way2quran.com/ar/reciters/ahmed-nasr — ملفات https://media.way2quran.com/ahmed-nasr/hafs-an-asim/001.mp3 … 114.mp3
+أحمد النفيس — https://way2quran.com/ar/reciters/ahmed-al-nafis — ملفات https://media.way2quran.com/ahmed-al-nafis/hafs-an-asim/001.mp3 … 114.mp3
+أحمد نعينع — https://way2quran.com/ar/reciters/ahmed-nainaa — ملفات https://media.way2quran.com/ahmed-nainaa/hafs-an-asim/001.mp3 … 114.mp3
+عبد الله عواد الجهني — https://way2quran.com/ar/reciters/abdullah-al-juhani — ملفات https://media.way2quran.com/abdullah-al-juhani/hafs-an-asim/001.mp3 … 114.mp3
+توفيق الصايغ — https://way2quran.com/ar/reciters/tawfiq-al-sayegh — ملفات https://media.way2quran.com/tawfiq-al-sayegh/hafs-an-asim/001.mp3 … 114.mp3
+ياسر سلامة — https://way2quran.com/ar/reciters/yasser-salama — ملفات https://media.way2quran.com/yasser-salama/hafs-an-asim/001.mp3 … 114.mp3
+صلاح بوخاطر — https://way2quran.com/ar/reciters/salah-boukhatir — ملفات https://media.way2quran.com/salah-boukhatir/hafs-an-asim/001.mp3 … 114.mp3
+رعد الكردي — https://way2quran.com/ar/reciters/raad-al-kurdi — ملفات https://media.way2quran.com/raad-al-kurdi/hafs-an-asim/001.mp3 … 114.mp3
+خالد المهنا — https://way2quran.com/ar/reciters/khaled-al-mihanna — ملفات https://media.way2quran.com/khaled-al-mihanna/hafs-an-asim/001.mp3 … 114.mp3
+صالح الأنصاري — https://way2quran.com/ar/reciters/saleh-al-ansari — ملفات https://media.way2quran.com/saleh-al-ansari/hafs-an-asim/001.mp3 … 114.mp3
+عمر الدريويز — https://way2quran.com/ar/reciters/omar-al-dariwez — ملفات https://media.way2quran.com/omar-al-dariwez/hafs-an-asim/001.mp3 … 114.mp3
+مصطفى اللاهوني — https://way2quran.com/ar/reciters/mustafa-al-lahouni — ملفات https://media.way2quran.com/mustafa-al-lahouni/hafs-an-asim/001.mp3 … 114.mp3
+منصور السالمي — https://way2quran.com/ar/reciters/mansour-al-salmi — ملفات https://media.way2quran.com/mansour-al-salmi/hafs-an-asim/001.mp3 … 114.mp3
+وديع اليمني — https://way2quran.com/ar/reciters/wadih-al-yamani — ملفات https://media.way2quran.com/wadih-al-yamani/hafs-an-asim/001.mp3 … 114.mp3
+ياسين الجزائري — ورش — https://way2quran.com/ar/reciters/yassin-al-jazairi — ملفات https://media.way2quran.com/yassin-al-jazairi/warsh-an-nafi/001.mp3 … 114.mp3

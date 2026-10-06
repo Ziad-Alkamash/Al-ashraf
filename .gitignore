@@ -1,0 +1,27 @@
+# Signing material and machine-local Android credentials
+*.jks
+*.keystore
+*.keystore.*
+android/key.properties
+android/local.properties
+android/app/google-services.json
+
+# Build outputs and local release artifacts
+node_modules/
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/app/build.zip
+dist/
+work/
+
+# Firebase local state
+.firebase/
+
+# Common local editor files
+.idea/
+.vscode/
+*.iml
+
+.release-work/

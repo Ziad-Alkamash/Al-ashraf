@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ashraf.mushaf",
+      "sha256_cert_fingerprints": [
+        "1C:52:32:7F:F2:99:45:8A:DF:C5:CE:EB:AF:95:00:E8:0C:71:28:B4:0F:C9:9E:F2:92:B3:34:36:77:EC:60:0A"
+      ]
+  }
+}]

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ويدجت المسبحة (شيبس الذكر فوق + دايرة تحته): بيتضاف ٣×٣. لا يوجد تحديث دوري (updatePeriodMillis=0): بيتحدّث عند الضغط فقط.
+     لو المستخدم كبّره/صغّره بشكل غير مربع، الدايرة بتتحدد بأصغر بُعد وبتفضل في المنتصف -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="220dp"
+    android:minResizeWidth="120dp"
+    android:minResizeHeight="160dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="3"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_tasbih"
+    android:previewLayout="@layout/widget_tasbih_preview"
+    android:label="@string/widget_tasbih_label"
+    android:description="@string/widget_tasbih_description"
+    android:configure="com.ashraf.mushaf.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />

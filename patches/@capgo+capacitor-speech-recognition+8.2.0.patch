@@ -1,0 +1,51 @@
+diff --git a/node_modules/@capgo/capacitor-speech-recognition/android/src/main/java/app/capgo/speechrecognition/SpeechRecognitionPlugin.java b/node_modules/@capgo/capacitor-speech-recognition/android/src/main/java/app/capgo/speechrecognition/SpeechRecognitionPlugin.java
+index 0000000..0000000 100644
+--- a/node_modules/@capgo/capacitor-speech-recognition/android/src/main/java/app/capgo/speechrecognition/SpeechRecognitionPlugin.java
++++ b/node_modules/@capgo/capacitor-speech-recognition/android/src/main/java/app/capgo/speechrecognition/SpeechRecognitionPlugin.java
+@@ -598,7 +598,12 @@
+         }
+ 
+         if (allowForSilence > 0) {
+-            intent.putExtra(RecognizerIntent.EXTRA_SEGMENTED_SESSION, true);
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
++                intent.putExtra(
++                    RecognizerIntent.EXTRA_SEGMENTED_SESSION,
++                    RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS
++                );
++            }
+             intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, allowForSilence);
+             intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, allowForSilence);
+         }
+@@ -1273,7 +1278,32 @@
+ 
+         @Override
+         public void onEndOfSegmentedSession() {
++            if (isStale()) {
++                return;
++            }
+             notifyListeners(END_OF_SEGMENT_EVENT, new JSObject());
++
++            boolean restartContinuous;
++            try {
++                lock.lock();
++                restartContinuous = continuousPTTMode && pttButtonHeld && pendingStopReason == null;
++                if (restartContinuous) {
++                    resetPartialResultsCache();
++                    listening(false);
++                }
++            } finally {
++                lock.unlock();
++            }
++
++            if (restartContinuous) {
++                scheduleContinuousRestart(listenerSessionId);
++            } else {
++                finishSession(
++                    listenerSessionId,
++                    pendingStopReason != null ? pendingStopReason : "segmentedSession",
++                    null
++                );
++            }
+         }
+ 
+         @Override

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="12dp"
+    android:background="#465238">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <ImageView
+            android:id="@+id/notif_art"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/notif_player_bg"
+            android:contentDescription="" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="12dp">
+            <TextView
+                android:id="@+id/notif_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/notif_subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="#E0E6D4"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+        <ImageButton android:id="@+id/notif_previous" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:background="@android:color/transparent" android:src="@drawable/ic_notif_previous" android:contentDescription="الآية السابقة" />
+        <ImageButton android:id="@+id/notif_rewind" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:background="@android:color/transparent" android:src="@drawable/ic_notif_rewind" android:contentDescription="إرجاع ١٠ ثوانٍ" />
+        <ImageButton android:id="@+id/notif_play_pause" android:layout_width="52dp" android:layout_height="52dp" android:layout_weight="1.25" android:background="@drawable/notif_player_primary_button" android:src="@drawable/ic_stat_play" android:contentDescription="تشغيل أو إيقاف مؤقت" />
+        <ImageButton android:id="@+id/notif_forward" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:background="@android:color/transparent" android:src="@drawable/ic_notif_forward" android:contentDescription="تقديم ١٠ ثوانٍ" />
+        <ImageButton android:id="@+id/notif_next" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:background="@android:color/transparent" android:src="@drawable/ic_notif_next" android:contentDescription="الآية التالية" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="4dp"
+        android:background="#75FFFFFF" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <TextView
+            android:id="@+id/notif_stop"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical|start"
+            android:drawableStart="@drawable/ic_stat_stop"
+            android:drawablePadding="8dp"
+            android:text="إيقاف التلاوة"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/notif_speed"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:minWidth="74dp"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:background="@drawable/notif_player_speed_button"
+            android:text="السرعة ١×"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

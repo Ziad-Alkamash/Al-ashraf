@@ -1,0 +1,1071 @@
+/* ======================================================================
+   الختمة الجماعية — بنفس هوية "صفحة الصوتيات" (متغيرات --ap-*: خلفية
+   كريمية دافئة/داكنة، بطاقات بيضاء أو داكنة بحواف دائرية وظل ناعم، لمسة
+   زيتونية أساسية ولمسة ذهبية للتمييز، خط Tajawal) — بدل الطابع الذهبي
+   القديم (--paper/--ink/--gold-deep) عشان تتماشى مع باقي شاشات التطبيق.
+   الشاشات المشمولة: اختيار فردية/جماعية، مركز الختمات الجماعية، إنشاء/
+   انضمام، تفاصيل الختمة الجماعية، الأعضاء، شاشة الاحتفال، وبروبمت الاسم.
+   ====================================================================== */
+
+/* نافذة "إضافة عضو بالـ ID" بتتفتح فوق قايمة الأعضاء (nested overlay)، وبما
+   إن كل الـ overlays بتاخد نفس z-index الافتراضي (200) وبيترتبوا حسب ترتيبهم
+   في الـ DOM، وقايمة الأعضاء جايه بعدها في الملف، كانت قايمة الأعضاء بتغطّيها
+   فتفضل مفتوحة من غير ما تتشاف (وتظهر تايهة بعدين لما نقفل القايمة ونرجع
+   لصفحة الختمة). لازم z-index أعلى من الافتراضي عشان تظهر فوقها صح */
+#khatma-group-addbyid-overlay { z-index: 210; }
+
+/* نافذة "استرجاع الختمات الجماعية" ممكن تتفتح من جوه "بروفايلي" (وأحيانًا
+   من جوه شاشة الترحيب) وتفضل هي التانية مفتوحة فوقها — نفس مشكلة
+   #khatma-group-addbyid-overlay فوق بالظبط: كلهم بياخدوا نفس الـ z-index
+   الافتراضي (200) فبيترتبوا حسب ترتيبهم في الـ DOM بس، وبما إن
+   #khatma-restore-overlay جايه قبل #khatma-profile-overlay في الملف، كانت
+   بتفضل مستخبية وراها لحد ما "بروفايلي" تتقفل. لازم z-index أعلى من الاتنين
+   عشان تظهر فوقهم فعليًا */
+#khatma-restore-overlay { z-index: 215; }
+
+/* نوافذ الختمة تُفتح أحيانًا من فوق صفحة/نافذة الختمة نفسها. لازم تكون
+   طبقاتها أعلى من الصفحة الأم صراحةً بدل الاعتماد على ترتيبها في الـ DOM. */
+#khatma-type-overlay { z-index: 220; }
+#khatma-group-hub-overlay { z-index: 225; }
+#khatma-group-create-overlay,
+#khatma-group-join-overlay { z-index: 230; }
+
+#khatma-name-prompt-overlay,
+#khatma-onboarding-overlay,
+#khatma-restore-overlay,
+#khatma-profile-overlay,
+#khatma-type-overlay,
+#khatma-group-invite-overlay,
+#khatma-group-hub-overlay,
+#khatma-group-create-overlay,
+#khatma-group-edit-overlay,
+#khatma-group-join-overlay,
+#khatma-group-details-overlay,
+#khatma-group-rename-overlay, #khatma-group-myname-overlay,
+#khatma-group-extend-overlay,
+#khatma-group-assign-overlay,
+#khatma-group-members-overlay,
+#khatma-group-celebrate-overlay {
+  --ap-bg: #FAF8F3;
+  --ap-card: #FFFFFF;
+  --ap-line: rgba(90, 84, 60, .11);
+  --ap-ink: #211F1A;
+  --ap-ink-2: #5A574D;
+  --ap-ink-3: #8E8A7D;
+  --ap-olive: #6F7752;
+  --ap-olive-2: #8A8768;
+  --ap-olive-soft: #ECEADF;
+  --ap-hl: #E7E5D8;
+  --ap-gold: #B8892B;
+  --ap-gold-soft: rgba(184, 137, 43, .14);
+  --ap-shadow: 0 8px 26px rgba(70, 60, 30, .07), 0 1px 2px rgba(70, 60, 30, .05);
+  --ap-font: 'Tajawal', sans-serif;
+  background: var(--ap-bg);
+  color: var(--ap-ink);
+  font-family: var(--ap-font);
+}
+body.theme-night #khatma-name-prompt-overlay,
+body.theme-night #khatma-onboarding-overlay,
+body.theme-night #khatma-restore-overlay,
+body.theme-night #khatma-profile-overlay,
+body.theme-night #khatma-type-overlay,
+body.theme-night #khatma-group-invite-overlay,
+body.theme-night #khatma-group-hub-overlay,
+body.theme-night #khatma-group-create-overlay,
+body.theme-night #khatma-group-edit-overlay,
+body.theme-night #khatma-group-join-overlay,
+body.theme-night #khatma-group-details-overlay,
+body.theme-night #khatma-group-rename-overlay,
+body.theme-night #khatma-group-myname-overlay,
+body.theme-night #khatma-group-extend-overlay,
+body.theme-night #khatma-group-assign-overlay,
+body.theme-night #khatma-group-members-overlay,
+body.theme-night #khatma-group-celebrate-overlay {
+  --ap-bg: #121211;
+  --ap-card: #1C1C1A;
+  --ap-line: rgba(255, 255, 255, .08);
+  --ap-ink: #EFEDE6;
+  --ap-ink-2: #B5B2A6;
+  --ap-ink-3: #85826F;
+  --ap-olive: #98A278;
+  --ap-olive-2: #6F7550;
+  --ap-olive-soft: #262820;
+  --ap-hl: #2A2C22;
+  --ap-gold: #D6AE55;
+  --ap-gold-soft: rgba(214, 174, 85, .16);
+  --ap-shadow: 0 8px 26px rgba(0, 0, 0, .4);
+}
+
+.kg-compact-sheet { max-height: 86vh; align-self: flex-end; }
+
+
+/* تثبيت هوية "صفحة الصوتيات" (style.css) بتحط background: var(--ap-bg)
+   على عنصر الأوفرلاي نفسه (مش بس على الـ sheet) لـ #khatma-add-overlay
+   و#khatma-profile-overlay ضمن قايمة طويلة من العناصر — فبيطمس الخلفية
+   الشفافة الغامقة الافتراضية لـ .overlay (اللي المفروض تورّي الصفحة اللي
+   وراه معتّمة) بلون كريمي صريح صلب، فيبان وكأن وراه صفحة فاضية سادة بدل
+   الصفحة الحقيقية. الحل: نرجّع خلفية الأوفرلاي (الحاوية) نفسها شفافة زي
+   أي أوفرلاي عادي، وخلفية الـ sheet جواه فاضلة زي ما هي (متحطوطة بقواعد
+   تانية أخص) */
+#khatma-add-overlay,
+#khatma-profile-overlay,
+#khatma-restore-overlay {
+  background: rgba(6, 14, 11, .68);
+}
+body.theme-night #khatma-add-overlay,
+body.theme-night #khatma-profile-overlay,
+body.theme-night #khatma-restore-overlay {
+  background: rgba(6, 14, 11, .68);
+}
+
+/* -------- عناصر عامة معاد استخدامها من التصميم الأساسي (form/overlay-head/
+   details/preset/icon-btn) — بتاخد هوية صفحة الصوتيات بدل الذهبي القديم -------- */
+:is(#khatma-name-prompt-overlay, #khatma-onboarding-overlay, #khatma-restore-overlay, #khatma-profile-overlay,
+    #khatma-type-overlay, #khatma-group-hub-overlay,
+    #khatma-group-invite-overlay,
+    #khatma-group-create-overlay, #khatma-group-join-overlay, #khatma-group-details-overlay,
+    #khatma-group-rename-overlay, #khatma-group-myname-overlay, #khatma-group-extend-overlay, #khatma-group-assign-overlay,
+    #khatma-group-members-overlay, #khatma-group-celebrate-overlay) .overlay-sheet {
+  background: var(--ap-bg);
+}
+:is(#khatma-type-overlay, #khatma-group-invite-overlay, #khatma-group-members-overlay, #khatma-profile-overlay) .overlay-head h3,
+:is(#khatma-name-prompt-overlay, #khatma-onboarding-overlay, #khatma-restore-overlay, #khatma-group-create-overlay, #khatma-group-join-overlay,
+    #khatma-group-rename-overlay, #khatma-group-myname-overlay, #khatma-group-extend-overlay, #khatma-group-assign-overlay) .khatma-form-head h3 {
+  font-family: var(--ap-font);
+  color: var(--ap-ink);
+}
+:is(#khatma-name-prompt-overlay, #khatma-type-overlay, #khatma-group-invite-overlay, #khatma-group-create-overlay,
+    #khatma-group-join-overlay, #khatma-group-members-overlay, #khatma-restore-overlay, #khatma-profile-overlay,
+    #khatma-group-rename-overlay, #khatma-group-myname-overlay, #khatma-group-extend-overlay, #khatma-group-assign-overlay) .khatma-form-text-btn {
+  color: var(--ap-ink-2);
+  font-family: var(--ap-font);
+}
+:is(#khatma-name-prompt-overlay, #khatma-group-create-overlay, #khatma-group-join-overlay, #khatma-restore-overlay, #khatma-profile-overlay,
+    #khatma-group-rename-overlay, #khatma-group-myname-overlay, #khatma-group-extend-overlay, #khatma-group-assign-overlay) .khatma-form-save {
+  color: var(--ap-gold);
+}
+:is(#khatma-onboarding-overlay) .khatma-form-input {
+  border: 1px solid var(--ap-line);
+  background: var(--ap-card);
+  color: var(--ap-ink);
+  font-family: var(--ap-font);
+}
+:is(#khatma-onboarding-overlay, #khatma-restore-overlay, #khatma-profile-overlay) .kg-hint { color: var(--ap-ink-2); }
+#khatma-onboarding-overlay .khatma-form-head-center { justify-content: center; }
+#khatma-onboarding-overlay .kg-onboarding-btn { margin-top: 6px; }
+#khatma-onboarding-overlay .kg-id-badge { background: var(--ap-olive-soft); }
+#khatma-onboarding-overlay .kg-id-text { color: var(--ap-ink); }
+:is(#khatma-group-create-overlay, #khatma-group-rename-overlay, #khatma-group-myname-overlay, #khatma-group-extend-overlay) .khatma-form-label {
+  color: var(--ap-ink); font-family: var(--ap-font);
+}
+:is(#khatma-group-create-overlay, #khatma-group-join-overlay, #khatma-group-rename-overlay, #khatma-group-myname-overlay, #khatma-group-extend-overlay,
+    #khatma-restore-overlay, #khatma-profile-overlay) .khatma-form-input {
+  border: 1px solid var(--ap-line);
+  background: var(--ap-card);
+  color: var(--ap-ink);
+  font-family: var(--ap-font);
+}
+#khatma-group-create-overlay .khatma-segmented {
+  background: var(--ap-olive-soft);
+  border: 1px solid var(--ap-line);
+}
+#khatma-group-create-overlay .khatma-segmented-btn { color: var(--ap-ink-2); font-family: var(--ap-font); }
+#khatma-group-create-overlay .khatma-segmented-btn.active { background: var(--ap-olive); color: #fff; box-shadow: none; }
+body.theme-night #khatma-group-create-overlay .khatma-segmented-btn.active { color: #15160f; }
+
+:is(#khatma-group-hub-overlay, #khatma-group-details-overlay) .icon-btn,
+#khatma-group-celebrate-overlay .icon-btn {
+  background: var(--ap-card);
+  color: var(--ap-ink);
+  border: 1px solid var(--ap-line);
+}
+:is(#khatma-group-hub-overlay, #khatma-group-details-overlay) .khatma-details-title {
+  font-family: var(--ap-font);
+  color: var(--ap-ink);
+}
+#khatma-group-details-overlay .khatma-details-more-btn {
+  background: var(--ap-olive-soft);
+  color: var(--ap-olive);
+}
+#khatma-group-details-overlay .khatma-details-more-wrap { position: relative; flex-shrink: 0; }
+#khatma-group-details-overlay .khatma-details-more-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  bottom: auto;
+  left: 0;
+  right: auto;
+  z-index: 30;
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow);
+  border: 1px solid var(--ap-line);
+}
+#khatma-group-details-overlay .khatma-details-menu-item { color: var(--ap-ink); font-family: var(--ap-font); }
+#khatma-group-details-overlay .khatma-details-menu-item:active { background: var(--ap-olive-soft); }
+#khatma-group-details-overlay .khatma-details-menu-item svg { color: var(--ap-gold); }
+#khatma-group-details-overlay .khatma-details-menu-item.danger,
+#khatma-group-details-overlay .khatma-details-menu-item.danger svg { color: #C0473E; }
+:is(#khatma-group-hub-overlay, #khatma-group-details-overlay) .khatma-details-list-title {
+  color: var(--ap-ink);
+  font-family: var(--ap-font);
+}
+#khatma-group-hub-overlay .khatma-preset-row,
+#khatma-group-hub-overlay .khatma-history-empty {
+  border-bottom-color: var(--ap-line);
+  color: var(--ap-ink-3);
+}
+
+/* -------- اختيار فردية/جماعية -------- */
+.kg-type-choices { display: flex; flex-direction: column; gap: 12px; padding: 10px 18px 26px; }
+.kg-type-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: start;
+  padding: 16px;
+  background: var(--ap-card);
+  border: 1px solid var(--ap-line);
+  border-radius: 22px;
+  box-shadow: var(--ap-shadow);
+  transition: transform .12s ease, background-color .15s ease;
+}
+.kg-type-card:active { transform: scale(.98); background: var(--ap-hl); }
+.kg-type-icon {
+  flex-shrink: 0;
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 16px;
+  background: var(--ap-olive-soft);
+  color: var(--ap-olive);
+}
+.kg-type-card-group .kg-type-icon { background: var(--ap-gold-soft); color: var(--ap-gold); }
+.kg-type-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; }
+.kg-type-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.kg-type-name { font-family: var(--ap-font); font-weight: 800; font-size: 15.5px; color: var(--ap-ink); }
+.kg-type-desc { font-family: var(--ap-font); font-size: 12px; color: var(--ap-ink-2); line-height: 1.55; }
+/* سهم صغير في نهاية الصف يوضّح إن الزرار بيفتح خطوة تانية */
+.kg-type-card::after {
+  content: '';
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-inline-start: 2px solid var(--ap-ink-3);
+  border-bottom: 2px solid var(--ap-ink-3);
+  transform: rotate(45deg);
+  opacity: .55;
+}
+
+/* -------- مركز الختمات الجماعية -------- */
+/* هيرو المركز (نفس هيرو الصوتيات): الشريط العلوي بقى عايم فوق الرسمة في جهتها
+   (نهاية السطر) وفيه زر الإغلاق بس، والهيرو أول حاجة جوه منطقة السكرول */
+#khatma-group-hub-overlay .khatma-details-sheet { position: relative; }
+#khatma-group-hub-overlay .khatma-details-topbar {
+  position: absolute;
+  top: 0; inset-inline: 0;
+  z-index: 6;
+  justify-content: flex-end;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 0;
+  background: transparent;
+}
+#khatma-group-hub-overlay .khatma-details-topbar .icon-btn {
+  width: 42px; height: 42px;
+  box-shadow: var(--ap-shadow);
+}
+#khatma-group-hub-overlay .khatma-details-body { padding-top: 0; }
+#khatma-group-hub-overlay .kg-hero { min-height: 196px; }
+.kg-hint { font-family: var(--ap-font); font-size: 13px; color: var(--ap-ink-2); margin: 0 0 10px; line-height: 1.6; }
+.kg-error { color: #C0473E !important; }
+
+.kg-hub-actions { display: flex; gap: 10px; margin-bottom: 22px; }
+.kg-action-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px;
+  border-radius: 18px;
+  background: var(--ap-olive);
+  color: #fff;
+  font-family: var(--ap-font);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: none;
+}
+body.theme-night .kg-action-btn { color: #15160f; }
+.kg-action-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; }
+.kg-action-btn:active { transform: scale(.97); }
+.kg-action-btn-ghost {
+  background: var(--ap-olive-soft);
+  color: var(--ap-olive);
+  box-shadow: none;
+}
+body.theme-night .kg-action-btn-ghost { color: var(--ap-olive); }
+
+.kg-note {
+  font-family: var(--ap-font);
+  font-size: 12.5px;
+  color: var(--ap-ink-2);
+  background: var(--ap-olive-soft);
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.kg-list { margin-bottom: 6px; }
+.kg-text-link {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 12px 0;
+  font-family: var(--ap-font);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ap-gold);
+}
+
+/* صف ختمة جماعية داخل القوائم (يعيد استخدام .khatma-preset-row الأساسي) */
+.kg-row-progress {
+  flex-shrink: 0;
+  font-family: var(--ap-font);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ap-gold);
+  background: var(--ap-gold-soft);
+  border-radius: 10px;
+  padding: 4px 9px;
+}
+.kg-row-badge {
+  font-family: var(--ap-font);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: #C0473E;
+  border-radius: 8px;
+  padding: 2px 7px;
+  margin-inline-start: 6px;
+}
+
+/* -------- تفاصيل الختمة الجماعية -------- */
+.kg-meta-text { font-family: var(--ap-font); font-size: 12.5px; color: var(--ap-ink-2); margin: 2px 0 0; }
+.kg-status-banner {
+  margin-top: 12px;
+  padding: 9px 14px;
+  border-radius: 14px;
+  font-family: var(--ap-font);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(192, 71, 62, .1);
+  color: #C0473E;
+}
+.kg-status-banner.is-done { background: var(--ap-gold-soft); color: var(--ap-gold); }
+
+.kg-selected-card {
+  background: var(--ap-card);
+  border: 1px solid var(--ap-line);
+  border-radius: 18px;
+  box-shadow: var(--ap-shadow);
+  padding: 14px 16px;
+  margin: 14px 0;
+}
+.kg-selected-title { font-family: var(--ap-font); font-weight: 800; font-size: 15px; color: var(--ap-ink); margin: 0 0 4px; }
+.kg-selected-status { font-family: var(--ap-font); font-size: 12.5px; color: var(--ap-ink-2); margin: 0 0 12px; }
+.kg-selected-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.kg-selected-actions .khatma-primary-btn {
+  flex: 1; width: auto; padding: 12px 16px; font-size: 13.5px;
+  background: var(--ap-olive); color: #fff; font-family: var(--ap-font); box-shadow: none;
+}
+body.theme-night .kg-selected-actions .khatma-primary-btn { color: #15160f; }
+.kg-selected-actions .kg-btn-secondary {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--ap-olive-soft);
+  color: var(--ap-olive);
+  font-family: var(--ap-font);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.kg-selected-actions .kg-btn-text {
+  width: 100%;
+  text-align: center;
+  padding: 6px;
+  font-family: var(--ap-font);
+  font-size: 12.5px;
+  color: var(--ap-ink-2);
+  text-decoration: underline;
+}
+
+/* شبكة الأجزاء/الصفحات */
+.kg-units-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  padding-bottom: 10px;
+}
+.kg-units-grid.is-pages { grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.kg-unit-cell {
+  aspect-ratio: 1 / 1;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  font-family: var(--ap-font);
+  font-weight: 800;
+  font-size: 13px;
+  background: var(--ap-card);
+  color: var(--ap-ink-3);
+  border: 1px dashed var(--ap-line);
+  position: relative;
+}
+.kg-units-grid.is-pages .kg-unit-cell { font-size: 9.5px; border-radius: 7px; }
+.kg-unit-cell:active { transform: scale(.92); }
+.kg-unit-cell.is-mine {
+  background: var(--ap-gold-soft);
+  border: 1px solid var(--ap-gold);
+  color: var(--ap-gold);
+}
+.kg-unit-cell.is-others {
+  background: var(--ap-hl);
+  border-style: solid;
+  border-color: var(--ap-line);
+  color: var(--ap-ink-2);
+}
+.kg-unit-cell.is-done {
+  background: var(--ap-olive-soft);
+  border-style: solid;
+  border-color: var(--ap-olive);
+  color: var(--ap-olive);
+}
+.kg-unit-cell.is-selected { outline: 2px solid var(--ap-gold); outline-offset: 1px; }
+.kg-unit-cell .kg-unit-check {
+  position: absolute; top: -4px; left: -4px;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--ap-olive);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+body.theme-night .kg-unit-cell .kg-unit-check { color: #15160f; }
+.kg-unit-cell .kg-unit-check svg { width: 9px; height: 9px; fill: none; stroke: currentColor; }
+
+/* قائمة الأعضاء */
+#khatma-group-members-overlay .nav-sheet-handle { background: var(--ap-line); }
+#khatma-group-members-overlay .overlay-head h3 { font-family: var(--ap-font); color: var(--ap-ink); }
+#khatma-group-members-overlay .khatma-preset-row { border-bottom-color: var(--ap-line); }
+#khatma-group-members-overlay .khatma-preset-text strong { color: var(--ap-ink); font-family: var(--ap-font); }
+#khatma-group-members-overlay .khatma-preset-text small { color: var(--ap-ink-2); }
+#khatma-group-members-overlay .kg-admin-badge { display: inline-flex; width: 17px; height: 17px; margin-inline-start: 6px; vertical-align: -3px; color: var(--ap-olive); }
+#khatma-group-members-overlay .kg-admin-badge svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* -------- شاشة الاحتفال -------- */
+.kg-celebrate-sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 60px 26px 34px;
+  gap: 8px;
+  position: relative;
+}
+.kg-celebrate-close { position: absolute; top: 16px; inset-inline-start: 16px; }
+.kg-celebrate-emblem {
+  width: 96px; height: 96px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--ap-gold-soft);
+  color: var(--ap-gold);
+  margin-bottom: 10px;
+}
+.kg-celebrate-emblem svg { width: 50px; height: 50px; fill: none; stroke: currentColor; }
+.kg-celebrate-title { font-family: var(--ap-font); font-weight: 800; font-size: 20px; color: var(--ap-ink); margin: 0; }
+.kg-celebrate-name { font-family: var(--ap-font); font-size: 15px; font-weight: 700; color: var(--ap-gold); margin: 0; }
+.kg-celebrate-sub { font-family: var(--ap-font); font-size: 13px; color: var(--ap-ink-2); margin: 0 0 18px; }
+.kg-celebrate-sheet .khatma-primary-btn {
+  margin-top: 4px;
+  background: var(--ap-olive);
+  color: #fff;
+  font-family: var(--ap-font);
+  box-shadow: none;
+}
+body.theme-night .kg-celebrate-sheet .khatma-primary-btn { color: #15160f; }
+.kg-dua-box {
+  margin-top: 16px;
+  padding: 18px 16px;
+  background: var(--ap-card);
+  border: 1px solid var(--ap-line);
+  box-shadow: var(--ap-shadow);
+  border-radius: 18px;
+  font-family: var(--ap-font);
+  font-size: 14.5px;
+  line-height: 2.1;
+  color: var(--ap-ink);
+  text-align: center;
+}
+
+/* ======================================================================
+   شريط تقدّم القراءة — مشترك بين الختمة الجماعية (.kg-reading-bar) والفردية
+   (.khatma-reading-bar): شريط زيتوني رفيع في منتصف المساحة بين آخر سطر
+   وشريط رقم الصفحة والحزب، من غير أي مستطيل أبيض. اسم الجزء/الصفحة فضل في الـ DOM مخفي
+   بصريًا، وزرّ الإغلاق (X) دايرة صغيرة على طرف الشريط
+   ====================================================================== */
+.kg-reading-bar,
+.khatma-reading-bar {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  width: min(58vw, 260px);
+  z-index: 60;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  font-family: 'Tajawal', sans-serif;
+  pointer-events: none; /* ما نعطّلش لمس المصحف — بس زرّ الإغلاق بيفعّل لمسه بنفسه */
+}
+.kg-reading-bar.hidden,
+.khatma-reading-bar.hidden { display: none; }
+.kg-reading-bar-row,
+.khatma-reading-bar-row { margin: 0; }
+.kg-reading-bar-label,
+.khatma-reading-bar-label {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.kg-reading-bar-exit,
+.khatma-reading-bar-exit {
+  position: absolute;
+  right: calc(100% + 10px); /* على يسار الشريط (طرف التقدّم) */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(111, 119, 82, .16);
+  color: #5A574D;
+  padding: 0;
+  pointer-events: auto;
+}
+/* مساحة لمس أكبر من الدايرة الصغيرة من غير ما تكبّر شكلها */
+.kg-reading-bar-exit::after,
+.khatma-reading-bar-exit::after { content: ""; position: absolute; inset: -8px; }
+.kg-reading-bar-exit svg,
+.khatma-reading-bar-exit svg { width: 9px; height: 9px; fill: none; stroke: currentColor; stroke-width: 2.6; }
+.kg-reading-bar-track,
+.khatma-reading-bar-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(111, 119, 82, .2);
+  overflow: hidden;
+  margin: 0;
+}
+.kg-reading-bar-fill,
+.khatma-reading-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: #6F7752;
+  transition: width .25s ease;
+}
+body.theme-night .kg-reading-bar-track,
+body.theme-night .khatma-reading-bar-track { background: rgba(255, 255, 255, .14); }
+body.theme-night .kg-reading-bar-fill,
+body.theme-night .khatma-reading-bar-fill { background: #98A278; }
+body.theme-night .kg-reading-bar-exit,
+body.theme-night .khatma-reading-bar-exit { background: rgba(255, 255, 255, .12); color: #B5B2A6; }
+
+/* ======================================================================
+   توزيع الأجزاء على الأعضاء (المنشئ فقط)
+   ====================================================================== */
+/* هذه الشاشة صفحة كاملة (خطها overlay-sheet.khatma-details-sheet، اللي
+   بادينجه صفر ومحتاج هيدر من نوع khatma-details-topbar يدي مساحة أعلى
+   الشاشة للـ safe-area) لكن هيدرها فعليًا khatma-form-head (اللي مالوش
+   أي بادينج خاص بيه، وبيتعمد إنه ياخد بادينج الصفحة من khatma-form-sheet
+   العادي). النتيجة إن الهيدر (إغلاق/العنوان/توزيع تلقائي) بيطلع لاصق
+   تمامًا في أعلى وحواف الشاشة من غير أي مسافة — فبيتغطى بشريط الحالة/
+   النوتش على الموبايل وكإن الصفحة "طالعة لفوق". الحل: نضيف للهيدر هنا
+   بالظبط نفس بادينج khatma-details-topbar (أعلى: مسافة + safe-area،
+   وجوانب 16px زي جسم الصفحة) عشان يرجع مطابق لباقي الصفحات الكاملة. */
+#khatma-group-assign-overlay .khatma-form-head {
+  padding: calc(14px + env(safe-area-inset-top)) 16px 0;
+}
+#khatma-group-assign-overlay .kg-hint {
+  font-size: 12.5px; color: var(--ap-ink-2); margin: 0 0 14px; line-height: 1.7;
+}
+.kg-assign-members { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.kg-assign-chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ap-line);
+  background: var(--ap-card);
+  color: var(--ap-ink-2);
+  font-family: var(--ap-font);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.kg-assign-chip.is-active {
+  background: var(--ap-gold-soft);
+  border-color: var(--ap-gold);
+  color: var(--ap-gold);
+}
+#kg-assign-grid .kg-unit-cell { overflow: visible; }
+.kg-unit-owner {
+  position: absolute; bottom: -4px; inset-inline-end: -4px;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--ap-ink-3);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+
+/* زرار "توزيع الأجزاء" الظاهر في شاشة الختمة للمنشئ فقط */
+.kg-assign-cta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--ap-olive);
+  color: #fff;
+  font-family: var(--ap-font);
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: var(--ap-shadow);
+  transition: transform .15s ease;
+}
+.kg-assign-cta.hidden { display: none; }
+.kg-assign-cta svg { width: 20px; height: 20px; fill: none; stroke: currentColor; flex-shrink: 0; }
+.kg-assign-cta:active { transform: scale(.97); }
+body.theme-night .kg-assign-cta { color: #15160f; }
+
+/* قايمة اختيار تاريخ تمديد الموعد */
+.kg-select {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  padding-inline-end: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236F7752' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 16px center;
+  font-weight: 700;
+}
+[dir="ltr"] .kg-select, html[dir="ltr"] .kg-select { background-position: right 16px center; }
+#khatma-group-extend-overlay .kg-hint.hidden { display: none; }
+
+
+/* -------- أزرار الإجراءات في قائمة الأعضاء (تعديل اسمي / إزالة عضو) -------- */
+.kg-member-action {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  color: var(--ap-ink-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .15s ease, transform .1s ease;
+}
+.kg-member-action svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
+.kg-member-action:active { transform: scale(.92); background: var(--ap-olive-soft); }
+.kg-member-action.is-danger { color: #C0473E; }
+.kg-member-action.is-danger:active { background: rgba(192, 71, 62, .12); }
+.kg-member-action:disabled { opacity: .4; pointer-events: none; }
+
+
+/* -------- بروفايلي: أفاتار + اسم قابل للتعديل + الـ ID الثابت -------- */
+.kg-profile-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.kg-profile-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--ap-font, var(--font-display));
+  font-size: 30px; font-weight: 700;
+  color: var(--ap-gold, var(--gold-deep));
+  background: var(--ap-gold-soft, rgba(201,162,39,.14));
+  margin: 4px 0 6px;
+}
+
+.kg-profile-name-view { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.kg-profile-name-text { font-family: var(--ap-font); font-weight: 800; font-size: 17px; color: var(--ap-ink, var(--ink)); }
+.kg-profile-edit-link {
+  font-size: 13px; font-weight: 700; font-family: var(--ap-font);
+  color: var(--ap-gold, var(--gold-deep));
+  background: transparent; border: 0; padding: 0;
+}
+
+.kg-profile-name-edit { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.kg-profile-name-edit.hidden { display: none; }
+.kg-profile-edit-actions { display: flex; justify-content: flex-end; gap: 14px; }
+
+.kg-id-badge {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--ap-olive-soft, rgba(201,162,39,.10));
+  margin-top: 4px;
+}
+.kg-id-text {
+  font-family: var(--font-mono, monospace);
+  font-size: 18px; font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--ap-ink, var(--ink));
+  direction: ltr;
+}
+.kg-id-copy-btn {
+  flex-shrink: 0; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%;
+  color: var(--ap-gold, var(--gold-deep));
+  background: transparent;
+}
+.kg-id-copy-btn svg { width: 16px; height: 16px; }
+.kg-id-copy-btn:active { transform: scale(.9); background: var(--ap-gold-soft, rgba(201,162,39,.16)); }
+
+/* -------- كود الاسترجاع (بروفايلي + شاشة الترحيب) -------- */
+.kg-recovery-block { width: 100%; margin-top: 10px; }
+.kg-recovery-block.hidden { display: none; }
+.kg-recovery-hint { color: #C0473E; }
+body.theme-night .kg-recovery-hint { color: #E08A7D; }
+.kg-recovery-badge { background: rgba(192,71,62,.10); margin-top: 6px; }
+.kg-recovery-text { font-size: 14px; letter-spacing: .5px; word-break: break-all; direction: ltr; }
+.kg-profile-divider { width: 100%; height: 1px; background: var(--ap-line, rgba(201,162,39,.25)); margin: 14px 0 10px; }
+.kg-restore-link { margin-top: 8px; font-size: 13px; font-weight: 700; font-family: var(--ap-font); color: var(--ap-gold, var(--gold-deep)); background: transparent; border: 0; padding: 4px; }
+.kg-restore-textarea { font-family: var(--font-mono, monospace); font-size: 13px; resize: none; word-break: break-all; }
+#khatma-restore-overlay .kg-error,
+#khatma-profile-overlay .kg-error { font-family: var(--ap-font); }
+
+/* -------- زرّ "إضافة عضو بالـ ID" في شاشة الأعضاء (لمنشئ الختمة بس) -------- */
+.kg-add-by-id-wrap { padding: 4px 4px 10px; }
+.kg-add-by-id-wrap.hidden { display: none; }
+.kg-add-by-id-btn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--ap-line, rgba(201,162,39,.35));
+  background: transparent;
+  color: var(--gold-deep);
+  font-weight: 700; font-size: 14px;
+}
+body.theme-night .kg-add-by-id-btn { color: var(--gold-soft); }
+.kg-add-by-id-btn svg { width: 18px; height: 18px; }
+.kg-add-by-id-btn:active { background: rgba(201,162,39,.10); }
+
+/* تحسينات مشتركة لشاشات الختمات: مساحة آمنة أسفل الهاتف، تركيز واضح
+   للتنقل بلوحة المفاتيح، وبطاقات اختيار أسهل للمس من غير تغيير أي سلوك. */
+#khatma-type-overlay .kg-compact-sheet,
+#khatma-group-join-overlay .kg-compact-sheet,
+#khatma-add-overlay .khatma-form-sheet {
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
+}
+#khatma-add-overlay .khatma-form-head,
+#khatma-group-create-overlay .khatma-form-head { min-height: 56px; }
+#khatma-add-overlay .khatma-form-input,
+#khatma-group-create-overlay .khatma-form-input { min-height: 48px; }
+#khatma-add-overlay :is(button, input, select):focus-visible,
+#khatma-details-overlay :is(button, input, select):focus-visible,
+#khatma-group-create-overlay :is(button, input, select):focus-visible,
+#khatma-group-details-overlay :is(button, input, select):focus-visible {
+  outline: 3px solid var(--ap-gold);
+  outline-offset: 2px;
+}
+#khatma-type-overlay .overlay-head { min-height: 58px; padding-inline: 18px; }
+.kg-type-choices { gap: 12px; padding: 12px 18px 20px; }
+.kg-type-card {
+  min-height: 88px;
+  border: 1px solid var(--ap-line);
+  box-shadow: var(--ap-shadow);
+  transition: transform .18s ease, border-color .18s ease, background-color .18s ease;
+}
+.kg-type-card-solo .kg-type-icon { background: var(--ap-olive-soft); color: var(--ap-olive); }
+.kg-type-card-group .kg-type-icon { background: var(--ap-gold-soft); color: var(--ap-gold); }
+.kg-type-card:focus-visible,
+.kg-action-btn:focus-visible,
+.kg-text-link:focus-visible { outline: 3px solid var(--ap-gold); outline-offset: 3px; }
+@media (hover: hover) {
+  .kg-type-card:hover { transform: translateY(-2px); border-color: var(--ap-olive); }
+  .kg-action-btn:hover { filter: brightness(1.04); }
+}
+.kg-action-btn { min-height: 88px; justify-content: center; transition: transform .18s ease, filter .18s ease; }
+.kg-action-btn-ghost { border: 1px solid var(--ap-line); }
+@media (min-width: 700px) {
+  #khatma-type-overlay { align-items: center; justify-content: center; }
+  #khatma-type-overlay .kg-compact-sheet {
+    align-self: center;
+    width: min(calc(100% - 40px), 480px);
+    border-radius: 24px;
+  }
+  #khatma-group-hub-overlay .khatma-details-sheet { max-width: 640px; margin-inline: auto; }
+}
+@media (max-width: 360px) {
+  .kg-hub-actions { gap: 8px; }
+  .kg-action-btn { min-height: 82px; padding-inline: 7px; font-size: 12px; }
+  .kg-type-choices { padding-inline: 14px; }
+  .kg-type-card { gap: 12px; padding-inline: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kg-type-card, .kg-action-btn { transition: none; }
+  .kg-type-card:active, .kg-action-btn:active { transform: none; }
+}
+
+#khatma-group-invite-overlay .kg-invite-sheet { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+.kg-invite-content { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 18px 22px 10px; text-align: center; }
+.kg-invite-emblem { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; background: var(--ap-olive-soft); color: var(--ap-olive); }
+.kg-invite-emblem svg { width: 38px; height: 38px; }
+.kg-invite-name { margin: 0; color: var(--ap-ink); font: 800 20px/1.45 var(--ap-font); overflow-wrap: anywhere; }
+.kg-invite-meta { margin: 0; color: var(--ap-ink-2); font: 600 13px/1.6 var(--ap-font); }
+.kg-invite-content .kg-hint { margin: 0; }
+.kg-invite-open-app { width: 100%; padding: 12px; border: 1px solid var(--ap-line); border-radius: 14px; background: var(--ap-card); color: var(--ap-olive); font: 700 14px var(--ap-font); }
+.kg-invite-join-btn { margin-top: 6px; width: 100%; background: var(--ap-olive); color: #fff; font-family: var(--ap-font); }
+body.theme-night .kg-invite-join-btn { color: #15160f; }
+.kg-invite-join-btn:disabled { opacity: .72; }
+
+/* ورقة تعديل الختمة الجماعية بنفس هوية صفحة الصوتيات */
+#khatma-group-edit-overlay { background: rgba(6, 14, 11, .68); }
+body.theme-night #khatma-group-edit-overlay { background: rgba(6, 14, 11, .72); }
+#khatma-group-edit-overlay .kg-compact-sheet {
+  width: 100%;
+  max-height: min(86vh, 760px);
+  align-self: flex-end;
+  padding: 8px 18px max(24px, env(safe-area-inset-bottom));
+  border: 1px solid var(--ap-line);
+  border-bottom: 0;
+  border-radius: 28px 28px 0 0;
+  background: var(--ap-bg);
+  color: var(--ap-ink);
+  box-shadow: 0 -12px 40px rgba(25, 22, 12, .16);
+}
+#khatma-group-edit-overlay .khatma-form-head {
+  min-height: 60px;
+  margin: 0 -2px 14px;
+  padding: 0 2px 12px;
+  border-bottom: 1px solid var(--ap-line);
+}
+#khatma-group-edit-overlay .khatma-form-head h3 {
+  color: var(--ap-ink);
+  font: 800 18px/1.4 var(--ap-font);
+}
+#khatma-group-edit-overlay .khatma-form-text-btn {
+  min-width: 54px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  color: var(--ap-ink-2);
+  font: 700 14px/1.3 var(--ap-font);
+}
+#khatma-group-edit-overlay .khatma-form-save {
+  color: var(--ap-olive);
+  background: var(--ap-olive-soft);
+}
+#khatma-group-edit-overlay .khatma-form-body {
+  gap: 10px;
+  padding: 2px 1px 6px;
+  overscroll-behavior: contain;
+}
+#khatma-group-edit-overlay .khatma-form-label {
+  margin: 8px 2px 1px;
+  color: var(--ap-ink-2);
+  font: 700 13px/1.5 var(--ap-font);
+}
+#khatma-group-edit-overlay .khatma-form-body > .khatma-form-label:first-child { margin-top: 0; }
+#khatma-group-edit-overlay .khatma-form-input {
+  min-height: 52px;
+  padding: 13px 15px;
+  border: 1px solid var(--ap-line);
+  border-radius: 16px;
+  background-color: var(--ap-card);
+  color: var(--ap-ink);
+  font: 500 15px/1.5 var(--ap-font);
+  box-shadow: 0 3px 12px rgba(50, 44, 25, .035);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+#khatma-group-edit-overlay .khatma-form-input:focus {
+  outline: 0;
+  border-color: var(--ap-olive);
+  box-shadow: 0 0 0 3px rgba(111, 119, 82, .16);
+}
+body.theme-night #khatma-group-edit-overlay .khatma-form-input:focus { box-shadow: 0 0 0 3px rgba(152, 162, 120, .2); }
+#khatma-group-edit-overlay .khatma-form-toggle-row {
+  min-height: 60px;
+  margin-top: 1px;
+  padding: 10px 14px;
+  border: 1px solid var(--ap-line);
+  border-radius: 16px;
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow);
+}
+#khatma-group-edit-overlay .settings-card-title {
+  color: var(--ap-ink);
+  font: 700 14px/1.4 var(--ap-font);
+}
+#khatma-group-edit-overlay .switch-track { background: var(--ap-line); }
+#khatma-group-edit-overlay .switch input:checked + .switch-track { background: var(--ap-olive); }
+#khatma-group-edit-overlay .switch input:checked + .switch-track .switch-thumb { background: #fff; }
+#khatma-group-edit-overlay .switch input:focus-visible + .switch-track { outline: 3px solid var(--ap-gold); outline-offset: 3px; }
+#khatma-group-edit-overlay .kg-hint {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--ap-line);
+  border-radius: 14px;
+  background: var(--ap-olive-soft);
+  color: var(--ap-ink-2);
+  font: 500 13px/1.75 var(--ap-font);
+}
+#khatma-group-edit-overlay :is(button, input, select):focus-visible { outline: 3px solid var(--ap-gold); outline-offset: 2px; }
+body.theme-night #khatma-group-edit-overlay .kg-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2398A278' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+@media (min-width: 700px) {
+  #khatma-group-edit-overlay { align-items: center; justify-content: center; }
+  #khatma-group-edit-overlay .kg-compact-sheet {
+    width: min(calc(100% - 40px), 560px);
+    align-self: center;
+    border: 1px solid var(--ap-line);
+    border-radius: 26px;
+    padding-bottom: 24px;
+  }
+}
+
+/* Khatma group refresh: clearer entry points and a more useful progress view. */
+#khatma-group-hub-overlay .khatma-details-body { padding-inline: 18px; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+#khatma-group-hub-overlay .kg-hero { min-height: 218px; margin-inline: -18px; border-radius: 0 0 30px 30px; overflow: hidden; }
+#khatma-group-hub-overlay .kg-hero::after { content: ''; position: absolute; inset: auto 0 0; height: 54%; background: linear-gradient(0deg, rgba(18,23,15,.72), transparent); pointer-events: none; }
+#khatma-group-hub-overlay .kg-hero .ap-hero-text { z-index: 1; padding-inline: 22px; }
+#khatma-group-hub-overlay .kg-hero .ap-title { font-size: clamp(26px, 7vw, 34px); }
+#khatma-group-hub-overlay .kg-hero .ap-subtitle { max-width: 260px; line-height: 1.7; }
+#khatma-group-hub-overlay .kg-hub-actions { gap: 12px; margin: 20px 0 24px; }
+#khatma-group-hub-overlay .kg-action-btn { min-height: 96px; border-radius: 20px; padding: 16px 12px; box-shadow: 0 10px 22px rgba(83,94,60,.16); }
+#khatma-group-hub-overlay .kg-action-btn svg { width: 23px; height: 23px; }
+#khatma-group-hub-overlay .kg-action-btn-ghost { background: var(--ap-card); border: 1px solid var(--ap-line); box-shadow: var(--ap-shadow); }
+#khatma-group-hub-overlay .khatma-details-list-title { margin: 22px 2px 12px; font-size: 17px; }
+#khatma-group-hub-overlay .kg-list { overflow: hidden; border: 1px solid var(--ap-line); border-radius: 20px; background: var(--ap-card); box-shadow: var(--ap-shadow); }
+#khatma-group-hub-overlay .kg-list .khatma-history-empty { padding: 22px 18px; line-height: 1.75; }
+#khatma-group-hub-overlay .kg-text-link { border: 1px solid var(--ap-line); border-radius: 15px; background: var(--ap-card); margin-top: 10px; }
+#khatma-group-details-overlay .khatma-details-body { padding: 14px 16px calc(28px + env(safe-area-inset-bottom)); }
+#khatma-group-details-overlay .khatma-details-card { position: relative; overflow: hidden; border-radius: 24px; padding: 22px 18px 18px; }
+#khatma-group-details-overlay .khatma-details-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, var(--ap-olive), var(--ap-gold)); }
+#khatma-group-details-overlay .kg-emblem-ring { width: 88px; height: 88px; margin-inline: auto; }
+#khatma-group-details-overlay .kg-details-pct-below { display: block; text-align: center; font-size: 22px; margin-top: 10px; }
+#khatma-group-details-overlay .khatma-details-progress-text { margin-top: 5px; font-weight: 700; }
+#khatma-group-details-overlay .kg-meta-text { margin-top: 7px; }
+#khatma-group-details-overlay .kg-status-banner { border: 1px solid rgba(192,71,62,.12); }
+#khatma-group-details-overlay .kg-assign-cta { min-height: 48px; border-radius: 15px; }
+#khatma-group-details-overlay .kg-selected-card { border-radius: 19px; padding: 16px; }
+#khatma-group-details-overlay .khatma-details-list-title { margin: 22px 2px 12px; font-size: 17px; }
+#khatma-group-details-overlay .kg-unit-tools { display: flex; flex-direction: column; gap: 17px; margin-top: 14px; margin-bottom: 18px; }
+#khatma-group-details-overlay .kg-unit-search { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 14px; border: 1px solid var(--ap-line); border-radius: 15px; background: var(--ap-card); color: var(--ap-ink-2); box-shadow: 0 5px 16px rgba(40,40,20,.04); }
+#khatma-group-details-overlay .kg-unit-search > svg { flex: 0 0 auto; width: 19px; height: 19px; color: var(--ap-olive); }
+#khatma-group-details-overlay .kg-unit-search input { flex: 1 1 auto; width: 100%; min-width: 0; height: 44px; padding: 0; border: 0; outline: 0; appearance: none; background: transparent; color: var(--ap-ink); font: 600 14px var(--ap-font); text-align: right; box-shadow: none; }
+#khatma-group-details-overlay .kg-unit-search input::placeholder { color: var(--ap-ink-3); opacity: 1; }
+#khatma-group-details-overlay .kg-unit-search input::-webkit-search-decoration,
+#khatma-group-details-overlay .kg-unit-search input::-webkit-search-cancel-button { display: none; }
+#khatma-group-details-overlay .kg-unit-search button { flex: 0 0 auto; width: 27px; height: 27px; border: 0; border-radius: 50%; background: var(--ap-olive-soft); color: var(--ap-olive); font-size: 19px; line-height: 1; }
+#khatma-group-details-overlay .kg-unit-filters { padding: 4px; border: 1px solid var(--ap-line); border-radius: 15px; background: var(--ap-card); }
+#khatma-group-details-overlay .kg-unit-filters button { border-radius: 11px; }
+#khatma-group-details-overlay .kg-unit-filters button.active { background: var(--ap-olive); color: #fff; }
+#khatma-group-members-overlay .kg-approval-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 58px; padding: 12px 14px; border: 1px solid var(--ap-line); border-radius: 15px; background: var(--ap-card); cursor: pointer; }
+#khatma-group-members-overlay .kg-approval-toggle-row .khatma-preset-text { flex: 1; min-width: 0; }
+#khatma-group-members-overlay .kg-switch { position: relative; display: inline-flex; flex: 0 0 auto; width: 48px; height: 28px; }
+#khatma-group-members-overlay .kg-switch input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+#khatma-group-members-overlay .kg-switch-track { position: absolute; inset: 0; border-radius: 999px; background: var(--ap-ink-3); transition: background .18s ease; }
+#khatma-group-members-overlay .kg-switch-track::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.2); transition: transform .18s ease; }
+#khatma-group-members-overlay .kg-switch input:checked + .kg-switch-track { background: var(--ap-olive); }
+#khatma-group-members-overlay .kg-switch input:checked + .kg-switch-track::after { transform: translateX(-20px); }
+#khatma-group-members-overlay .kg-switch input:focus-visible + .kg-switch-track { outline: 2px solid var(--ap-gold); outline-offset: 3px; }
+#khatma-group-details-overlay .kg-units-grid { gap: 9px; }
+#khatma-group-details-overlay .kg-unit-cell { border-radius: 13px; border-style: solid; box-shadow: 0 3px 10px rgba(40,40,20,.04); transition: transform .16s ease, box-shadow .16s ease; }
+#khatma-group-details-overlay .kg-unit-cell.is-mine { background: linear-gradient(145deg, var(--ap-gold-soft), var(--ap-card)); }
+#khatma-group-details-overlay .kg-unit-cell.is-done { background: linear-gradient(145deg, var(--ap-olive-soft), var(--ap-card)); }
+#khatma-group-create-overlay .khatma-form-head { margin-bottom: 16px; }
+#khatma-group-create-overlay .khatma-form-body,
+#khatma-add-overlay .khatma-form-body {
+  gap: 18px;
+  padding: 2px 2px max(24px, env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
+}
+#khatma-group-create-overlay .kg-create-intro,
+#khatma-add-overlay .kg-create-intro {
+  margin: 0;
+  color: var(--ap-ink-2);
+  font-size: 14px;
+  line-height: 1.8;
+}
+#khatma-group-create-overlay .kg-create-step,
+#khatma-add-overlay .kg-create-step {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--ap-line);
+  border-radius: 20px;
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow);
+}
+#khatma-group-create-overlay .kg-create-step h4,
+#khatma-add-overlay .kg-create-step h4 {
+  margin: 0 0 2px;
+  color: var(--ap-ink);
+  font-size: 17px;
+  line-height: 1.6;
+}
+#khatma-group-create-overlay .khatma-form-label,
+#khatma-add-overlay .khatma-form-label { margin: 6px 0 0; font-size: 14px; }
+#khatma-group-create-overlay .khatma-form-input,
+#khatma-add-overlay .khatma-form-input {
+  min-height: 54px;
+  padding: 12px 15px;
+  border: 1px solid var(--ap-line);
+  border-radius: 15px;
+  box-shadow: none;
+  outline: none;
+  font-size: 16px;
+}
+#khatma-group-create-overlay .khatma-form-input:focus,
+#khatma-group-create-overlay .khatma-form-input:focus-visible,
+#khatma-add-overlay .khatma-form-input:focus,
+#khatma-add-overlay .khatma-form-input:focus-visible {
+  border-color: var(--ap-olive);
+  outline: 3px solid var(--ap-gold-soft);
+  outline-offset: 1px;
+}
+#khatma-group-create-overlay .khatma-segmented,
+#khatma-add-overlay .khatma-segmented { min-height: 54px; padding: 4px; gap: 5px; }
+#khatma-group-create-overlay .khatma-segmented-btn,
+#khatma-add-overlay .khatma-segmented-btn { min-height: 44px; line-height: 1.4; }
+#khatma-group-create-overlay .kg-create-explainer,
+#khatma-group-create-overlay .kg-hint { margin: 0; color: var(--ap-ink-2); line-height: 1.7; }
+#khatma-group-create-overlay .khatma-form-toggle-row,
+#khatma-add-overlay .khatma-form-toggle-row {
+  min-height: 56px; margin: 2px 0 0; padding: 10px 12px;
+  border: 1px solid var(--ap-line); border-radius: 14px; background: var(--ap-bg);
+}
+@media (max-width: 380px) {
+  #khatma-group-create-overlay .kg-create-step,
+  #khatma-add-overlay .kg-create-step { padding: 15px; }
+  #khatma-group-create-overlay .khatma-segmented-btn,
+  #khatma-add-overlay .khatma-segmented-btn { padding-inline: 8px; font-size: 13px; }
+}
+@media (hover: hover) {
+  #khatma-group-details-overlay .kg-unit-cell:hover { transform: translateY(-2px); box-shadow: 0 7px 16px rgba(40,40,20,.09); }
+}
+@media (max-width: 380px) {
+  #khatma-group-hub-overlay .khatma-details-body { padding-inline: 14px; }
+  #khatma-group-hub-overlay .kg-hero { margin-inline: -14px; }
+  #khatma-group-hub-overlay .kg-hub-actions { gap: 8px; }
+  #khatma-group-hub-overlay .kg-action-btn { padding-inline: 8px; font-size: 11.5px; }
+  #khatma-group-details-overlay .khatma-details-body { padding-inline: 12px; }
+  #khatma-group-details-overlay .kg-units-grid { gap: 6px; }
+}

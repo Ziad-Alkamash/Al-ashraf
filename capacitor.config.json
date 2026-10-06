@@ -1,0 +1,30 @@
+{
+  "appId": "com.ashraf.mushaf",
+  "appName": "المصحف الأشرف",
+  "webDir": "www",
+  "server": {
+    "cleartext": true,
+    "allowNavigation": [
+      "*.radiojar.com",
+      "*.radio.co",
+      "*.mp3quran.net",
+      "*.itworkscdn.net",
+      "*.qurango.net",
+      "*.radioca.st"
+    ]
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "LIGHT",
+      "backgroundColor": "#0B3D2E"
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_notify",
+      "iconColor": "#0B3D2E"
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

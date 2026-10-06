@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- خلفية الويدجت (لون/شفافية/وضع فاتح أو داكن) بتترسم برمجيًا حسب حجم الويدجت الفعلي -->
+    <ImageView
+        android:id="@+id/widget_dua_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:contentDescription="@null" />
+
+    <LinearLayout
+        android:id="@+id/widget_dua_root"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layoutDirection="rtl"
+        android:padding="12dp">
+
+        <!-- الصف العلوي: "المصحف الأشرف" في المنتصف فقط (شيلنا عنوان "دعاء اليوم" وزرار التحديث) -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="30dp">
+
+            <ImageView
+                android:id="@+id/widget_dua_app_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+        <!-- نص الدعاء: صورة مرسومة بخط تاجوال (WidgetTextRenderer) بأكبر حجم خط
+             يناسب مساحة الويدجت. centerInside + match_parent: لو الصورة أكبر من المساحة
+             لأي سبب بتتصغّر لتناسبها بدل ما تتقصّ من الأطراف -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp">
+
+            <ImageView
+                android:id="@+id/widget_dua_text"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerInside"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+    </LinearLayout>
+</FrameLayout>

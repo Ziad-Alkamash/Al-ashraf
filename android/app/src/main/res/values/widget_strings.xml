@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="widget_prayer_label">مواقيت الصلاة</string>
+    <string name="widget_prayer_description">عرض الصلاة القادمة والعدّاد ومواقيت اليوم على الشاشة الرئيسية</string>
+
+    <string name="widget_dua_label">دعاء اليوم</string>
+    <string name="widget_dua_description">عرض دعاء يومي متجدد على الشاشة الرئيسية</string>
+
+    <string name="widget_tasbih_label">المسبحة</string>
+    <string name="widget_tasbih_description">مسبحة إلكترونية تعدّ أذكارك من الشاشة الرئيسية بدون فتح التطبيق</string>
+    <string name="tasbih_change_dhikr">تغيير الذكر</string>
+    <string name="tasbih_count_button">سبّح</string>
+    <string name="tasbih_reset_button">تصفير العدّاد</string>
+
+</resources>

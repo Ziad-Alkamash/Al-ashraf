@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- اهتزاز خفيف مع كل تسبيحة في ويدجت المسبحة (TasbihWidgetProvider) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- مطلوب بس على أندرويد ٩ وأقل (API ≤28) عشان حفظ الصور/الفيديوهات في
+         المعرض العام (MediaSaverPlugin) — من ١٠ فوق بنستخدم MediaStore
+         (Scoped Storage) اللي مش محتاج أي إذن تخزين خالص -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- رابط دعوة "الختمة الجماعية" — سكيم مخصّص، بيشتغل فورًا بدون أي
+                 إعداد إضافي (خلافًا لروابط https اللي محتاجة ملف
+                 assetlinks.json على السيرفر عشان تتفتح بالتطبيق مباشرة).
+                 الرابط اللي بيتشارك: almushafalashraf://khatmah/join?code=XYZ123 -->
+            <intent-filter android:label="فتح دعوة ختمة جماعية">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="almushafalashraf" android:host="khatmah" />
+            </intent-filter>
+
+            <!-- روابط HTTPS تفتح التطبيق مباشرةً بعد نشر ملف التحقق
+                 www/.well-known/assetlinks.json على Firebase Hosting. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="almushaf-alashraf-b284b.web.app" />
+                <data android:scheme="https" android:host="almushaf-alashraf-b284b.firebaseapp.com" />
+            </intent-filter>
+        </activity>
+        <receiver android:name=".PrayerWidgetProvider" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_widget_info" />
+        </receiver>
+
+        <receiver android:name=".DuaWidgetProvider" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/dua_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".TasbihWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_tasbih_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/tasbih_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/AppTheme"
+            android:label="إعدادات الويدجت">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".MediaPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+        />
+
+        <service
+            android:name=".AdhanAlarmService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+        />
+
+        <receiver android:name=".AdhanAlarmReceiver" android:exported="false" />
+
+        <service
+            android:name=".SalawatAlarmService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+        />
+
+        <receiver android:name=".SalawatAlarmReceiver" android:exported="false" />
+
+        <!-- بلاطة كتم الأذان المؤقت في لوحة الإشعارات السريعة (Quick Settings) -->
+        <service
+            android:name=".AdhanMuteTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_adhan_mute"
+            android:label="كتم الأذان مؤقتًا"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="true" />
+        </service>
+
+        <receiver android:name=".BootReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+</manifest>

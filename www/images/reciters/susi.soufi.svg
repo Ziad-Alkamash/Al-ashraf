@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="صورة رمزية لقارئ القرآن">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#687765"/><stop offset="1" stop-color="#4B5948"/></linearGradient><linearGradient id="robe" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#E7D1A0"/><stop offset="1" stop-color="#687765"/></linearGradient></defs>
+<circle cx="60" cy="60" r="59" fill="url(#bg)"/><circle cx="60" cy="60" r="53" fill="none" stroke="#F7F1DF" stroke-opacity=".5" stroke-width="1.5"/>
+<path d="M18 109c3-20 17-31 34-36h16c18 5 31 16 34 36v5H18z" fill="url(#robe)"/>
+<path d="M43 74l17 15 17-15 7 4-9 31H52l-9-31z" fill="#F7F1DF" fill-opacity=".82"/>
+<ellipse cx="60" cy="48" rx="21" ry="25" fill="#D6B990"/>
+<path d="M38 44c1-17 10-27 22-27s21 10 22 27c-6-7-13-10-22-10s-16 3-22 10z" fill="#4B5948"/>
+<path d="M40 43c7-8 14-11 20-11s13 3 20 11" fill="none" stroke="#F7F1DF" stroke-opacity=".75" stroke-width="2"/>
+<path d="M53 55c2 2 4 3 7 3s5-1 7-3" fill="none" stroke="#755B46" stroke-opacity=".45" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M32 22l3 4m50-4-3 4M22 62h5m66 0h5" stroke="#F7F1DF" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+</svg>

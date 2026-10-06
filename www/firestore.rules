@@ -1,0 +1,124 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /khatmaGroups/{khatmaId} {
+
+      // ---- دوال مساعدة لنظام الموافقة على الانضمام ----
+      function isCreator() { return request.auth.uid == resource.data.creatorId; }
+      function approvalOn() { return resource.data.get('requireApproval', false) == true; }
+      function addedMembers() {
+        return request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet());
+      }
+      function addedMemberKeys() {
+        return request.resource.data.members.keys().toSet().difference(resource.data.members.keys().toSet());
+      }
+      function oldPending() { return resource.data.get('pending', {}); }
+      function newPending() { return request.resource.data.get('pending', {}); }
+      function addedPending() { return newPending().keys().toSet().difference(oldPending().keys().toSet()); }
+      function removedPending() { return oldPending().keys().toSet().difference(newPending().keys().toSet()); }
+
+      // لو الموافقة مفعّلة: غير المنشئ ما يقدرش يضيف أعضاء جُدد (لا في memberUids ولا في members)
+      function joinAllowed() {
+        return isCreator() || !approvalOn() || (addedMembers().size() == 0 && addedMemberKeys().size() == 0);
+      }
+      // الطلبات المعلّقة: أي مستخدم يضيف/يشيل طلبه هو بس، والمنشئ يتحكم في الكل
+      function pendingAllowed() {
+        return isCreator() || (addedPending().hasOnly([request.auth.uid]) && removedPending().hasOnly([request.auth.uid]));
+      }
+      // العنوان وإعداد الموافقة: للمنشئ بس
+      function titleAllowed() {
+        return request.resource.data.title == resource.data.title
+          || (isCreator()
+              && request.resource.data.title is string
+              && request.resource.data.title.size() > 0
+              && request.resource.data.title.size() < 80);
+      }
+      function approvalSettingAllowed() {
+        return request.resource.data.get('requireApproval', false) == resource.data.get('requireApproval', false)
+          || isCreator();
+      }
+      // تاريخ الانتهاء وتفعيل/إلغاء "ختمة مستمرة": للمنشئ بس (شاشة "تعديل" الموحّدة)
+      function endDateAllowed() {
+        return request.resource.data.endDate == resource.data.endDate || isCreator();
+      }
+      function continuousAllowed() {
+        return request.resource.data.get('continuous', false) == resource.data.get('continuous', false)
+          || (isCreator() && request.resource.data.continuous is bool);
+      }
+
+      // القراءة: أي مستخدم مسجّل حتى لو مجهول (anonymous)
+      allow read: if request.auth != null;
+
+      // الإنشاء
+      allow create: if request.auth != null
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.status == 'active'
+        && request.resource.data.unitType in ['juz', 'page']
+        && request.resource.data.unitCount in [30, 604]
+        && request.resource.data.type in ['private', 'public']
+        && request.resource.data.memberUids == [request.auth.uid]
+        && request.resource.data.units == {}
+        && request.resource.data.completedCount == 0
+        && request.resource.data.get('pending', {}) == {}
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() < 80;
+
+      // التعديل
+      allow update: if request.auth != null
+        && resource.data.status in ['active', 'completed', 'expired']
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['members', 'memberUids', 'units', 'completedCount',
+                       'status', 'completedAt', 'endDate', 'lastActivityAt',
+                       'title', 'pending', 'requireApproval', 'continuous',
+                       'roundsCompleted', 'lastRoundCompletedAt'])
+        && request.resource.data.creatorId == resource.data.creatorId
+        && request.resource.data.unitType == resource.data.unitType
+        && request.resource.data.unitCount == resource.data.unitCount
+        && request.resource.data.type == resource.data.type
+        && titleAllowed()
+        && joinAllowed()
+        && pendingAllowed()
+        && approvalSettingAllowed()
+        && endDateAllowed()
+        && continuousAllowed();
+
+      // الحذف: صاحب الختمة بس
+      allow delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+    }
+
+    // بروفايل المستخدم: id ثابت (code) لا يتغيّر أبدًا بعد إنشائه + اسم قابل
+    // للتعديل. أي مستخدم مسجّل (حتى مجهول) يقدر يقرا بروفايلات الكل عشان
+    // يقدر يلاقي حد بالـ id بتاعه ويضيفه لختمة، بالظبط زي قراءة khatmaGroups.
+    // ملحوظة: حقل hasRecoveryKey (bool) بيتضاف/يتحدّث من غير أي تعديل هنا —
+    // مفيش قيود على حقول زيادة في create/update، والتحقق الحقيقي لعملية
+    // "استرجاع الختمات الجماعية" بيحصل بالكامل جوه Firebase Authentication
+    // (تسجيل دخول بباسورد داخلي مربوط بنفس الـ uid)، مش هنا في Firestore —
+    // لازم تفعّل "Email/Password" من Firebase Console → Authentication →
+    // Sign-in method عشان الميزة دي تشتغل (راجع README-UPDATE.md).
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.code is string
+        && request.resource.data.code.size() >= 6
+        && request.resource.data.name is string
+        && request.resource.data.name.size() < 60;
+      // التحديث: لصاحب البروفايل بس، وممنوع يغيّر الـ code أبدًا (هو ده كل
+      // المطلوب: id ثابت لا يتغيّر تحت أي ظرف).
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.code == resource.data.code
+        && request.resource.data.name is string
+        && request.resource.data.name.size() < 60;
+      allow delete: if false;
+    }
+
+    // توكنز الإشعارات
+    match /pushTokens/{uid} {
+      allow read: if false;
+      allow create, update, delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+  }
+}

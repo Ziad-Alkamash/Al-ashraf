@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ويدجت المسبحة: صورة واحدة (widget_tasbih_dial) فيها الشيبس فوق والدايرة تحته، ومناطق ضغط
+     شفافة فوقها. ارتفاع الشريط العلوي (٤٢dp) وعرض منطقة الشيبس (٧٦٪) لازم يطابقوا
+     TasbihDialRenderer. أوزان مناطق الدايرة (٧٢ / ٢٢ / ٦) مبنية على نسب الرسم داخلها:
+     العدد ٤٣٪، الكبسولة ٦٥٪، زرار التصفير ٨٢٪ من ارتفاع الدايرة -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/widget_tasbih_dial"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:contentDescription="@null" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- شيبس اسم الذكر: الضغط = الذكر التالي (الجوانب فاضية مش بتستجيب) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:orientation="horizontal"
+            android:weightSum="100">
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="12" />
+
+            <FrameLayout
+                android:id="@+id/widget_tasbih_zone_dhikr"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="76"
+                android:contentDescription="@string/tasbih_change_dhikr" />
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="12" />
+        </LinearLayout>
+
+        <!-- مناطق الدايرة (بتاخد باقي الارتفاع) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:weightSum="100">
+
+            <!-- الزرار الكبير: الضغط = +1 -->
+            <FrameLayout
+                android:id="@+id/widget_tasbih_zone_count"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="72"
+                android:contentDescription="@string/tasbih_count_button" />
+
+            <!-- زرار التصفير -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="22"
+                android:gravity="center_horizontal"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:id="@+id/widget_tasbih_zone_reset"
+                    android:layout_width="56dp"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/tasbih_reset_button" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="6" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

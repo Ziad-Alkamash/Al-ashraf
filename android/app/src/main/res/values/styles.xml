@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <!-- خلفية النافذة الحقيقية للتطبيق أثناء التشغيل العادي: لون غامق مطابق
+         لخلفية التطبيق نفسه (paper الوضع الليلي)، مش أبيض. ده اللي بيبان
+         في أي جزء من الثانية ما بين تدمير/إعادة رسم النظام للنافذة أثناء
+         الدوران الحقيقي (screen-orientation)، قبل ما محتوى الـ WebView
+         يتمدد يغطي الأبعاد الجديدة بالكامل. لو فضل أبيض (القيمة الافتراضية)
+         هو ده بالظبط "الفلاش الأبيض" اللي بيبان وقت القلب بالعرض/الطول -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowBackground">#121212</item>
+        <item name="android:colorBackground">#121212</item>
+        <!-- Edge-to-Edge: شريط الحالة وشريط التنقل شفافين من أول ما النافذة
+             تتحط (قبل حتى ما كود MainActivity يتنفذ)، عشان مفيش أي فلاش
+             بلون افتراضي (أبيض/أسود) قبل ما الجافا تظبطهم -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- بيسمح لمحتوى التطبيق يمتد جوه منطقة الكاميرا/الحزّ (notch) لو
+             موجودة، بدل ما النظام يسيب شريط أسود فاضي بارتفاعها دايمًا -->
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="28">shortEdges</item>
+    </style>
+
+    <!-- ثيم شاشة السبلاش بس (أول لحظة تشغيل التطبيق). كانت بتستخدم
+         android:background اللي مالوش أي تأثير فعلي على خلفية النافذة —
+         صححناها لـ android:windowBackground (الخاصية الصح)، وضفنا
+         postSplashScreenTheme عشان النظام يرجّع التطبيق تلقائيًا لثيم
+         AppTheme.NoActionBar العادي (الغامق) بمجرد ما شاشة السبلاش تختفي،
+         بدل ما يفضل عالق على ثيم السبلاش طول عمر التطبيق (وهو السبب
+         الرئيسي في إن خلفية النافذة الافتراضية (البيضاء) كانت بتفضل
+         شغالة طول الوقت مش بس وقت الإطلاق) -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:windowBackground">@drawable/splash</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>
+</resources>

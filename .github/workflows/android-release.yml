@@ -1,0 +1,132 @@
+name: Android APK release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish signed APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Run updater and application tests
+        run: npm test
+
+      - name: Verify increasing release version
+        run: node tools/verify-release-version.mjs
+
+      - name: Restore Android signing and Firebase config from secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64" || { echo 'Missing ANDROID_KEYSTORE_BASE64 secret.'; exit 1; }
+          test -n "$GOOGLE_SERVICES_JSON_BASE64" || { echo 'Missing GOOGLE_SERVICES_JSON_BASE64 secret.'; exit 1; }
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/alashraf-release.jks"
+          chmod 600 "$RUNNER_TEMP/alashraf-release.jks"
+          printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/alashraf-release.jks" >> "$GITHUB_ENV"
+
+      - name: Configure this repository's public update manifest URL
+        run: node tools/configure-update-config.mjs
+
+      - name: Install Android SDK platform and signing tools
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --sdk_root="$ANDROID_HOME" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Sync Capacitor Android assets and plugins
+        run: npx cap sync android
+
+      - name: Build signed production APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo 'Missing ANDROID_KEYSTORE_PASSWORD secret.'; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo 'Missing ANDROID_KEY_ALIAS secret.'; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo 'Missing ANDROID_KEY_PASSWORD secret.'; exit 1; }
+          chmod +x android/gradlew
+          android/gradlew --no-daemon -p android assembleRelease
+
+      - name: Verify APK signature and package identity
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk" || { echo 'Release APK was not created.'; exit 1; }
+          apksigner verify --verbose "$apk"
+          app_id="$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -n 1)"
+          test "$app_id" = 'com.ashraf.mushaf' || { echo "Unexpected applicationId: $app_id"; exit 1; }
+          actual="$(apksigner verify --print-certs "$apk" | awk -F': ' '/Signer #1 certificate SHA-256 digest:/ {print tolower($2); exit}' | tr -d ':')"
+          expected="$(node -p "require('./release-config.json').expectedSigningCertSha256.toLowerCase()")"
+          test -n "$actual" && test "$actual" = "$expected" || { echo 'APK signing certificate does not match the installed app signing identity.'; exit 1; }
+
+      - name: Generate update manifest and release notes
+        run: |
+          set -euo pipefail
+          mkdir -p .release-work
+          cp android/app/build/outputs/apk/release/app-release.apk .release-work/AlAshraf.apk
+          sha="$(sha256sum .release-work/AlAshraf.apk | awk '{print $1}')"
+          APK_SHA256="$sha" node tools/generate-apk-release.mjs
+
+      - name: Publish GitHub Release
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            .release-work/AlAshraf.apk \
+            .release-work/update.json \
+            --verify-tag \
+            --title "المصحف الأشرف $GITHUB_REF_NAME" \
+            --notes-file .release-work/release-notes.md
+
+      - name: Publish the current raw update manifest on the default branch
+        run: |
+          set -euo pipefail
+          branch="$GITHUB_DEFAULT_BRANCH"
+          content="$(base64 -w0 .release-work/update.json)"
+          sha="$(gh api "repos/$GITHUB_REPOSITORY/contents/update.json?ref=$branch" --jq '.sha' 2>/dev/null || true)"
+          if [ -n "$sha" ]; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/update.json" \
+              --field message="Publish updater manifest for $GITHUB_REF_NAME" \
+              --field content="$content" --field sha="$sha" --field branch="$branch" >/dev/null
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/update.json" \
+              --field message="Publish updater manifest for $GITHUB_REF_NAME" \
+              --field content="$content" --field branch="$branch" >/dev/null
+          fi

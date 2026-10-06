@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">المصحف الأشرف</string>
+    <string name="title_activity_main">المصحف الأشرف</string>
+    <string name="package_name">com.alashraf.mushaf</string>
+    <string name="custom_url_scheme">com.alashraf.mushaf</string>
+</resources>

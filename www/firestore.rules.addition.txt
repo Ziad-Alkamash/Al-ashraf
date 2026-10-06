@@ -1,0 +1,6 @@
+// ضيف الجزء ده جوّه match /databases/{database}/documents { ... } في firestore.rules
+// (جنب قواعد khatmaGroups). السيرفر بيستخدم Admin SDK فبيتخطّى القواعد، فمحدّش يقدر يقرا التوكنز من التطبيق.
+match /pushTokens/{uid} {
+  allow read: if false;
+  allow create, update, delete: if request.auth != null && request.auth.uid == uid;
+}
