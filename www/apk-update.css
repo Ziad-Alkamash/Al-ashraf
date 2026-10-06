@@ -57,3 +57,8 @@ body.theme-night .apk-update-version { color: #e2c681; }
 .apk-update-install { color: #fff; background: var(--section-accent, #806326); box-shadow: 0 7px 18px color-mix(in srgb, var(--section-accent, #806326) 24%, transparent); }
 .apk-update-install:disabled { opacity: .65; cursor: wait; }
 .apk-update-later { color: inherit; background: color-mix(in srgb, currentColor 8%, transparent); }
+.apk-update-background { color: var(--section-accent, #765b25); background: color-mix(in srgb, var(--section-accent, #927433) 10%, transparent); }
+.apk-update-background[hidden] { display: none; }
+.apk-update-ready-toast { position: fixed; z-index: 10060; right: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 16px; display: flex; width: min(520px, calc(100% - 32px)); min-height: 58px; margin-inline: auto; padding: 10px 14px; align-items: center; justify-content: space-between; gap: 12px; color: var(--text, #25261f); background: var(--paper, #fffdf7); border: 1px solid color-mix(in srgb, var(--section-accent, #927433) 24%, transparent); border-radius: 18px; box-shadow: 0 10px 36px rgba(0,0,0,.24); font-size: 13px; line-height: 1.5; }
+body.theme-night .apk-update-ready-toast { color: var(--text, #f0eee7); background: var(--paper, #171815); }
+.apk-update-ready-toast button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; color: #fff; background: var(--section-accent, #806326); border: 0; border-radius: 12px; font: inherit; font-weight: 800; }

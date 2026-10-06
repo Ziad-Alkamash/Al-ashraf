@@ -50,6 +50,8 @@ public class ApkUpdaterPlugin extends Plugin {
     private final AtomicBoolean cancelRequested = new AtomicBoolean(false);
     private volatile HttpURLConnection activeConnection;
     private volatile boolean downloading = false;
+    private volatile long lastProgressBytes = 0;
+    private volatile long lastProgressAt = 0;
 
     @PluginMethod
     public void getAppInfo(PluginCall call) {
@@ -70,6 +72,18 @@ public class ApkUpdaterPlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("allowed", Build.VERSION.SDK_INT < 26 || getContext().getPackageManager().canRequestPackageInstalls());
         call.resolve(result);
+    }
+
+    @PluginMethod
+    public void startBackgroundDownload(PluginCall call) {
+        try {
+            UpdateDownloadService.start(getContext(), call.getString("versionName"));
+            JSObject result = new JSObject();
+            result.put("started", true);
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("تعذر بدء التنزيل في الخلفية", "DOWNLOAD_SERVICE_FAILED", error);
+        }
     }
 
     @PluginMethod
@@ -123,18 +137,29 @@ public class ApkUpdaterPlugin extends Plugin {
 
         downloading = true;
         cancelRequested.set(false);
+        lastProgressBytes = 0;
+        lastProgressAt = 0;
         saveCall(call);
         executor.execute(() -> {
             File partial = null;
             try {
-                File dir = new File(getContext().getCacheDir(), "apk-updates");
+                File dir = new File(getContext().getNoBackupFilesDir(), "apk-updates");
                 if (!dir.exists() && !dir.mkdirs()) throw new UpdateException("تعذر تجهيز مساحة التحديث", "STORAGE_FAILED");
                 File apk = new File(dir, APK_NAME);
                 partial = new File(dir, APK_NAME + ".part");
-                if (partial.exists() && !partial.delete()) throw new UpdateException("تعذر تنظيف تنزيل سابق", "STORAGE_FAILED");
-                if (apk.exists() && !apk.delete()) throw new UpdateException("تعذر تنظيف تنزيل سابق", "STORAGE_FAILED");
-
+                if (partial.isFile() && partial.length() > MAX_APK_BYTES && !partial.delete()) {
+                    throw new UpdateException("تعذر تنظيف تنزيل سابق", "STORAGE_FAILED");
+                }
+                if (isReusableDownloadedApk(apk, expectedHash, expectedVersionCode)) {
+                    JSObject result = new JSObject();
+                    result.put("verified", true);
+                    result.put("bytes", apk.length());
+                    call.resolve(result);
+                    UpdateDownloadService.finish(getContext(), true, "");
+                    return;
+                }
                 download(downloadUrl, ownerRepo, tagName, expectedHash.toLowerCase(Locale.ROOT), partial);
+                if (apk.exists() && !apk.delete()) throw new UpdateException("تعذر تنظيف تنزيل سابق", "STORAGE_FAILED");
                 if (!partial.renameTo(apk)) throw new UpdateException("تعذر حفظ ملف التحديث", "STORAGE_FAILED");
                 validateApk(apk, expectedVersionCode);
                 getContext().getSharedPreferences(PREFS, 0).edit()
@@ -147,13 +172,17 @@ public class ApkUpdaterPlugin extends Plugin {
                 result.put("verified", true);
                 result.put("bytes", apk.length());
                 call.resolve(result);
+                UpdateDownloadService.finish(getContext(), true, "");
             } catch (UpdateException e) {
-                if (partial != null && partial.exists()) partial.delete();
+                if (partial != null && partial.exists() && isNonResumableFailure(e.code)) partial.delete();
                 call.reject(e.getMessage(), e.code, e);
+                if ("DOWNLOAD_CANCELLED".equals(e.code) || cancelRequested.get()) UpdateDownloadService.cancel(getContext());
+                else UpdateDownloadService.finish(getContext(), false, e.getMessage());
             } catch (Exception e) {
-                if (partial != null && partial.exists()) partial.delete();
                 if (cancelRequested.get()) call.reject("تم إلغاء التنزيل", "DOWNLOAD_CANCELLED", e);
                 else call.reject("تعذر تنزيل التحديث أو التحقق منه", "DOWNLOAD_FAILED", e);
+                if (cancelRequested.get()) UpdateDownloadService.cancel(getContext());
+                else UpdateDownloadService.finish(getContext(), false, "تعذر تنزيل التحديث. افتح التطبيق وحاول مرة أخرى.");
             } finally {
                 activeConnection = null;
                 downloading = false;
@@ -166,6 +195,7 @@ public class ApkUpdaterPlugin extends Plugin {
         cancelRequested.set(true);
         HttpURLConnection connection = activeConnection;
         if (connection != null) connection.disconnect();
+        UpdateDownloadService.cancel(getContext());
         JSObject result = new JSObject();
         result.put("cancelled", true);
         call.resolve(result);
@@ -217,7 +247,7 @@ public class ApkUpdaterPlugin extends Plugin {
 
     private void download(String initialUrl, String ownerRepo, String tagName, String expectedHash, File output) throws Exception {
         URL current = new URL(initialUrl);
-        long downloaded = 0;
+        long downloaded = output.isFile() ? output.length() : 0;
         int redirects = 0;
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
@@ -230,6 +260,7 @@ public class ApkUpdaterPlugin extends Plugin {
             connection.setInstanceFollowRedirects(false);
             connection.setRequestProperty("Accept", "application/octet-stream");
             connection.setRequestProperty("User-Agent", "AlAshraf-Android-Updater");
+            if (downloaded > 0) connection.setRequestProperty("Range", "bytes=" + downloaded + "-");
             int status = connection.getResponseCode();
 
             if (status >= 300 && status < 400) {
@@ -242,26 +273,50 @@ public class ApkUpdaterPlugin extends Plugin {
                 }
                 continue;
             }
-            if (status != HttpURLConnection.HTTP_OK) {
+            if (status != HttpURLConnection.HTTP_OK && status != HttpURLConnection.HTTP_PARTIAL) {
                 connection.disconnect();
                 throw new UpdateException("تعذر الوصول إلى ملف التحديث (HTTP " + status + ")", "DOWNLOAD_HTTP_ERROR");
             }
 
+            long transferStart = downloaded;
             long total = connection.getContentLengthLong();
+            if (status == HttpURLConnection.HTTP_PARTIAL) {
+                String contentRange = connection.getHeaderField("Content-Range");
+                java.util.regex.Matcher range = Pattern.compile("^bytes (\\d+)-(\\d+)/(\\d+|\\*)$").matcher(contentRange == null ? "" : contentRange);
+                if (!range.matches() || Long.parseLong(range.group(1)) != downloaded) {
+                    connection.disconnect();
+                    throw new UpdateException("استئناف التنزيل أعاد نطاقًا غير صالح", "DOWNLOAD_RANGE_INVALID");
+                }
+                if (!"*".equals(range.group(3))) total = Long.parseLong(range.group(3));
+                else if (total > 0) total += downloaded;
+            } else {
+                transferStart = 0;
+                downloaded = 0;
+            }
             if (total > MAX_APK_BYTES) {
                 connection.disconnect();
                 throw new UpdateException("حجم ملف التحديث أكبر من الحد المسموح", "APK_TOO_LARGE");
             }
-            if (total > 0 && output.getParentFile().getUsableSpace() < total + 2L * 1024L * 1024L) {
+            long remainingBytes = total > 0 ? Math.max(0, total - transferStart) : -1;
+            if (remainingBytes > 0 && output.getParentFile().getUsableSpace() < remainingBytes + 2L * 1024L * 1024L) {
                 connection.disconnect();
                 throw new UpdateException("لا توجد مساحة كافية لتنزيل التحديث", "INSUFFICIENT_STORAGE");
             }
 
+            if (transferStart == 0) digest.reset();
+            if (transferStart > 0) {
+                try (InputStream existing = new BufferedInputStream(new FileInputStream(output))) {
+                    byte[] previous = new byte[256 * 1024];
+                    int count;
+                    while ((count = existing.read(previous)) != -1) digest.update(previous, 0, count);
+                }
+            }
             try (InputStream in = new BufferedInputStream(connection.getInputStream());
-                 FileOutputStream fileOut = new FileOutputStream(output);
+                 FileOutputStream fileOut = new FileOutputStream(output, transferStart > 0);
                  BufferedOutputStream out = new BufferedOutputStream(fileOut)) {
-                byte[] buffer = new byte[64 * 1024];
+                byte[] buffer = new byte[256 * 1024];
                 int count;
+                notifyDownloadProgress(downloaded, total);
                 while ((count = in.read(buffer)) != -1) {
                     if (cancelRequested.get() || Thread.currentThread().isInterrupted()) {
                         throw new UpdateException("تم إلغاء التنزيل", "DOWNLOAD_CANCELLED");
@@ -288,11 +343,36 @@ public class ApkUpdaterPlugin extends Plugin {
     }
 
     private void notifyDownloadProgress(long downloaded, long total) {
+        long now = System.currentTimeMillis();
+        if ((total <= 0 || downloaded < total) && downloaded - lastProgressBytes < 512L * 1024L && now - lastProgressAt < 500) return;
+        lastProgressBytes = downloaded;
+        lastProgressAt = now;
+        UpdateDownloadService.updateProgress(getContext(), downloaded, total);
         JSObject data = new JSObject();
         data.put("downloadedBytes", downloaded);
         data.put("totalBytes", total);
         data.put("percent", total > 0 ? Math.min(100, Math.round((downloaded * 100.0) / total)) : -1);
         notifyListeners("downloadProgress", data);
+    }
+
+    private boolean isReusableDownloadedApk(File apk, String expectedHash, Integer expectedVersionCode) {
+        if (!apk.isFile()) return false;
+        try {
+            android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS, 0);
+            if (!expectedHash.equalsIgnoreCase(prefs.getString("sha256", ""))
+                || prefs.getInt("versionCode", -1) != expectedVersionCode
+                || !expectedHash.equalsIgnoreCase(sha256(apk))) return false;
+            validateApk(apk, expectedVersionCode);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private boolean isNonResumableFailure(String code) {
+        return "APK_HASH_MISMATCH".equals(code) || "APK_INVALID".equals(code)
+            || "APK_TOO_LARGE".equals(code) || "DOWNLOAD_RANGE_INVALID".equals(code)
+            || "APK_SIGNER_MISMATCH".equals(code) || "APK_VERSION_INVALID".equals(code);
     }
 
     private void validateApk(File apk, long expectedVersionCode) throws Exception {

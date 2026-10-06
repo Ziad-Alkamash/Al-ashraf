@@ -214,6 +214,14 @@ public class MainActivity extends BridgeActivity {
         setIntent(intent);
         dispatchKhatmaInvite(intent);
         dispatchWidgetNavigation(intent);
+        if (intent != null && intent.getBooleanExtra("open_update_ready", false)) {
+            intent.removeExtra("open_update_ready");
+            inviteHandler.postDelayed(() -> {
+                WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+                if (webView != null) webView.evaluateJavascript(
+                    "window.__ashrafUpdateReadyPending=true;window.dispatchEvent(new Event('alashraf:update-download-notification-tap'))", null);
+            }, 300);
+        }
     }
 
     private void dispatchWidgetNavigation(Intent intent) {

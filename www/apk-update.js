@@ -17,6 +17,7 @@
   let homeReady = false;
   let pendingDialogTimer = null;
   let activeCheckPromise = null;
+  let backgroundReadyToastTimer = null;
 
   function uiText(key, fallback) {
     const i18n = window.appI18n;
@@ -90,7 +91,7 @@
       clearTimeout(pendingDialogTimer);
       pendingDialogTimer = null;
     }
-    if (!homeReady || !currentUpdate || updateDialog?.isConnected || document.visibilityState !== 'visible') return;
+    if (!homeReady || !currentUpdate || ['downloading', 'ready'].includes(state) || updateDialog?.isConnected || document.visibilityState !== 'visible') return;
     // انتظر اختفاء شاشة البداية كيلا يظهر تنبيه التحديث فوقها.
     if (document.querySelector('#splash')) {
       pendingDialogTimer = setTimeout(showPendingUpdateDialog, 350);
@@ -129,6 +130,27 @@
       el.classList.toggle('is-error', !!isError);
       el.hidden = !message;
     }
+  }
+
+  function showBackgroundReadyToast(message, actionText, onAction) {
+    document.querySelector('.apk-update-ready-toast')?.remove();
+    if (backgroundReadyToastTimer) clearTimeout(backgroundReadyToastTimer);
+    const toast = document.createElement('div');
+    toast.className = 'apk-update-ready-toast';
+    toast.setAttribute('role', 'status');
+    const copy = document.createElement('span');
+    copy.textContent = message;
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.textContent = actionText;
+    action.addEventListener('click', () => {
+      toast.remove();
+      if (backgroundReadyToastTimer) clearTimeout(backgroundReadyToastTimer);
+      onAction();
+    });
+    toast.append(copy, action);
+    document.body.appendChild(toast);
+    backgroundReadyToastTimer = setTimeout(() => toast.remove(), 12000);
   }
 
   function renderDialog(manifest, forced) {
@@ -228,6 +250,14 @@
     later.textContent = uiText('update.later_button', 'Later');
     later.addEventListener('click', dismissOptionalUpdate);
     actions.appendChild(later);
+
+    const background = document.createElement('button');
+    background.type = 'button';
+    background.className = 'apk-update-background';
+    background.textContent = uiText('update.download_background', language === 'ar' ? 'التنزيل في الخلفية' : 'Download in background');
+    background.hidden = apkReady && apkReadyVersionCode === manifest.versionCode;
+    background.addEventListener('click', () => handleInstallClick({ runInBackground: true }));
+    actions.appendChild(background);
     dialog.appendChild(actions);
     updateDialog.appendChild(dialog);
     document.body.appendChild(updateDialog);
@@ -255,7 +285,8 @@
     return uiText('update.dialog_error', 'The update could not be completed. Check your connection and try again.');
   }
 
-  async function handleInstallClick() {
+  async function handleInstallClick(options = {}) {
+    const runInBackground = options?.runInBackground === true;
     const plugin = getPlugin();
     if (!plugin || !currentUpdate || state === 'downloading') return;
     if (apkReadyVersionCode !== currentUpdate.manifest.versionCode) apkReady = false;
@@ -273,17 +304,35 @@
         });
       }
       if (!apkReady) {
-        await plugin.downloadAndVerify({
+        if (runInBackground) {
+          await plugin.startBackgroundDownload({ versionName: currentUpdate.manifest.versionName });
+        }
+        const downloadPromise = plugin.downloadAndVerify({
           downloadUrl: currentUpdate.manifest.downloadUrl,
           sha256: currentUpdate.manifest.sha256,
           ownerRepo: currentUpdate.ownerRepo,
           tagName: currentUpdate.manifest.tagName,
-          versionCode: currentUpdate.manifest.versionCode
+          versionCode: currentUpdate.manifest.versionCode,
+          versionName: currentUpdate.manifest.versionName
         });
+        if (runInBackground && updateDialog) {
+          updateDialog.remove();
+          updateDialog = null;
+        }
+        await downloadPromise;
         apkReady = true;
         apkReadyVersionCode = currentUpdate.manifest.versionCode;
         if (progressListener?.remove) await progressListener.remove();
         progressListener = null;
+      }
+      if (runInBackground) {
+        state = 'ready';
+        showBackgroundReadyToast(
+          uiText('update.download_ready', 'اكتمل تنزيل التحديث وأصبح جاهزًا للتثبيت.'),
+          uiText('update.install_now', 'التثبيت الآن'),
+          () => renderDialog(currentUpdate.manifest, isForced)
+        );
+        return;
       }
       state = 'installing';
       if (button) { button.textContent = uiText('update.installing_message', 'Opening the installer…'); button.disabled = true; }
@@ -305,6 +354,13 @@
       if (button && button.isConnected) { button.textContent = uiText('update.download_button', 'Download update'); button.disabled = false; }
       if (later && later.isConnected) later.disabled = false;
       setStatus(errorMessage(error), true);
+      if (runInBackground) {
+        showBackgroundReadyToast(
+          uiText('update.dialog_error', 'تعذر إكمال التحديث. تحقق من الاتصال وحاول مرة أخرى.'),
+          uiText('update.check_again', 'حاول مرة أخرى'),
+          () => renderDialog(currentUpdate.manifest, isForced)
+        );
+      }
       if (error?.code === 'DOWNLOAD_CANCELLED') {
         apkReady = false;
         const wrap = updateDialog?.querySelector('.apk-update-progress');
@@ -496,6 +552,19 @@
 
     window.addEventListener('alashraf:update-screen-open', check);
     window.addEventListener('alashraf:update-screen-close', () => { requestId += 1; });
+    const openReadyUpdateFromNotification = async () => {
+      window.__ashrafUpdateReadyPending = false;
+      if (!currentUpdate) {
+        const result = await window.AlAshrafApkUpdater?.checkNow?.();
+        if (result?.status === 'available') {
+          const parts = new URL(result.manifest.downloadUrl).pathname.split('/').filter(Boolean);
+          currentUpdate = { manifest: result.manifest, ownerRepo: `${parts[0]}/${parts[1]}` };
+        }
+      }
+      if (currentUpdate) renderDialog(currentUpdate.manifest, isForced);
+    };
+    window.addEventListener('alashraf:update-download-notification-tap', openReadyUpdateFromNotification);
+    if (window.__ashrafUpdateReadyPending) openReadyUpdateFromNotification();
     window.appI18n?.onLanguageChange?.(() => render(viewState));
     action.addEventListener('click', async () => {
       if (action.dataset.action !== 'install') {
