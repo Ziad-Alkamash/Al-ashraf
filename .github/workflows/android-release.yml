@@ -67,7 +67,7 @@ jobs:
       - name: Install Android SDK platform and signing tools
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --licenses < <(yes) >/dev/null
           sdkmanager --sdk_root="$ANDROID_HOME" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Sync Capacitor Android assets and plugins
