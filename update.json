@@ -1,14 +1,14 @@
 {
   "enabled": true,
-  "versionName": "5.5.10",
-  "versionCode": 37,
+  "versionName": "5.5.11",
+  "versionCode": 38,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-06",
-  "tagName": "v5.5.10",
+  "tagName": "v5.5.11",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "4551dd5f81d85a3ad12ec257e087d659e0a4efb5931fc02c848bebc7da7dcf07",
+  "sha256": "4fc3f2ccafd6cb6652f85bed5a4619aaf6a207dc25a6d907791008553f0daae2",
   "releaseNotes": [
-    "ترجمة صفحات السيرة النبوية والشمائل المحمدية وسنن اليوم والليلة لثماني لغات إضافية",
-    "الحفاظ على الصور التوضيحية للسيرة وإصلاح التثبيت بعد اكتمال التنزيل"
+    "تجربة تحديث جديدة تعرض تقدم التنزيل وتسمح بإلغائه أو إخفائه مع استمراره في الخلفية",
+    "تحسين إشعار التحديث وإظهار التثبيت بعد اكتمال التنزيل والتحقق منه"
   ]
 }
