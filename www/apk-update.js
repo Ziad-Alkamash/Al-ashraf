@@ -17,7 +17,6 @@
   let homeReady = false;
   let pendingDialogTimer = null;
   let activeCheckPromise = null;
-  let installedAppInfoCache = null;
 
   function uiText(key, fallback) {
     const i18n = window.appI18n;
@@ -40,7 +39,6 @@
   }
 
   async function getInstalledAppInfo(plugin) {
-    if (installedAppInfoCache) return installedAppInfoCache;
     const validInfo = (value) => {
       const versionCode = Number(value?.versionCode);
       const versionName = String(value?.versionName || '').trim();
@@ -54,7 +52,7 @@
     if (plugin?.getAppInfo) {
       try {
         const nativeInfo = validInfo(await withTimeout(plugin.getAppInfo(), 1800));
-        if (nativeInfo) return (installedAppInfoCache = nativeInfo);
+        if (nativeInfo) return nativeInfo;
       } catch (_) {}
     }
 
@@ -65,11 +63,10 @@
       const response = await withTimeout(fetch('./app-version.json?ts=' + Date.now(), { cache: 'no-store' }), 1500);
       if (response.ok) {
         const info = validInfo(await response.json());
-        if (info) return (installedAppInfoCache = info);
+        if (info) return info;
       }
     } catch (_) {}
-    installedAppInfoCache = validInfo(window.AlAshrafBundledVersion);
-    return installedAppInfoCache;
+    return validInfo(window.AlAshrafBundledVersion);
   }
 
   function showPendingUpdateDialog() {

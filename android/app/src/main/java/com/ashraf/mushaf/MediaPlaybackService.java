@@ -95,19 +95,18 @@ public class MediaPlaybackService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
             notifyJs("stop");
-            stopForeground(true);
-            stopSelf();
+            stopPlaybackService();
             return START_NOT_STICKY;
         }
         if (intent != null) {
             String action = intent.getAction();
-            if (ACTION_PLAY.equals(action)) { notifyJs("play"); return START_STICKY; }
-            if (ACTION_PAUSE.equals(action)) { notifyJs("pause"); return START_STICKY; }
-            if (ACTION_PREVIOUS.equals(action)) { notifyJs("previous"); return START_STICKY; }
-            if (ACTION_REWIND.equals(action)) { notifyJs("rewind"); return START_STICKY; }
-            if (ACTION_FORWARD.equals(action)) { notifyJs("forward"); return START_STICKY; }
-            if (ACTION_NEXT.equals(action)) { notifyJs("next"); return START_STICKY; }
-            if (ACTION_SPEED.equals(action)) { notifyJs("speed"); return START_STICKY; }
+            if (ACTION_PLAY.equals(action)) { notifyJs("play"); return START_NOT_STICKY; }
+            if (ACTION_PAUSE.equals(action)) { notifyJs("pause"); return START_NOT_STICKY; }
+            if (ACTION_PREVIOUS.equals(action)) { notifyJs("previous"); return START_NOT_STICKY; }
+            if (ACTION_REWIND.equals(action)) { notifyJs("rewind"); return START_NOT_STICKY; }
+            if (ACTION_FORWARD.equals(action)) { notifyJs("forward"); return START_NOT_STICKY; }
+            if (ACTION_NEXT.equals(action)) { notifyJs("next"); return START_NOT_STICKY; }
+            if (ACTION_SPEED.equals(action)) { notifyJs("speed"); return START_NOT_STICKY; }
         }
 
         String title = intent != null && intent.getStringExtra("title") != null ? intent.getStringExtra("title") : "المصحف الأشرف";
@@ -205,7 +204,7 @@ public class MediaPlaybackService extends Service {
             startForeground(NOTIF_ID, notification);
         }
 
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     private PendingIntent actionPendingIntent(String action, int requestCode) {
@@ -239,8 +238,34 @@ public class MediaPlaybackService extends Service {
     }
 
     @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        stopPlaybackService();
+        super.onTaskRemoved(rootIntent);
+    }
+
+    private void stopPlaybackService() {
+        if (mediaSession != null) {
+            mediaSession.setActive(false);
+            mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                    .setState(PlaybackStateCompat.STATE_STOPPED, 0, 0f)
+                    .setActions(0)
+                    .build());
+        }
+        stopForeground(true);
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) manager.cancel(NOTIF_ID);
+        stopSelf();
+    }
+
+    @Override
     public void onDestroy() {
-        if (mediaSession != null) mediaSession.release();
+        if (mediaSession != null) {
+            mediaSession.setActive(false);
+            mediaSession.release();
+            mediaSession = null;
+        }
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) manager.cancel(NOTIF_ID);
         super.onDestroy();
     }
 
