@@ -304,7 +304,28 @@
       }
       if (!apkReady) {
         if (runInBackground) {
-          await plugin.startBackgroundDownload({ versionName: currentUpdate.manifest.versionName });
+          // Close immediately so a slow or unavailable Android foreground
+          // service cannot make the button appear unresponsive.
+          if (updateDialog) {
+            updateDialog.remove();
+            updateDialog = null;
+          }
+          showBackgroundReadyToast(
+            'جارٍ بدء تنزيل التحديث في الخلفية…',
+            'حسنًا',
+            () => {}
+          );
+          try {
+            const service = await plugin.startBackgroundDownload({ versionName: currentUpdate.manifest.versionName });
+            if (service?.started !== true) throw new Error('background-service-not-started');
+          } catch (serviceError) {
+            console.warn('Background update service unavailable; continuing with an in-app download.', serviceError);
+            showBackgroundReadyToast(
+              'تعذر تشغيل خدمة الخلفية؛ سيستمر التنزيل والتطبيق مفتوح.',
+              'حسنًا',
+              () => {}
+            );
+          }
         }
         const downloadPromise = plugin.downloadAndVerify({
           downloadUrl: currentUpdate.manifest.downloadUrl,
@@ -314,10 +335,6 @@
           versionCode: currentUpdate.manifest.versionCode,
           versionName: currentUpdate.manifest.versionName
         });
-        if (runInBackground && updateDialog) {
-          updateDialog.remove();
-          updateDialog = null;
-        }
         await downloadPromise;
         apkReady = true;
         apkReadyVersionCode = currentUpdate.manifest.versionCode;
