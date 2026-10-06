@@ -1463,6 +1463,7 @@
       // حساب مواضعه (عرض المسرح بيبقى صفر وهي مخفية)
       safeCall(renderResumeCard, 'renderResumeCard');
     }
+    window.dispatchEvent(new CustomEvent('app:tab-changed', { detail: { tab } }));
   }
 
   // يضبط نص شارة أعلى الهيدر (اسم السورة أو الجزء)، ويضيف كلاس تصغير بسيط
@@ -13746,6 +13747,7 @@
     const updateCheckTitle = $('#update-check-status-title');
     const updateCheckMessage = $('#update-check-status-message');
     const updateCheckVersions = $('#update-check-version-card');
+    const updateCheckNewVersionBlock = $('#update-check-new-version-block');
     const updateCheckCurrent = $('#update-check-current-version');
     const updateCheckNew = $('#update-check-new-version');
     const updateCheckAction = $('#btn-update-check-action');
@@ -13774,7 +13776,8 @@
       const index = Object.keys(titleKeys).indexOf(state);
       updateCheckTitle.textContent = tUI(titleKeys[state] || titleKeys.error, fallbacks[index >= 0 ? index : 3][0]);
       updateCheckMessage.textContent = tUI(messageKeys[state] || messageKeys.error, fallbacks[index >= 0 ? index : 3][1]);
-      updateCheckVersions?.classList.toggle('hidden', state !== 'available');
+      updateCheckVersions?.classList.toggle('hidden', !updateCheckView.current);
+      updateCheckNewVersionBlock?.classList.toggle('hidden', state !== 'available');
       if (updateCheckCurrent) updateCheckCurrent.textContent = updateCheckView.current || '—';
       if (updateCheckNew) updateCheckNew.textContent = updateCheckView.latest || '—';
       if (updateCheckAction) {
@@ -13798,16 +13801,22 @@
         renderUpdateCheck();
         return;
       }
+      const currentVersion = await updater.getInstalledVersion?.();
+      if (requestId !== updateCheckRequest) return;
+      if (currentVersion) {
+        updateCheckView.current = currentVersion;
+        renderUpdateCheck();
+      }
       const result = await updater.checkNow();
       if (requestId !== updateCheckRequest) return;
       if (result?.status === 'available') {
-        updateCheckView = { state: 'available', current: result.currentVersion || '', latest: result.manifest?.versionName || '' };
+        updateCheckView = { state: 'available', current: result.currentVersion || currentVersion || '', latest: result.manifest?.versionName || '' };
       } else if (result?.status === 'latest') {
-        updateCheckView = { state: 'latest', current: result.currentVersion || '', latest: '' };
+        updateCheckView = { state: 'latest', current: result.currentVersion || currentVersion || '', latest: '' };
       } else if (result?.status === 'unsupported') {
         updateCheckView = { state: 'unsupported', current: '', latest: '' };
       } else {
-        updateCheckView = { state: 'error', current: '', latest: '' };
+        updateCheckView = { state: 'error', current: currentVersion || '', latest: '' };
       }
       renderUpdateCheck();
     };

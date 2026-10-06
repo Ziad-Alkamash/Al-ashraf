@@ -2,11 +2,9 @@
   'use strict';
 
   const Core = window.AlAshrafUpdateCore;
-  const SESSION_KEY = 'alashraf:apk-update:checked-this-session';
   const LAST_CHECK_KEY = 'alashraf:apk-update:last-check';
-  const LAST_FORCED_KEY = 'alashraf:apk-update:last-forced';
   const LATER_KEY = 'alashraf:apk-update:later-until';
-  const CHECK_INTERVAL = 24 * 60 * 60 * 1000;
+  const CHECK_INTERVAL = 60 * 60 * 1000;
   const RESUME_INTERVAL = 5 * 60 * 1000;
   let updateDialog = null;
   let currentUpdate = null;
@@ -18,6 +16,8 @@
   let state = 'idle';
   let apkReady = false;
   let apkReadyVersionCode = 0;
+  let homeReady = false;
+  let pendingDialogTimer = null;
 
   function uiText(key, fallback) {
     const i18n = window.appI18n;
@@ -30,6 +30,20 @@
   const storageGet = (storage, key) => { try { return storage.getItem(key); } catch (_) { return null; } };
   const storageSet = (storage, key, value) => { try { storage.setItem(key, value); } catch (_) {} };
   const storageRemove = (storage, key) => { try { storage.removeItem(key); } catch (_) {} };
+
+  function showPendingUpdateDialog() {
+    if (pendingDialogTimer) {
+      clearTimeout(pendingDialogTimer);
+      pendingDialogTimer = null;
+    }
+    if (!homeReady || !currentUpdate || updateDialog?.isConnected || document.visibilityState !== 'visible') return;
+    // انتظر اختفاء شاشة البداية كيلا يظهر تنبيه التحديث فوقها.
+    if (document.querySelector('#splash')) {
+      pendingDialogTimer = setTimeout(showPendingUpdateDialog, 350);
+      return;
+    }
+    renderDialog(currentUpdate.manifest, isForced);
+  }
 
   async function readJson(url) {
     const controller = new AbortController();
@@ -150,18 +164,16 @@
     const install = document.createElement('button');
     install.type = 'button';
     install.className = 'apk-update-install';
-    install.textContent = uiText('update.download_button', 'Download update');
+    install.textContent = uiText('update.install_now', 'Install now');
     install.addEventListener('click', handleInstallClick);
     actions.appendChild(install);
 
-    if (!forced) {
-      const later = document.createElement('button');
-      later.type = 'button';
-      later.className = 'apk-update-later';
-      later.textContent = uiText('update.later_button', 'Later');
-      later.addEventListener('click', dismissOptionalUpdate);
-      actions.appendChild(later);
-    }
+    const later = document.createElement('button');
+    later.type = 'button';
+    later.className = 'apk-update-later';
+    later.textContent = uiText('update.later_button', 'Later');
+    later.addEventListener('click', dismissOptionalUpdate);
+    actions.appendChild(later);
     dialog.appendChild(actions);
     updateDialog.appendChild(dialog);
     document.body.appendChild(updateDialog);
@@ -169,8 +181,9 @@
   }
 
   function dismissOptionalUpdate() {
-    if (isForced || !updateDialog) return;
-    storageSet(localStorage, LATER_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    if (!updateDialog) return;
+    const lastCheck = Number(storageGet(localStorage, LAST_CHECK_KEY) || Date.now());
+    storageSet(localStorage, LATER_KEY, String(Math.min(Date.now() + CHECK_INTERVAL, lastCheck + CHECK_INTERVAL - 5000)));
     updateDialog.remove();
     updateDialog = null;
     currentUpdate = null;
@@ -261,22 +274,17 @@
     const cap = window.Capacitor;
     const plugin = getPlugin();
     if (!cap || cap.getPlatform?.() !== 'android' || !plugin) return { status: 'unsupported' };
-    const sessionChecked = storageGet(sessionStorage, SESSION_KEY) === '1';
-    if (sessionChecked && !forceNetwork) return { status: 'error' };
     const now = Date.now();
     if (forceNetwork && now - lastCheckAt < RESUME_INTERVAL) {
       if (currentUpdate) return { status: 'available', manifest: currentUpdate.manifest, currentVersion: installedVersionName };
       return { status: 'error' };
     }
     const last = Number(storageGet(localStorage, LAST_CHECK_KEY) || 0);
-    const knownForced = storageGet(localStorage, LAST_FORCED_KEY) === '1';
-    if (!forceNetwork && !knownForced && last > 0 && now - last < CHECK_INTERVAL) {
-      storageSet(sessionStorage, SESSION_KEY, '1');
+    if (!forceNetwork && last > 0 && now - last < CHECK_INTERVAL) {
       return { status: 'skipped' };
     }
     checking = true;
     lastCheckAt = now;
-    storageSet(sessionStorage, SESSION_KEY, '1');
     try {
       const configResponse = await fetch('./update-config.json', { cache: 'no-store' });
       if (!configResponse.ok) return { status: 'error' };
@@ -290,7 +298,6 @@
       installedVersionName = String(installed?.versionName || '');
       const decision = Core.getUpdateDecision(installedVersionCode, manifest, parsedUrl.ownerRepo);
       storageSet(localStorage, LAST_CHECK_KEY, String(Date.now()));
-      storageSet(localStorage, LAST_FORCED_KEY, decision.forced ? '1' : '0');
 
       if (!decision.available) {
         currentUpdate = null;
@@ -304,11 +311,10 @@
         return { status: 'latest', currentVersion: installedVersionName };
       }
       const laterUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
-      if (!decision.forced && laterUntil > Date.now() && !forceNetwork) return { status: 'snoozed', currentVersion: installedVersionName };
-      if (decision.forced) storageRemove(localStorage, LATER_KEY);
+      if (laterUntil > Date.now() && !forceNetwork) return { status: 'snoozed', currentVersion: installedVersionName };
       currentUpdate = { manifest, ownerRepo: parsedUrl.ownerRepo };
       isForced = decision.forced;
-      if (showDialog !== false) renderDialog(manifest, decision.forced);
+      if (showDialog !== false) showPendingUpdateDialog();
       return { status: 'available', manifest, currentVersion: installedVersionName };
     } catch (_) {
       // Update checks are deliberately silent when GitHub or the network is unavailable.
@@ -319,6 +325,17 @@
   }
 
   window.AlAshrafApkUpdater = {
+    getInstalledVersion: async () => {
+      const plugin = getPlugin();
+      if (!window.Capacitor || window.Capacitor.getPlatform?.() !== 'android' || !plugin) return '';
+      try {
+        const installed = await plugin.getAppInfo();
+        installedVersionName = String(installed?.versionName || '');
+        return installedVersionName;
+      } catch (_) {
+        return '';
+      }
+    },
     checkNow: async () => {
       for (let attempt = 0; checking && attempt < 24; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 250));
@@ -337,13 +354,19 @@
 
   function start() {
     if (!Core) return;
-    setTimeout(() => checkForUpdate(false), 3500);
+    const postponedUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
+    if (postponedUntil - Date.now() > CHECK_INTERVAL) storageRemove(localStorage, LATER_KEY);
+    const checkIfDue = () => checkForUpdate(false);
+    setTimeout(checkIfDue, 3500);
+    setInterval(checkIfDue, CHECK_INTERVAL);
+    window.addEventListener('app:tab-changed', (event) => {
+      homeReady = event.detail?.tab === 'tools';
+      if (homeReady) setTimeout(showPendingUpdateDialog, 420);
+    });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible') return;
-      checkForUpdate(isForced);
-    });
-    window.addEventListener('focus', () => {
-      if (isForced) checkForUpdate(true);
+      checkForUpdate(false);
+      showPendingUpdateDialog();
     });
     document.addEventListener('keydown', (event) => {
       if (updateDialog && event.key === 'Escape') {

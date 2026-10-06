@@ -3105,10 +3105,12 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
           <p id="update-check-status-message" data-i18n="update.ready_message">جارٍ التحقق من أحدث إصدار...</p>
         </div>
       </div>
-      <div class="update-check-version-card hidden" id="update-check-version-card">
+      <div class="update-check-version-card" id="update-check-version-card">
         <div><span data-i18n="update.current_version">الإصدار الحالي</span><strong id="update-check-current-version">—</strong></div>
-        <svg class="update-check-version-arrow"><use href="#icon-chevron-left"></use></svg>
-        <div><span data-i18n="update.new_version">الإصدار الجديد</span><strong id="update-check-new-version">—</strong></div>
+        <div class="update-check-new-version hidden" id="update-check-new-version-block">
+          <svg class="update-check-version-arrow"><use href="#icon-chevron-left"></use></svg>
+          <span><span data-i18n="update.new_version">الإصدار الجديد</span><strong id="update-check-new-version">—</strong></span>
+        </div>
       </div>
       <div class="update-check-actions">
         <button type="button" class="update-check-primary" id="btn-update-check-action" data-i18n="update.check_button">تحقق الآن</button>

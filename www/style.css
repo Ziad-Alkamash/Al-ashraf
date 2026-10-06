@@ -20403,6 +20403,8 @@ body.theme-night .ap-round.soft { color: var(--ap-ink); }
 .update-check-status-copy h2 { margin: 0 0 4px; color: var(--ap-ink); font-size: 16px; font-weight: 850; }
 .update-check-status-copy p { margin: 0; color: var(--ap-ink-2); font-size: 13px; line-height: 1.65; }
 .update-check-version-card { justify-content: space-between; gap: 10px; margin-top: 13px; padding: 15px 18px; }
+.update-check-new-version { display: flex; align-items: center; gap: 10px; }
+.update-check-new-version > span { display: flex; flex-direction: column; gap: 5px; }
 .update-check-version-card > div { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
 .update-check-version-card span { color: var(--ap-ink-3); font-size: 11px; }
 .update-check-version-card strong { color: var(--ap-ink); font-size: 15px; direction: ltr; unicode-bidi: isolate; }
