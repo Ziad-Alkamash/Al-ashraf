@@ -25420,3 +25420,15 @@ body.mushaf-landscape-mode .tasmee-qcf-page {
   overflow: visible;
 }
 
+/* علامات أرقام الآيات في المصحف: لون بني دافئ للوضع الفاتح، مع الحفاظ
+   على ألوان الوضع الداكن ولون الصفحة الداكنة كما هما. */
+body:not(.theme-night) #mushaf-wrap:not(.page-color-dark) .qcf-word.qcf-end-marker,
+body:not(.theme-night) #autoscroll-wrap:not(.page-color-dark) .qcf-word.qcf-end-marker {
+  color: #96683F;
+  -webkit-text-fill-color: #96683F;
+}
+body:not(.theme-night) #mushaf-wrap:not(.page-color-dark) :is(.warsh-svg-page, .riwaya-svg-page, .qcf-page-image-svg) #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon),
+body:not(.theme-night) #autoscroll-wrap:not(.page-color-dark) :is(.warsh-svg-page, .riwaya-svg-page, .qcf-page-image-svg) #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon) {
+  fill: #96683F !important;
+}
+
