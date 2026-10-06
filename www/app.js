@@ -13801,24 +13801,39 @@
         renderUpdateCheck();
         return;
       }
-      const currentVersion = await updater.getInstalledVersion?.();
-      if (requestId !== updateCheckRequest) return;
-      if (currentVersion) {
-        updateCheckView.current = currentVersion;
-        renderUpdateCheck();
+      let currentVersion = '';
+      try {
+        const versionPromise = updater.getInstalledVersion?.();
+        if (versionPromise) {
+          currentVersion = await Promise.race([
+            versionPromise,
+            new Promise((resolve) => setTimeout(() => resolve(''), 9000))
+          ]) || '';
+        }
+        if (requestId !== updateCheckRequest) return;
+        if (currentVersion) {
+          updateCheckView.current = currentVersion;
+          renderUpdateCheck();
+        }
+        const result = await Promise.race([
+          updater.checkNow(),
+          new Promise((resolve) => setTimeout(() => resolve({ status: 'error' }), 25000))
+        ]);
+        if (requestId !== updateCheckRequest) return;
+        if (result?.status === 'available') {
+          updateCheckView = { state: 'available', current: result.currentVersion || currentVersion, latest: result.manifest?.versionName || '' };
+        } else if (result?.status === 'latest') {
+          updateCheckView = { state: 'latest', current: result.currentVersion || currentVersion, latest: '' };
+        } else if (result?.status === 'unsupported') {
+          updateCheckView = { state: 'unsupported', current: '', latest: '' };
+        } else {
+          updateCheckView = { state: 'error', current: currentVersion, latest: '' };
+        }
+      } catch (_) {
+        if (requestId !== updateCheckRequest) return;
+        updateCheckView = { state: 'error', current: currentVersion, latest: '' };
       }
-      const result = await updater.checkNow();
-      if (requestId !== updateCheckRequest) return;
-      if (result?.status === 'available') {
-        updateCheckView = { state: 'available', current: result.currentVersion || currentVersion || '', latest: result.manifest?.versionName || '' };
-      } else if (result?.status === 'latest') {
-        updateCheckView = { state: 'latest', current: result.currentVersion || currentVersion || '', latest: '' };
-      } else if (result?.status === 'unsupported') {
-        updateCheckView = { state: 'unsupported', current: '', latest: '' };
-      } else {
-        updateCheckView = { state: 'error', current: currentVersion || '', latest: '' };
-      }
-      renderUpdateCheck();
+      if (requestId === updateCheckRequest) renderUpdateCheck();
     };
     if (openUpdateCheck && updateCheckOverlay) openUpdateCheck.addEventListener('click', () => {
       openOverlay('#update-check-overlay');

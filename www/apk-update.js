@@ -31,6 +31,14 @@
   const storageSet = (storage, key, value) => { try { storage.setItem(key, value); } catch (_) {} };
   const storageRemove = (storage, key) => { try { storage.removeItem(key); } catch (_) {} };
 
+  function withTimeout(promise, ms) {
+    let timer;
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('update-check-timeout')), ms); })
+    ]).finally(() => clearTimeout(timer));
+  }
+
   function showPendingUpdateDialog() {
     if (pendingDialogTimer) {
       clearTimeout(pendingDialogTimer);
@@ -286,14 +294,14 @@
     checking = true;
     lastCheckAt = now;
     try {
-      const configResponse = await fetch('./update-config.json', { cache: 'no-store' });
+      const configResponse = await withTimeout(fetch('./update-config.json', { cache: 'no-store' }), 10000);
       if (!configResponse.ok) return { status: 'error' };
       const config = await configResponse.json();
       const parsedUrl = Core.parseManifestUrl(config?.manifestUrl);
       if (!parsedUrl) return { status: 'error' };
       const manifest = await readJson(config.manifestUrl);
       if (!Core.isValidManifest(manifest, parsedUrl.ownerRepo)) return { status: 'error' };
-      const installed = await plugin.getAppInfo();
+      const installed = await withTimeout(plugin.getAppInfo(), 10000);
       const installedVersionCode = Number(installed?.versionCode);
       installedVersionName = String(installed?.versionName || '');
       const decision = Core.getUpdateDecision(installedVersionCode, manifest, parsedUrl.ownerRepo);
@@ -329,7 +337,7 @@
       const plugin = getPlugin();
       if (!window.Capacitor || window.Capacitor.getPlatform?.() !== 'android' || !plugin) return '';
       try {
-        const installed = await plugin.getAppInfo();
+        const installed = await withTimeout(plugin.getAppInfo(), 8000);
         installedVersionName = String(installed?.versionName || '');
         return installedVersionName;
       } catch (_) {
