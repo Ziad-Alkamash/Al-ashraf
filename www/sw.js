@@ -6,7 +6,7 @@
 // إلا لو المستخدم مسح بيانات التطبيق يدويًا. تغيير الاسم هنا هو الطريقة
 // الوحيدة اللي بتخلي event 'activate' يمسح الكاش القديم (v301) ويجبر
 // 'install' يجيب كل الملفات من جديد بمحتواها المحدَّث
-const CACHE_NAME = 'mushaf-ashraf-v674';
+const CACHE_NAME = 'mushaf-ashraf-v675';
 
 // طبقة تخزين منفصلة لبيانات القرآن المجلوبة من الإنترنت (صفحات المصحف، التفسير، الصوتيات، معاني الكلمات)
 // تبقى هذه البيانات محفوظة دائمًا حتى بعد تحديث التطبيق، ولا تُمسح إلا يدويًا من إعدادات المتصفح
@@ -23,7 +23,7 @@ const ASSETS_TO_CACHE = [
   './index.html',
   './manifest.json',
   './app-version.json',
-  './app-version.json',
+  './app-version.js',
   './splash-mark.webp',
   './splash-night.mp4',
   './splash-light.mp4',
@@ -44,9 +44,7 @@ const ASSETS_TO_CACHE = [
   './images/zakat.webp',
   './images/qadaa.svg',
   './images/stats.webp',
-  './images/mosque.webp',
   './images/tasbih.webp',
-  './images/qibla.webp',
   './net-status.js',
   './app.js',
   './location-resolver.js',

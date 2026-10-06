@@ -17,6 +17,7 @@ if (!Number.isSafeInteger(currentCode) || currentCode < 1 || tag !== `v${props.v
 
 const bundledVersion = { versionName: props.versionName, versionCode: currentCode };
 fs.writeFileSync(path.join(root, 'www', 'app-version.json'), `${JSON.stringify(bundledVersion, null, 2)}\n`);
+fs.writeFileSync(path.join(root, 'www', 'app-version.js'), `// Generated from version.properties for this signed release.\nwindow.AlAshrafBundledVersion = Object.freeze(${JSON.stringify(bundledVersion)});\n`);
 
 const headers = { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
 const releases = [];

@@ -13751,7 +13751,8 @@
     const updateCheckCurrent = $('#update-check-current-version');
     const updateCheckNew = $('#update-check-new-version');
     const updateCheckAction = $('#btn-update-check-action');
-    let updateCheckView = { state: 'checking', current: '', latest: '' };
+    const bundledAppVersion = String(window.AlAshrafBundledVersion?.versionName || '');
+    let updateCheckView = { state: 'checking', current: bundledAppVersion, latest: '' };
     let updateCheckRequest = 0;
     const renderUpdateCheck = () => {
       if (!updateCheckCard) return;
@@ -13800,23 +13801,23 @@
         updateCheckView = { state: 'error', current: updateCheckView.current || '', latest: '' };
         renderUpdateCheck();
       }, 15000);
-      updateCheckView = { state: 'checking', current: '', latest: '' };
+      updateCheckView = { state: 'checking', current: bundledAppVersion, latest: '' };
       renderUpdateCheck();
       const updater = window.AlAshrafApkUpdater;
       if (!updater?.checkNow) {
-        updateCheckView = { state: 'unsupported', current: '', latest: '' };
+        updateCheckView = { state: 'unsupported', current: bundledAppVersion, latest: '' };
         renderUpdateCheck();
         clearTimeout(checkDeadline);
         return;
       }
-      let currentVersion = '';
+      let currentVersion = bundledAppVersion;
       try {
         const versionPromise = updater.getInstalledVersion?.();
         if (versionPromise) {
           currentVersion = await Promise.race([
             versionPromise,
             new Promise((resolve) => setTimeout(() => resolve(''), 3000))
-          ]) || '';
+          ]) || bundledAppVersion;
         }
         if (requestId !== updateCheckRequest || timedOut) return;
         if (currentVersion) {
@@ -13833,7 +13834,7 @@
         } else if (result?.status === 'latest') {
           updateCheckView = { state: 'latest', current: result.currentVersion || currentVersion, latest: '' };
         } else if (result?.status === 'unsupported') {
-          updateCheckView = { state: 'unsupported', current: '', latest: '' };
+          updateCheckView = { state: 'unsupported', current: currentVersion, latest: '' };
         } else {
           updateCheckView = { state: 'error', current: currentVersion, latest: '' };
         }
