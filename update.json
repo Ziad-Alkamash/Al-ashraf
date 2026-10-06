@@ -1,14 +1,14 @@
 {
   "enabled": true,
-  "versionName": "5.5.8",
-  "versionCode": 35,
+  "versionName": "5.5.9",
+  "versionCode": 36,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-06",
-  "tagName": "v5.5.8",
+  "tagName": "v5.5.9",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "232bb434482c9669dd4b09cdbd8a682f12b6e90fe7a59fb91e2d80a4fcbfaf5d",
+  "sha256": "8bba60a9ee1bedda4681d83dc1d9cfb0a6385b039fbd87d68ffefda4af391999",
   "releaseNotes": [
-    "إصلاح فتح مثبت Android بعد اكتمال تنزيل التحديث",
-    "إغلاق نافذة التحديث فور بدء التنزيل بالخلفية وعرض حالة المحاولة"
+    "ترجمة صفحات السيرة النبوية والشمائل المحمدية وسنن اليوم والليلة لثماني لغات إضافية",
+    "إصلاح تسليم ملف التحديث إلى مثبت Android بعد اكتمال التنزيل"
   ]
 }
