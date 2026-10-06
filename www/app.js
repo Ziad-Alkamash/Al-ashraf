@@ -23685,6 +23685,36 @@
     Isha: 'العشاء'
   };
 
+  const PRAYER_NOTIFICATION_COPY = {
+    Fajr: {
+      title: 'حانت صلاة الفجر',
+      body: 'من صلى الصبح فهو في ذمة الله'
+    },
+    Dhuhr: {
+      title: 'حانت صلاة الظهر',
+      body: 'مَنْ حَافَظَ عَلَى أَرْبَعِ رَكَعَاتٍ قَبْلَ الظُّهْرِ وَأَرْبَعٍ بَعْدَهَا حَرَّمَهُ اللَّهُ تَعَالَى عَلَى النَّارِ'
+    },
+    Asr: {
+      title: 'حانت صلاة العصر',
+      body: 'الذي تفوته صلاة العصر، كأنما وُتِرَ أهله وماله'
+    },
+    Maghrib: {
+      title: 'حانت صلاة المغرب',
+      body: 'لَا تَزَالُ أُمَّتِي بِخَيْرٍ أَوْ عَلَى الْفِطْرَةِ مَا لَمْ يُؤَخِّرُوا الْمَغْرِبَ حَتَّى تَشْتَبِكَ النُّجُومُ'
+    },
+    Isha: {
+      title: 'حانت صلاة العشاء',
+      body: 'مَن صلى العشاءَ في جماعةٍ كأنما قام نصفَ ليلةٍ'
+    }
+  };
+
+  function prayerNotificationCopy(key) {
+    return PRAYER_NOTIFICATION_COPY[key] || {
+      title: `حانت صلاة ${PRAYER_NAMES[key] || 'الصلاة'}`,
+      body: ''
+    };
+  }
+
   // اسم الصلاة بلغة الواجهة الحالية (تُترجم عبر i18n.js)، مع رجوع تلقائي
   // للاسم العربي الأصلي لو نظام اللغات مش متاح لأي سبب
   const PRAYER_NAME_I18N_KEY = {
@@ -25089,7 +25119,8 @@
           const prayerMinutes = ph * 60 + pm;
           const minutesSincePrayer = nowMinutes - prayerMinutes;
           if (minutesSincePrayer >= 0 && minutesSincePrayer <= ADHAN_REPLAY_WINDOW_MIN) {
-            sendNotification(`حان وقت صلاة ${PRAYER_NAMES[key]} 🕌`, 'حي على الصلاة، حي على الفلاح.', { azanRelated: true });
+            const copy = prayerNotificationCopy(key);
+            sendNotification(copy.title, copy.body, { azanRelated: true });
           }
           // نعلّمها كمُعالَجة في كل الحالات حتى لو فوّتنا نافذة التشغيل، حتى لا نحاول تاني
           settings.prayers.lastSent[key] = today;
@@ -26593,10 +26624,12 @@
         const { hour, minute } = timeToHM(t);
         const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, hour, minute, 0, 0);
         if (at.getTime() <= Date.now()) continue; // ميعاد فات بالفعل، تجاهله
+        const copy = prayerNotificationCopy(apiKey);
         notifications.push({
           id: PRAYER_NOTIF_ID_BASE + day * PRAYER_DAY_ID_STEP + i,
-          title: `حان وقت صلاة ${PRAYER_NAMES[apiKey]} 🕌`,
-          body: 'حي على الصلاة، حي على الفلاح.',
+          title: copy.title,
+          body: copy.body,
+          largeBody: copy.body,
           channelId: 'mushaf-prayer-notif',
           sound: 'notify.mp3',
           schedule: { at, allowWhileIdle: true },
@@ -26865,11 +26898,12 @@
         // الملف كامل دايمًا بغضّ النظر عن اختيار "قصير"
         const shortMode = getAdhanLength() === 'short';
         const shortEndSeconds = shortMode ? (getCachedShortEnd(getMuezzinIdForPrayer(apiKey)) || ADHAN_SHORT_FALLBACK_SEC) : null;
+        const copy = prayerNotificationCopy(apiKey);
         const entry = {
           id: ADHAN_ALARM_ID_BASE + day * 10 + i,
           atMillis: at.getTime(),
-          title: `حان وقت صلاة ${PRAYER_NAMES[apiKey]} 🕌`,
-          body: 'حي على الصلاة، حي على الفلاح.',
+          title: copy.title,
+          body: copy.body,
           soundAssetName: currentAdhanAssetName(apiKey),
           shortEndSeconds,
           mediaVolume: isAdhanMediaVolumeEnabled()

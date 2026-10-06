@@ -56,8 +56,8 @@ public class AdhanAlarmService extends Service implements SensorEventListener {
             return START_NOT_STICKY;
         }
 
-        String title = "حان وقت الصلاة 🕌";
-        String body = "حي على الصلاة، حي على الفلاح.";
+        String title = "حانت الصلاة";
+        String body = "";
         String soundAssetName = "makkah.mp3";
         // shortEndSeconds جاية من جانب الجافاسكريبت (scheduleNativeAdhanAlarms في
         // app.js): ثانية "نهاية أول تكبيرتين" الحقيقية المكتشفة من تحليل الملف
@@ -200,6 +200,7 @@ public class AdhanAlarmService extends Service implements SensorEventListener {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(body)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
             .setSmallIcon(R.drawable.ic_stat_notify) // ممكن تستبدلها بأيقونة التطبيق (notif-icon)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -222,6 +223,7 @@ public class AdhanAlarmService extends Service implements SensorEventListener {
         return new NotificationCompat.Builder(this, SILENT_CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(body + " (الأذان مكتوم مؤقتًا)")
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(body + " (الأذان مكتوم مؤقتًا)"))
             .setSmallIcon(R.drawable.ic_stat_notify)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)

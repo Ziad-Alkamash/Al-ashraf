@@ -30,8 +30,8 @@ public class AdhanAlarmPlugin extends Plugin {
             call.reject("id و atMillis مطلوبين");
             return;
         }
-        String title = call.getString("title", "حان وقت الصلاة");
-        String body = call.getString("body", "حي على الصلاة، حي على الفلاح.");
+        String title = call.getString("title", "حانت الصلاة");
+        String body = call.getString("body", "");
         String soundAssetName = call.getString("soundAssetName", "makkah.mp3");
         // ثانية "نهاية أول تكبيرتين" لو المستخدم مختار "أذان قصير" (راجع
         // getAdhanShortEndSeconds في app.js) — null/غير موجودة معناها "كامل"،
