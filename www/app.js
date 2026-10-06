@@ -3478,8 +3478,6 @@
   async function renderPageContentQCF4Svg(targetContainer, pageAyahs, pageNumber) {
     const container = targetContainer || $('#ayat-container');
     clearQcfSvgMetaControls();
-    const bismillahEl = targetContainer ? null : $('#bismillah');
-    if (bismillahEl) bismillahEl.style.display = 'none';
     const pageHost = container.closest('.autoscroll-page') ||
       container.closest('#mushaf-page') || (!targetContainer ? $('#mushaf-page') : null);
     if (pageHost) pageHost.classList.add('qcf-page-image-layout');
@@ -3564,8 +3562,6 @@
     if (mushafPage) mushafPage.classList.toggle('riwaya-svg-layout', isQalun);
     if (mushafPage) mushafPage.classList.toggle('susi-edition-layout', isSusi);
     if (isQalun) {
-      const bismillah = $('#bismillah');
-      if (bismillah) bismillah.style.display = 'none';
       if (!window.QuranRiwayat) throw new Error('تعذر تهيئة مصحف قالون');
       const svgText = await QuranRiwayat.getQalunPage(pageNumber);
       const container = targetContainer || $('#ayat-container');
@@ -3597,8 +3593,6 @@
       return { fontsPromise: Promise.resolve() };
     }
     if (isSusi) {
-      const bismillah = $('#bismillah');
-      if (bismillah) bismillah.style.display = 'none';
       if (!window.QuranRiwayat) throw new Error('تعذر تهيئة مصحف السوسي');
       const ayahs = await QuranRiwayat.getSusiPage(pageNumber);
       const container = targetContainer || $('#ayat-container');
@@ -3631,8 +3625,6 @@
       return { fontsPromise: Promise.resolve() };
     }
     if (isWarsh) {
-      const bismillah = $('#bismillah');
-      if (bismillah) bismillah.style.display = 'none';
       if (!window.QuranWarsh) throw new Error('تعذر تهيئة مصحف ورش');
       const svgText = await QuranWarsh.getPageSVG(pageNumber);
       const container = targetContainer || $('#ayat-container');

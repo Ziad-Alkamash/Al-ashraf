@@ -29,6 +29,22 @@
   const storageGet = (storage, key) => { try { return storage.getItem(key); } catch (_) { return null; } };
   const storageSet = (storage, key, value) => { try { storage.setItem(key, value); } catch (_) {} };
   const storageRemove = (storage, key) => { try { storage.removeItem(key); } catch (_) {} };
+  const UPDATE_AVAILABLE_KEY = 'alashraf:apk-update:available-version-code';
+
+  function setSettingsUpdateAvailable(available, versionCode = '') {
+    const button = document.getElementById('btn-open-update-check');
+    const dot = document.getElementById('settings-update-dot');
+    if (button) button.classList.toggle('has-update', !!available);
+    if (dot) dot.classList.toggle('hidden', !available);
+    window.dispatchEvent(new CustomEvent('alashraf:update-availability', { detail: { available: !!available } }));
+    if (available && versionCode) storageSet(localStorage, UPDATE_AVAILABLE_KEY, String(versionCode));
+    else if (!available) storageRemove(localStorage, UPDATE_AVAILABLE_KEY);
+  }
+
+  function restoreSettingsUpdateAvailability() {
+    const cachedVersionCode = storageGet(localStorage, UPDATE_AVAILABLE_KEY);
+    setSettingsUpdateAvailable(!!cachedVersionCode, cachedVersionCode || '');
+  }
 
   function withTimeout(promise, ms) {
     let timer;
@@ -339,6 +355,7 @@
 
         if (!decision.available) {
           currentUpdate = null;
+          setSettingsUpdateAvailable(false);
           storageRemove(localStorage, LATER_KEY);
           if (isForced && updateDialog) {
             updateDialog.remove();
@@ -351,6 +368,7 @@
         const laterUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
         if (laterUntil > Date.now() && !forceNetwork) return { status: 'snoozed', currentVersion: installedVersionName };
         currentUpdate = { manifest, ownerRepo: parsedUrl.ownerRepo };
+        setSettingsUpdateAvailable(true, manifest.versionCode);
         isForced = decision.forced;
         if (showDialog !== false) showPendingUpdateDialog();
         return { status: 'available', manifest, currentVersion: installedVersionName };
@@ -497,6 +515,7 @@
 
   function start() {
     if (!Core) return;
+    restoreSettingsUpdateAvailability();
     initUpdateInfoPage();
     const postponedUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
     if (postponedUntil - Date.now() > CHECK_INTERVAL) storageRemove(localStorage, LATER_KEY);

@@ -990,28 +990,6 @@ body.theme-night #surah-name-ar { color: var(--gold-soft); }
   opacity: 0.9;
 }
 
-/* -------- البسملة بين السور: خط ذهبي رفيع من الجانبين، على طراز المصحف المطبوع -------- */
-#bismillah,
-.mushaf-bismillah {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  text-align: center;
-  font-family: var(--font-quran);
-  font-size: calc(26.5px * var(--ayah-font-scale) * var(--autofit-scale));
-  color: var(--mushaf-ink);
-  margin: calc(4px * var(--autofit-scale)) 0 calc(12px * var(--autofit-scale));
-}
-#bismillah::before, #bismillah::after,
-.mushaf-bismillah::before, .mushaf-bismillah::after {
-  content: '';
-  flex: 1 1 auto;
-  max-width: 60px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold-deep), transparent);
-}
-
 /* -------- فاصل بداية سورة جديدة وسط الصفحة (عندما تبدأ سورة في منتصف الصفحة) -------- */
 .mushaf-surah-divider {
   text-align: center;
@@ -1441,8 +1419,6 @@ body.theme-night.oled-true-black #app-header.page-color-dark {
    "المظهر" (ورقي/ليلي) العام للتطبيق */
 #mushaf-wrap[class*="page-color-"] .qcf-word,
 #mushaf-wrap[class*="page-color-"] .qcf-basmala,
-#mushaf-wrap[class*="page-color-"] #bismillah,
-#mushaf-wrap[class*="page-color-"] .mushaf-bismillah,
 #mushaf-wrap[class*="page-color-"] .mushaf-text {
   color: var(--mushaf-ink);
 }
@@ -1551,8 +1527,6 @@ body.theme-night.oled-true-black #autoscroll-wrap.page-color-dark {
    "المظهر" (ورقي/ليلي) العام للتطبيق */
 #autoscroll-wrap[class*="page-color-"] .qcf-word,
 #autoscroll-wrap[class*="page-color-"] .qcf-basmala,
-#autoscroll-wrap[class*="page-color-"] #bismillah,
-#autoscroll-wrap[class*="page-color-"] .mushaf-bismillah,
 #autoscroll-wrap[class*="page-color-"] .mushaf-text {
   color: var(--mushaf-ink);
 }
@@ -20442,7 +20416,16 @@ body.theme-night .update-check-hero { background: linear-gradient(145deg, #62694
   color: #191a17;
   background: #fff;
 }
-body.theme-night #update-check-overlay .update-check-sheet { color: #f4f4f1; background: #000; }
+body.theme-night #update-check-overlay .update-check-sheet { color: #fff; background: #000; }
+body.theme-night #update-check-overlay .update-check-hero { background: #000; }
+body.theme-night #update-check-overlay .update-check-heading h1 { color: #fff; }
+body.theme-night #update-check-overlay .update-check-version-line,
+body.theme-night #update-check-overlay .update-check-status-copy h2,
+body.theme-night #update-check-overlay .update-check-status-copy p,
+body.theme-night #update-check-overlay .update-check-new-version { color: #858585; }
+body.theme-night #update-check-overlay .update-check-status-card[data-state="latest"] .update-check-status-copy p { color: #858585; }
+.settings-update-dot { flex: 0 0 9px; width: 9px; height: 9px; margin-inline-start: 2px; border-radius: 50%; background: #737b50; box-shadow: 0 0 0 3px rgba(115,123,80,.14); }
+.settings-update-dot.hidden { display: none; }
 .update-check-hero {
   display: flex;
   min-height: 0;
@@ -25213,6 +25196,9 @@ body.theme-night #view-tools .home-row-60-40 .home-quiz-calligraphy {
 #mushaf-wrap > #mushaf-page.qcf-page-image-layout.mushaf-neighbor-preview {
   position: absolute;
   inset: 0 auto auto 50%;
+  /* صفحة الصورة تبدأ من أعلى القارئ؛ لا تورّث translateY(-50%) العامة
+     لمعاينة الصفحة، وإلا تهبط نصف ارتفاعها عند أول تقليب أفقي. */
+  transform: translate3d(-50%, 0, 0);
   width: 100%;
   height: 100%;
   min-height: 0;
