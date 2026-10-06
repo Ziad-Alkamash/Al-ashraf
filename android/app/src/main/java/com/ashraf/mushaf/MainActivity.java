@@ -1,7 +1,10 @@
 package com.ashraf.mushaf;
 
 import android.os.Bundle;
+import android.content.SharedPreferences;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -66,6 +69,7 @@ public class MainActivity extends BridgeActivity {
             // نفسه هيفضل شغال عادي لأنه إعداد داخلي في التطبيق (منفصل
             // تمامًا عن إعداد النظام ده)
             settings.setTextZoom(100);
+            clearStaleAppShellCacheAfterUpgrade(webView);
         }
 
         // Edge-to-Edge حقيقي: مبنسيبش الـ WebView يتوقف عند حدود شريط الحالة/شريط
@@ -154,6 +158,54 @@ public class MainActivity extends BridgeActivity {
         // واجهة WebView لأن سكربت الختمة الجماعية يُحمّل بعد إنشاء الـ Activity.
         dispatchKhatmaInvite(getIntent());
         dispatchWidgetNavigation(getIntent());
+    }
+
+    /**
+     * The app shell is bundled inside the APK, but the WebView service worker
+     * cache survives APK upgrades. On a native version change, remove only the
+     * versioned app-shell caches and reload once so the new APK's HTML/JS is
+     * used immediately. Quran/audio caches and all user data remain untouched.
+     */
+    private void clearStaleAppShellCacheAfterUpgrade(WebView webView) {
+        final int currentVersionCode;
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            currentVersionCode = android.os.Build.VERSION.SDK_INT >= 28
+                ? (int) packageInfo.getLongVersionCode()
+                : packageInfo.versionCode;
+        } catch (PackageManager.NameNotFoundException error) {
+            return;
+        }
+        final SharedPreferences prefs = getSharedPreferences("web_asset_migration", MODE_PRIVATE);
+        if (prefs.getInt("native_version_code", 0) == currentVersionCode) return;
+
+        final Runnable[] migrate = new Runnable[1];
+        final long deadline = android.os.SystemClock.uptimeMillis() + 30000;
+        migrate[0] = () -> {
+            if (isFinishing() || isDestroyed()) return;
+            if (webView.getUrl() == null || webView.getProgress() < 100) {
+                if (android.os.SystemClock.uptimeMillis() < deadline) {
+                    webView.postDelayed(migrate[0], 250);
+                }
+                return;
+            }
+            webView.evaluateJavascript(
+                "(async()=>{try{" +
+                    "const names=await caches.keys();" +
+                    "const current='mushaf-ashraf-v" + currentVersionCode + "';" +
+                    "const stale=names.filter(n=>/^mushaf-ashraf-v\\d+$/.test(n)&&n!==current);" +
+                    "if(!stale.length)return 'clean';" +
+                    "await Promise.all(stale.map(n=>caches.delete(n)));" +
+                    "sessionStorage.setItem('alashraf:skip-splash-on-shell-refresh','1');" +
+                    "location.reload();return 'cleared';" +
+                "}catch(e){console.error('App shell cache migration failed',e);return 'failed';}})()",
+                result -> {
+                    if ("\"failed\"".equals(result)) return;
+                    prefs.edit().putInt("native_version_code", currentVersionCode).apply();
+                }
+            );
+        };
+        webView.postDelayed(migrate[0], 500);
     }
 
     @Override

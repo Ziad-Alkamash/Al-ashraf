@@ -124,7 +124,9 @@
      "ومضة" ظهور الوضع الفاتح للحظة عند من يستخدم الوضع الداكن أو النظام */
   (function () {
     try {
-      window.__splashStartedAt = Date.now();
+      window.__skipSplashAfterShellRefresh = sessionStorage.getItem('alashraf:skip-splash-on-shell-refresh') === '1';
+      if (window.__skipSplashAfterShellRefresh) sessionStorage.removeItem('alashraf:skip-splash-on-shell-refresh');
+      window.__splashStartedAt = Date.now() - (window.__skipSplashAfterShellRefresh ? 5200 : 0);
       var mode = localStorage.getItem('almus-hraf:theme') || 'system';
       var isNight = mode === 'night' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       if (isNight) document.body.classList.add('theme-night');
@@ -141,6 +143,11 @@
   <div class="splash-video-cover" aria-hidden="true"></div>
   <script>
     (function () {
+      if (window.__skipSplashAfterShellRefresh) {
+        var oldSplash = document.getElementById('splash');
+        if (oldSplash) oldSplash.remove();
+        return;
+      }
       var video = document.getElementById('splash-video');
       if (!video) return;
       video.addEventListener('playing', function () {

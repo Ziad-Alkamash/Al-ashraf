@@ -6,7 +6,9 @@
 // إلا لو المستخدم مسح بيانات التطبيق يدويًا. تغيير الاسم هنا هو الطريقة
 // الوحيدة اللي بتخلي event 'activate' يمسح الكاش القديم (v301) ويجبر
 // 'install' يجيب كل الملفات من جديد بمحتواها المحدَّث
-const CACHE_NAME = 'mushaf-ashraf-v676';
+// Keep the shell cache suffix aligned with versionCode in version.properties.
+// MainActivity uses that value to clear only old app-shell caches on APK upgrade.
+const CACHE_NAME = 'mushaf-ashraf-v24';
 
 // طبقة تخزين منفصلة لبيانات القرآن المجلوبة من الإنترنت (صفحات المصحف، التفسير، الصوتيات، معاني الكلمات)
 // تبقى هذه البيانات محفوظة دائمًا حتى بعد تحديث التطبيق، ولا تُمسح إلا يدويًا من إعدادات المتصفح
@@ -272,9 +274,24 @@ const ASSETS_TO_CACHE = [
 // 1. تثبيت الـ Service Worker وتخزين الملفات
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const uniqueAssets = [...new Set(ASSETS_TO_CACHE)];
+      const coreAssets = new Set([
+        './', './index.html', './app.js', './app-version.js', './app-version.json',
+        './style.css', './i18n.js', './apk-update.js', './apk-update-core.js', './sw.js'
+      ]);
+      const results = await Promise.allSettled(uniqueAssets.map((asset) => cache.add(asset)));
+      const missingCore = results.flatMap((result, index) =>
+        result.status === 'rejected' && coreAssets.has(uniqueAssets[index]) ? [uniqueAssets[index]] : []
+      );
+      if (missingCore.length) {
+        await caches.delete(CACHE_NAME);
+        throw new Error(`Required app shell assets could not be cached: ${missingCore.join(', ')}`);
+      }
+      const optionalFailures = results.filter((result) => result.status === 'rejected').length;
+      if (optionalFailures) console.warn(`Service worker skipped ${optionalFailures} optional precache asset(s).`);
+    })()
   );
   self.skipWaiting();
 });
@@ -322,6 +339,28 @@ self.addEventListener('fetch', (event) => {
   // Keep the updater manifest fresh so a maintainer can disable a broken
   // release without an old service-worker copy continuing to force it.
   if (reqURL.hostname === 'raw.githubusercontent.com' && /\/update\.json$/.test(reqURL.pathname)) {
+    return;
+  }
+
+  // Always prefer the files bundled in the installed APK for the app shell.
+  // This makes native APK upgrades visible immediately even if a previous
+  // service-worker cache still contains older HTML/JS. Cache remains the
+  // offline fallback; Quran data and downloaded audio use their own caches.
+  if (reqURL.origin === self.location.origin && event.request.method === 'GET' &&
+      (event.request.mode === 'navigate' || /\.(?:html|js|css|json)$/.test(reqURL.pathname))) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const response = await swFetchWithTimeout(event.request, 8000);
+        if (response && response.ok) {
+          try { await cache.put(event.request, response.clone()); } catch (_) {}
+        }
+        return response;
+      } catch (_) {
+        const cached = await cache.match(event.request, { ignoreSearch: event.request.mode === 'navigate' });
+        return cached || new Response('App shell unavailable offline', { status: 503 });
+      }
+    })());
     return;
   }
 
