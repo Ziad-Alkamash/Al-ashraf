@@ -1,10 +1,13 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.ashraf.mushaf",
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ashraf.mushaf",
       "sha256_cert_fingerprints": [
-        "1C:52:32:7F:F2:99:45:8A:DF:C5:CE:EB:AF:95:00:E8:0C:71:28:B4:0F:C9:9E:F2:92:B3:34:36:77:EC:60:0A"
+        "1C:52:32:7F:F2:99:45:8A:DF:C5:CE:EB:AF:95:00:E8:0C:71:28:B4:0F:C9:9E:F2:92:B3:34:36:77:EC:60:0A",
+        "33:2E:A1:2C:BC:B8:B6:9B:27:98:1E:84:59:AC:52:C0:2B:54:9A:74:E8:0B:DC:BD:B4:DC:B2:1C:46:F7:1A:C0"
       ]
+    }
   }
-}]
+]

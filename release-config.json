@@ -1,6 +1,6 @@
 {
   "minimumVersionCode": 13,
   "minimumPreviousVersionCode": 13,
-  "expectedSigningCertSha256": "1c52327ff299458adfc5ceebaf9500e80c7128b40fc99ef292b3343677ec600a",
+  "expectedSigningCertSha256": "332ea12cbcb8b69b27981e8459ac52c02b549a74e80bdcbdb4dcb21c46f71ac0",
   "enabled": true
 }
