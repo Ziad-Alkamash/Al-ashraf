@@ -1,14 +1,14 @@
 {
   "enabled": true,
-  "versionName": "5.3.0",
-  "versionCode": 15,
+  "versionName": "5.3.1",
+  "versionCode": 16,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-06",
-  "tagName": "v5.3.0",
+  "tagName": "v5.3.1",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "b1da48137d3aa17734fffd26e2e60f90e3cc8e75617e88c8eadf5a3306d22a88",
+  "sha256": "c09e6ca30a3cf7a9261b27808787c62a824cb15fe727d286a631e2bdc2991a1b",
   "releaseNotes": [
-    "تحديث إشعارات الصلاة بأحاديث قصيرة لكل صلاة",
-    "تحسين عرض محتوى إشعارات الأذان"
+    "تغيير فيديو شاشة البداية في الوضع الفاتح",
+    "تحسينات على شاشة بدء التطبيق"
   ]
 }
