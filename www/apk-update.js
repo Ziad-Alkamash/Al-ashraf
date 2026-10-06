@@ -14,7 +14,6 @@
   let state = 'idle';
   let apkReady = false;
   let apkReadyVersionCode = 0;
-  let homeReady = false;
   let pendingDialogTimer = null;
   let activeCheckPromise = null;
   let backgroundReadyToastTimer = null;
@@ -91,7 +90,7 @@
       clearTimeout(pendingDialogTimer);
       pendingDialogTimer = null;
     }
-    if (!homeReady || !currentUpdate || ['downloading', 'ready'].includes(state) || updateDialog?.isConnected || document.visibilityState !== 'visible') return;
+    if (!currentUpdate || ['downloading', 'ready'].includes(state) || updateDialog?.isConnected || document.visibilityState !== 'visible') return;
     // انتظر اختفاء شاشة البداية كيلا يظهر تنبيه التحديث فوقها.
     if (document.querySelector('#splash')) {
       pendingDialogTimer = setTimeout(showPendingUpdateDialog, 350);
@@ -379,7 +378,7 @@
     try { await plugin.cancelDownload(); } catch (_) {}
   }
 
-  async function checkForUpdate(forceNetwork, showDialog) {
+  async function checkForUpdate(forceNetwork, showDialog, ignoreCheckInterval = false) {
     if (!Core) return { status: 'error' };
     if (checking && activeCheckPromise) {
       return withTimeout(activeCheckPromise, 11000).catch(() => ({ status: 'error' }));
@@ -389,7 +388,7 @@
     if (!cap || cap.getPlatform?.() !== 'android' || !plugin) return { status: 'unsupported' };
     const now = Date.now();
     const last = Number(storageGet(localStorage, LAST_CHECK_KEY) || 0);
-    if (!forceNetwork && last > 0 && now - last < CHECK_INTERVAL) {
+    if (!forceNetwork && !ignoreCheckInterval && last > 0 && now - last < CHECK_INTERVAL) {
       return { status: 'skipped' };
     }
     checking = true;
@@ -589,12 +588,9 @@
     const postponedUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
     if (postponedUntil - Date.now() > CHECK_INTERVAL) storageRemove(localStorage, LATER_KEY);
     const checkIfDue = () => checkForUpdate(false);
-    setTimeout(checkIfDue, 3500);
+    setTimeout(() => checkForUpdate(false, true, true), 3500);
     setInterval(checkIfDue, CHECK_INTERVAL);
-    window.addEventListener('app:tab-changed', (event) => {
-      homeReady = event.detail?.tab === 'tools';
-      if (homeReady) setTimeout(showPendingUpdateDialog, 420);
-    });
+    window.addEventListener('app:tab-changed', () => setTimeout(showPendingUpdateDialog, 420));
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible') return;
       checkForUpdate(false);
