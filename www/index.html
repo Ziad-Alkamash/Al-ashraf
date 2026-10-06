@@ -1462,7 +1462,22 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
         </button>
         <div class="nusuk-qibla-block qibla-prayer-compass-block" dir="rtl">
           <div class="nusuk-compass" id="qibla-prayer-compass">
-            <span class="nusuk-kaaba-badge" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="m8 16 16-9 16 9v20L24 41 8 36z"/><path d="m8 16 16 9 16-9M24 25v16M12 14l16 9m-8-14 16 9M8 21l16 9 16-9M8 27l16 9 16-9M8 32l16 9 16-9"/></svg></span>
+            <span class="nusuk-kaaba-badge" aria-hidden="true"><svg class="qibla-kaaba-realistic" viewBox="0 0 64 64">
+              <defs>
+                <linearGradient id="qibla-kaaba-left" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#161616"/><stop offset="1" stop-color="#292723"/></linearGradient>
+                <linearGradient id="qibla-kaaba-right" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#111"/><stop offset="1" stop-color="#050505"/></linearGradient>
+                <linearGradient id="qibla-kaaba-gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f2d98a"/><stop offset=".48" stop-color="#b78932"/><stop offset="1" stop-color="#e4c76f"/></linearGradient>
+              </defs>
+              <path d="M8 19 32 6l24 13v29L32 59 8 46Z" fill="#080808"/>
+              <path d="m8 19 24 13v27L8 46Z" fill="url(#qibla-kaaba-left)"/>
+              <path d="M32 32 56 19v27L32 59Z" fill="url(#qibla-kaaba-right)"/>
+              <path d="m8 19 24 13 24-13-2.4 5L32 37 10.4 24Z" fill="url(#qibla-kaaba-gold)"/>
+              <path d="m9 23 23 12 23-12M9 44l23 12 23-12" fill="none" stroke="#c9a44d" stroke-width=".8" opacity=".78"/>
+              <path d="m39 34 9-4.8v14.2L39 48Z" fill="#9c752e" stroke="#e1c16a" stroke-width=".9"/>
+              <path d="m41 36 5-2.7v10.1L41 46Z" fill="#18150f"/>
+              <circle cx="45.4" cy="37.3" r=".65" fill="#f0d47e"/>
+              <path d="M13 27v15m3-13v16m3-14v16m3-14v16m3-14v16" stroke="#b99b55" stroke-width=".45" opacity=".62"/>
+            </svg></span>
             <svg class="nusuk-compass-ring" viewBox="0 0 300 300" aria-hidden="true">
               <defs><radialGradient id="qibla-prayer-compass-fill" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#f3deb8" stop-opacity=".34"/><stop offset="100%" stop-color="#fff" stop-opacity=".03"/></radialGradient></defs>
               <circle cx="150" cy="150" r="148" fill="url(#qibla-prayer-compass-fill)"/>

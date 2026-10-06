@@ -8,7 +8,7 @@
 // 'install' يجيب كل الملفات من جديد بمحتواها المحدَّث
 // Keep the shell cache suffix aligned with versionCode in version.properties.
 // MainActivity uses that value to clear only old app-shell caches on APK upgrade.
-const CACHE_NAME = 'mushaf-ashraf-v28';
+const CACHE_NAME = 'mushaf-ashraf-v29';
 
 // طبقة تخزين منفصلة لبيانات القرآن المجلوبة من الإنترنت (صفحات المصحف، التفسير، الصوتيات، معاني الكلمات)
 // تبقى هذه البيانات محفوظة دائمًا حتى بعد تحديث التطبيق، ولا تُمسح إلا يدويًا من إعدادات المتصفح
