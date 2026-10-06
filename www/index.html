@@ -2928,6 +2928,22 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
       </div>
     </div>
 
+    <div class="settings-section settings-section--gold">
+      <h4 class="settings-section-title" data-i18n="update.settings_section">تحديث التطبيق</h4>
+      <div class="settings-card">
+        <button type="button" class="settings-card-row" id="btn-open-update-check">
+          <div class="settings-card-label">
+            <span class="settings-card-icon"><svg><use href="#icon-reset"></use></svg></span>
+            <div class="settings-card-text">
+              <span class="settings-card-title" data-i18n="update.settings_title">التحقق من وجود إصدار جديد</span>
+              <span class="settings-card-sub" data-i18n="update.settings_sub">اعرف إن كان هناك إصدار أحدث من التطبيق</span>
+            </div>
+          </div>
+          <svg class="settings-card-arrow"><use href="#icon-chevron-left"></use></svg>
+        </button>
+      </div>
+    </div>
+
     <!-- ويدجت الشاشة الرئيسية: ويدجت أندرويد حقيقية (تُضاف من شاشة الهاتف الرئيسية مباشرة: اضغط مطولاً على الشاشة الرئيسية ← ويدجت ← الأشرف)، وليست جزءًا من هذا التطبيق نفسه -->
     <div class="settings-section settings-section--cyan">
       <h4 class="settings-section-title" data-i18n="settings.widget_title">ويدجت على شاشة الهاتف الرئيسية</h4>
@@ -3065,6 +3081,41 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
     </div>
     </div>
   </div>
+</div>
+
+<!-- صفحة فحص تحديث التطبيق -->
+<div id="update-check-overlay" class="overlay overlay-fullpage update-check-overlay">
+  <section class="overlay-sheet update-check-sheet" role="dialog" aria-modal="true" aria-labelledby="update-check-title">
+    <header class="update-check-hero">
+      <button type="button" class="update-check-back" id="btn-close-update-check" data-i18n-aria="common.back" aria-label="رجوع">
+        <svg><use href="#icon-chevron-left"></use></svg>
+      </button>
+      <span class="update-check-orbit update-check-orbit-one" aria-hidden="true"></span>
+      <span class="update-check-orbit update-check-orbit-two" aria-hidden="true"></span>
+      <div class="update-check-brand" aria-hidden="true"><svg><use href="#icon-reset"></use></svg></div>
+      <p class="update-check-eyebrow" data-i18n="update.eyebrow">المصحف الأشرف</p>
+      <h1 id="update-check-title" data-i18n="update.title">تحديث التطبيق</h1>
+      <p class="update-check-subtitle" data-i18n="update.subtitle">تحقق من وجود أحدث إصدار للتطبيق</p>
+    </header>
+    <div class="update-check-content">
+      <div class="update-check-status-card" id="update-check-status-card" data-state="idle" aria-live="polite">
+        <span class="update-check-status-icon" id="update-check-status-icon" aria-hidden="true"><svg><use href="#icon-reset"></use></svg></span>
+        <div class="update-check-status-copy">
+          <h2 id="update-check-status-title" data-i18n="update.ready_title">جاهز للتحقق</h2>
+          <p id="update-check-status-message" data-i18n="update.ready_message">جارٍ التحقق من أحدث إصدار...</p>
+        </div>
+      </div>
+      <div class="update-check-version-card hidden" id="update-check-version-card">
+        <div><span data-i18n="update.current_version">الإصدار الحالي</span><strong id="update-check-current-version">—</strong></div>
+        <svg class="update-check-version-arrow"><use href="#icon-chevron-left"></use></svg>
+        <div><span data-i18n="update.new_version">الإصدار الجديد</span><strong id="update-check-new-version">—</strong></div>
+      </div>
+      <div class="update-check-actions">
+        <button type="button" class="update-check-primary" id="btn-update-check-action" data-i18n="update.check_button">تحقق الآن</button>
+      </div>
+      <p class="update-check-footnote" data-i18n="update.secure_note">يتم التحقق من سلامة التحديث قبل تثبيته.</p>
+    </div>
+  </section>
 </div>
 
 <!-- جولة تعريفية قصيرة، مستقلة عن معالج أذونات الصلاة في أول تشغيل -->

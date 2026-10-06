@@ -19,6 +19,13 @@
   let apkReady = false;
   let apkReadyVersionCode = 0;
 
+  function uiText(key, fallback) {
+    const i18n = window.appI18n;
+    const lang = i18n?.getSavedLang?.() || 'ar';
+    const value = i18n?.t?.(lang, key);
+    return value && value !== key ? value : fallback;
+  }
+
   const getPlugin = () => window.Capacitor?.Plugins?.ApkUpdater || null;
   const storageGet = (storage, key) => { try { return storage.getItem(key); } catch (_) { return null; } };
   const storageSet = (storage, key, value) => { try { storage.setItem(key, value); } catch (_) {} };
@@ -43,7 +50,7 @@
     const wrap = updateDialog.querySelector('.apk-update-progress');
     if (wrap) wrap.hidden = false;
     if (bar && percent >= 0) bar.style.width = `${Math.min(100, percent)}%`;
-    if (labelEl) labelEl.textContent = label || (percent >= 0 ? `${Math.round(percent)}٪` : 'جارٍ تنزيل التحديث…');
+    if (labelEl) labelEl.textContent = label || (percent >= 0 ? `${Math.round(percent)}%` : uiText('update.dialog_downloading', 'Downloading and verifying the update…'));
   }
 
   function setStatus(message, isError) {
@@ -83,26 +90,27 @@
 
     const title = document.createElement('h2');
     title.id = 'apk-update-title';
-    title.textContent = forced ? 'يجب تحديث التطبيق' : 'يتوفر تحديث جديد';
+    title.textContent = uiText(forced ? 'update.title' : 'update.available_title', forced ? 'تحديث التطبيق مطلوب' : 'A new version is available');
     dialog.appendChild(title);
 
     const intro = document.createElement('p');
     intro.className = 'apk-update-intro';
-    intro.textContent = forced
-      ? 'هذا الإصدار قديم ولم يعد مدعومًا. يرجى تحديث التطبيق للمتابعة.'
-      : 'يتوفر إصدار جديد من المصحف الأشرف.';
+    intro.textContent = uiText(forced ? 'update.subtitle' : 'update.available_message', forced
+      ? 'حدّث التطبيق للمتابعة.'
+      : 'A newer version of Al-Ashraf is available.');
     dialog.appendChild(intro);
 
     const version = document.createElement('div');
     version.className = 'apk-update-version';
     const currentVersion = document.createElement('span');
-    currentVersion.textContent = `الإصدار الحالي: ${installedVersionName || '—'}`;
+    currentVersion.textContent = `${uiText('update.current_version', 'Current version')}: ${installedVersionName || '—'}`;
     const newVersion = document.createElement('span');
-    newVersion.textContent = `الإصدار الجديد: ${manifest.versionName}`;
+    newVersion.textContent = `${uiText('update.new_version', 'New version')}: ${manifest.versionName}`;
     version.append(currentVersion, newVersion);
     dialog.appendChild(version);
 
-    if (manifest.releaseNotes.length) {
+    const language = window.appI18n?.getSavedLang?.() || 'ar';
+    if (manifest.releaseNotes.length && language === 'ar') {
       const notesTitle = document.createElement('h3');
       notesTitle.className = 'apk-update-notes-title';
       notesTitle.textContent = 'ما الجديد؟';
@@ -142,7 +150,7 @@
     const install = document.createElement('button');
     install.type = 'button';
     install.className = 'apk-update-install';
-    install.textContent = 'تحديث الآن';
+    install.textContent = uiText('update.download_button', 'Download update');
     install.addEventListener('click', handleInstallClick);
     actions.appendChild(install);
 
@@ -150,7 +158,7 @@
       const later = document.createElement('button');
       later.type = 'button';
       later.className = 'apk-update-later';
-      later.textContent = 'لاحقًا';
+      later.textContent = uiText('update.later_button', 'Later');
       later.addEventListener('click', dismissOptionalUpdate);
       actions.appendChild(later);
     }
@@ -173,12 +181,11 @@
 
   function errorMessage(error) {
     const code = error?.code || '';
-    if (code === 'DOWNLOAD_CANCELLED') return 'تم إلغاء التنزيل. يمكنك المحاولة مرة أخرى.';
-    if (code === 'INSUFFICIENT_STORAGE') return 'المساحة غير كافية لتنزيل التحديث. وفّر مساحة ثم حاول مرة أخرى.';
-    if (code === 'APK_HASH_MISMATCH' || code === 'APK_SIGNER_MISMATCH' || code === 'APK_INVALID') return 'تعذر التحقق من ملف التحديث. لن يتم تثبيته حفاظًا على أمان التطبيق.';
-    if (code === 'INSTALL_PERMISSION_DENIED' || code === 'INSTALL_PERMISSION_REQUIRED' || code === 'INSTALL_SETTINGS_UNAVAILABLE') return 'اسمح بتثبيت التطبيقات من هذا المصدر في إعدادات Android ثم أعد المحاولة.';
-    if (code === 'INSTALL_CANCELLED_OR_FAILED') return 'لم يكتمل التثبيت. يمكنك إعادة المحاولة.';
-    return 'تعذر تنزيل التحديث. تحقق من اتصال الإنترنت وحاول مرة أخرى.';
+    if (code === 'DOWNLOAD_CANCELLED') return uiText('update.dialog_cancelled', 'Download cancelled. You can try again.');
+    if (code === 'INSUFFICIENT_STORAGE') return uiText('update.dialog_storage', 'There is not enough space to download the update.');
+    if (code === 'APK_HASH_MISMATCH' || code === 'APK_SIGNER_MISMATCH' || code === 'APK_INVALID') return uiText('update.dialog_verify', 'The update file could not be verified and will not be installed.');
+    if (code === 'INSTALL_PERMISSION_DENIED' || code === 'INSTALL_PERMISSION_REQUIRED' || code === 'INSTALL_SETTINGS_UNAVAILABLE') return uiText('update.dialog_error', 'Allow app installs from this source in Android settings, then try again.');
+    return uiText('update.dialog_error', 'The update could not be completed. Check your connection and try again.');
   }
 
   async function handleInstallClick() {
@@ -188,9 +195,9 @@
     state = 'downloading';
     const button = updateDialog?.querySelector('.apk-update-install');
     const later = updateDialog?.querySelector('.apk-update-later');
-    if (button) button.textContent = 'إلغاء التنزيل';
+    if (button) button.textContent = uiText('update.cancel_download', 'Cancel download');
     if (later) later.disabled = true;
-    setStatus('جارٍ تنزيل التحديث والتحقق من سلامته…', false);
+    setStatus(uiText('update.dialog_downloading', 'Downloading and verifying the update…'), false);
     try {
       if (!apkReady && plugin.addListener) {
         progressListener = await plugin.addListener('downloadProgress', (event) => {
@@ -212,7 +219,7 @@
         progressListener = null;
       }
       state = 'installing';
-      if (button) { button.textContent = 'جارٍ فتح المثبّت…'; button.disabled = true; }
+      if (button) { button.textContent = uiText('update.installing_message', 'Opening the installer…'); button.disabled = true; }
       setProgress(100, 'اكتمل التنزيل');
       setStatus('تم التحقق من الملف. جارٍ فتح مثبت Android…', false);
 
@@ -228,7 +235,7 @@
       if (progressListener?.remove) await progressListener.remove();
       progressListener = null;
       state = 'idle';
-      if (button && button.isConnected) { button.textContent = apkReady ? 'فتح المثبّت مرة أخرى' : 'تحديث الآن'; button.disabled = false; }
+      if (button && button.isConnected) { button.textContent = uiText('update.download_button', 'Download update'); button.disabled = false; }
       if (later && later.isConnected) later.disabled = false;
       setStatus(errorMessage(error), true);
       if (error?.code === 'DOWNLOAD_CANCELLED') {
@@ -249,32 +256,35 @@
     try { await plugin.cancelDownload(); } catch (_) {}
   }
 
-  async function checkForUpdate(forceNetwork) {
-    if (checking || !Core) return;
+  async function checkForUpdate(forceNetwork, showDialog) {
+    if (checking || !Core) return { status: 'error' };
     const cap = window.Capacitor;
     const plugin = getPlugin();
-    if (!cap || cap.getPlatform?.() !== 'android' || !plugin) return;
+    if (!cap || cap.getPlatform?.() !== 'android' || !plugin) return { status: 'unsupported' };
     const sessionChecked = storageGet(sessionStorage, SESSION_KEY) === '1';
-    if (sessionChecked && !forceNetwork) return;
+    if (sessionChecked && !forceNetwork) return { status: 'error' };
     const now = Date.now();
-    if (forceNetwork && now - lastCheckAt < RESUME_INTERVAL) return;
+    if (forceNetwork && now - lastCheckAt < RESUME_INTERVAL) {
+      if (currentUpdate) return { status: 'available', manifest: currentUpdate.manifest, currentVersion: installedVersionName };
+      return { status: 'error' };
+    }
     const last = Number(storageGet(localStorage, LAST_CHECK_KEY) || 0);
     const knownForced = storageGet(localStorage, LAST_FORCED_KEY) === '1';
     if (!forceNetwork && !knownForced && last > 0 && now - last < CHECK_INTERVAL) {
       storageSet(sessionStorage, SESSION_KEY, '1');
-      return;
+      return { status: 'skipped' };
     }
     checking = true;
     lastCheckAt = now;
     storageSet(sessionStorage, SESSION_KEY, '1');
     try {
       const configResponse = await fetch('./update-config.json', { cache: 'no-store' });
-      if (!configResponse.ok) return;
+      if (!configResponse.ok) return { status: 'error' };
       const config = await configResponse.json();
       const parsedUrl = Core.parseManifestUrl(config?.manifestUrl);
-      if (!parsedUrl) return;
+      if (!parsedUrl) return { status: 'error' };
       const manifest = await readJson(config.manifestUrl);
-      if (!Core.isValidManifest(manifest, parsedUrl.ownerRepo)) return;
+      if (!Core.isValidManifest(manifest, parsedUrl.ownerRepo)) return { status: 'error' };
       const installed = await plugin.getAppInfo();
       const installedVersionCode = Number(installed?.versionCode);
       installedVersionName = String(installed?.versionName || '');
@@ -291,19 +301,39 @@
           isForced = false;
           state = 'idle';
         }
-        return;
+        return { status: 'latest', currentVersion: installedVersionName };
       }
       const laterUntil = Number(storageGet(localStorage, LATER_KEY) || 0);
-      if (!decision.forced && laterUntil > Date.now()) return;
+      if (!decision.forced && laterUntil > Date.now() && !forceNetwork) return { status: 'snoozed', currentVersion: installedVersionName };
       if (decision.forced) storageRemove(localStorage, LATER_KEY);
       currentUpdate = { manifest, ownerRepo: parsedUrl.ownerRepo };
-      renderDialog(manifest, decision.forced);
+      isForced = decision.forced;
+      if (showDialog !== false) renderDialog(manifest, decision.forced);
+      return { status: 'available', manifest, currentVersion: installedVersionName };
     } catch (_) {
       // Update checks are deliberately silent when GitHub or the network is unavailable.
+      return { status: 'error' };
     } finally {
       checking = false;
     }
   }
+
+  window.AlAshrafApkUpdater = {
+    checkNow: async () => {
+      for (let attempt = 0; checking && attempt < 24; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      if (checking) return { status: 'error' };
+      lastCheckAt = 0;
+      return checkForUpdate(true, false);
+    },
+    downloadUpdate: async () => {
+      if (!currentUpdate) return false;
+      renderDialog(currentUpdate.manifest, isForced);
+      await handleInstallClick();
+      return true;
+    }
+  };
 
   function start() {
     if (!Core) return;

@@ -13741,6 +13741,98 @@
   function initSettings() {
     $('#btn-close-settings').addEventListener('click', () => closeOverlay('#settings-overlay'));
     $('#btn-close-reminders').addEventListener('click', () => closeOverlay('#reminders-overlay'));
+    const updateCheckOverlay = $('#update-check-overlay');
+    const updateCheckCard = $('#update-check-status-card');
+    const updateCheckTitle = $('#update-check-status-title');
+    const updateCheckMessage = $('#update-check-status-message');
+    const updateCheckVersions = $('#update-check-version-card');
+    const updateCheckCurrent = $('#update-check-current-version');
+    const updateCheckNew = $('#update-check-new-version');
+    const updateCheckAction = $('#btn-update-check-action');
+    let updateCheckView = { state: 'checking', current: '', latest: '' };
+    let updateCheckRequest = 0;
+    const renderUpdateCheck = () => {
+      if (!updateCheckCard) return;
+      const state = updateCheckView.state;
+      updateCheckCard.dataset.state = state;
+      const titleKeys = {
+        checking: 'update.checking_title', available: 'update.available_title', latest: 'update.latest_title',
+        error: 'update.error_title', unsupported: 'update.unsupported_title', installing: 'update.installing_title'
+      };
+      const messageKeys = {
+        checking: 'update.checking_message', available: 'update.available_message', latest: 'update.latest_message',
+        error: 'update.error_message', unsupported: 'update.unsupported_message', installing: 'update.installing_message'
+      };
+      const fallbacks = {
+        checking: ['جارٍ التحقق', 'لحظات ونتأكد من أحدث إصدار.'],
+        available: ['يتوفر إصدار جديد', 'يوجد إصدار أحدث جاهز للتنزيل.'],
+        latest: ['تم تثبيت أحدث إصدار', 'تطبيقك محدّث إلى آخر إصدار.'],
+        error: ['تعذر التحقق من التحديث', 'تحقق من اتصال الإنترنت ثم حاول مرة أخرى.'],
+        unsupported: ['التحديث غير متاح هنا', 'يمكن فحص التحديثات من تطبيق Android المثبت.'],
+        installing: ['جارٍ تجهيز التحديث', 'سيبدأ تنزيل التحديث والتحقق منه الآن.']
+      };
+      const index = Object.keys(titleKeys).indexOf(state);
+      updateCheckTitle.textContent = tUI(titleKeys[state] || titleKeys.error, fallbacks[index >= 0 ? index : 3][0]);
+      updateCheckMessage.textContent = tUI(messageKeys[state] || messageKeys.error, fallbacks[index >= 0 ? index : 3][1]);
+      updateCheckVersions?.classList.toggle('hidden', state !== 'available');
+      if (updateCheckCurrent) updateCheckCurrent.textContent = updateCheckView.current || '—';
+      if (updateCheckNew) updateCheckNew.textContent = updateCheckView.latest || '—';
+      if (updateCheckAction) {
+        updateCheckAction.disabled = state === 'checking' || state === 'installing' || state === 'unsupported';
+        updateCheckAction.classList.toggle('hidden', state === 'unsupported' || state === 'installing');
+        const actionKey = state === 'available' ? 'update.download_button' : 'update.check_again';
+        updateCheckAction.textContent = tUI(actionKey, state === 'available' ? 'تنزيل التحديث' : 'تحقق مرة أخرى');
+        updateCheckAction.dataset.action = state === 'available' ? 'install' : 'check';
+      }
+    };
+    window.appI18n?.onLanguageChange?.(renderUpdateCheck);
+    const openUpdateCheck = $('#btn-open-update-check');
+    const closeUpdateCheck = $('#btn-close-update-check');
+    const runUpdateCheck = async () => {
+      const requestId = ++updateCheckRequest;
+      updateCheckView = { state: 'checking', current: '', latest: '' };
+      renderUpdateCheck();
+      const updater = window.AlAshrafApkUpdater;
+      if (!updater?.checkNow) {
+        updateCheckView = { state: 'unsupported', current: '', latest: '' };
+        renderUpdateCheck();
+        return;
+      }
+      const result = await updater.checkNow();
+      if (requestId !== updateCheckRequest) return;
+      if (result?.status === 'available') {
+        updateCheckView = { state: 'available', current: result.currentVersion || '', latest: result.manifest?.versionName || '' };
+      } else if (result?.status === 'latest') {
+        updateCheckView = { state: 'latest', current: result.currentVersion || '', latest: '' };
+      } else if (result?.status === 'unsupported') {
+        updateCheckView = { state: 'unsupported', current: '', latest: '' };
+      } else {
+        updateCheckView = { state: 'error', current: '', latest: '' };
+      }
+      renderUpdateCheck();
+    };
+    if (openUpdateCheck && updateCheckOverlay) openUpdateCheck.addEventListener('click', () => {
+      openOverlay('#update-check-overlay');
+      runUpdateCheck();
+    });
+    closeUpdateCheck?.addEventListener('click', () => {
+      ++updateCheckRequest;
+      closeOverlay('#update-check-overlay');
+    });
+    updateCheckAction?.addEventListener('click', async () => {
+      if (updateCheckAction.dataset.action === 'install') {
+        updateCheckView.state = 'installing';
+        renderUpdateCheck();
+        const installed = await window.AlAshrafApkUpdater?.downloadUpdate?.();
+        if (!installed) {
+          updateCheckView.state = 'error';
+          renderUpdateCheck();
+        }
+      } else {
+        runUpdateCheck();
+      }
+    });
+    initDragToClose('#update-check-overlay .update-check-hero', '#update-check-overlay .update-check-sheet', () => closeOverlay('#update-check-overlay'));
     // اسحب شاشة التنبيهات لتحت عشان تقفلها، بنفس أسلوب سحب-للإغلاق
     // المستخدم في شاشة الآية (initSheetSwipeToClose أعلى الملف)
     safeCall(() => initSheetSwipeToClose('#reminders-overlay'), 'initSheetSwipeToClose(reminders)');
