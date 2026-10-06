@@ -13783,7 +13783,7 @@
       if (updateCheckNew) updateCheckNew.textContent = updateCheckView.latest || '—';
       if (updateCheckAction) {
         updateCheckAction.disabled = state === 'checking' || state === 'installing' || state === 'unsupported';
-        updateCheckAction.classList.toggle('hidden', state === 'unsupported' || state === 'installing');
+        updateCheckAction.classList.toggle('hidden', state === 'unsupported' || state === 'installing' || state === 'latest');
         const actionKey = state === 'available' ? 'update.download_button' : 'update.check_again';
         updateCheckAction.textContent = tUI(actionKey, state === 'available' ? 'تنزيل التحديث' : 'تحقق مرة أخرى');
         updateCheckAction.dataset.action = state === 'available' ? 'install' : 'check';
@@ -13866,6 +13866,55 @@
       } else {
         runUpdateCheck();
       }
+    });
+    $('#btn-open-source-licenses')?.addEventListener('click', () => {
+      const dialog = document.createElement('dialog');
+      dialog.className = 'update-license-dialog';
+      dialog.setAttribute('aria-labelledby', 'update-license-title');
+      const title = document.createElement('h2');
+      title.id = 'update-license-title';
+      title.textContent = tUI('update.open_source_licenses', 'Open source licenses');
+      const intro = document.createElement('p');
+      intro.textContent = tUI('update.licenses_intro', 'This app uses the following open-source components and licenses.');
+      const list = document.createElement('ul');
+      [
+        ['@capacitor/android', 'MIT'], ['@capacitor/core', 'MIT'],
+        ['@capacitor/file-transfer', 'MIT'], ['@capacitor/filesystem', 'MIT'],
+        ['@capacitor/local-notifications', 'MIT'], ['@capacitor/preferences', 'MIT'],
+        ['@capacitor/push-notifications', 'MIT'], ['@capacitor/screen-orientation', 'MIT'],
+        ['@capacitor/share', 'MIT'], ['@capacitor/status-bar', 'MIT'],
+        ['@capgo/capacitor-speech-recognition', 'MPL-2.0']
+      ].forEach(([name, license]) => {
+        const item = document.createElement('li');
+        const component = document.createElement('span');
+        component.textContent = name;
+        const type = document.createElement('strong');
+        type.textContent = license;
+        item.append(component, type);
+        list.appendChild(item);
+      });
+      const refs = document.createElement('p');
+      refs.className = 'update-license-references';
+      const mit = document.createElement('a');
+      mit.href = 'https://opensource.org/license/mit';
+      mit.target = '_blank';
+      mit.rel = 'noopener noreferrer';
+      mit.textContent = 'MIT';
+      const mpl = document.createElement('a');
+      mpl.href = 'https://www.mozilla.org/en-US/MPL/2.0/';
+      mpl.target = '_blank';
+      mpl.rel = 'noopener noreferrer';
+      mpl.textContent = 'MPL-2.0';
+      refs.append(mit, document.createTextNode(' · '), mpl);
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.textContent = tUI('common.close', 'Close');
+      close.addEventListener('click', () => dialog.close());
+      dialog.append(title, intro, list, refs, close);
+      dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+      dialog.addEventListener('close', () => dialog.remove(), { once: true });
+      document.body.appendChild(dialog);
+      dialog.showModal();
     });
     initDragToClose('#update-check-overlay .update-check-hero', '#update-check-overlay .update-check-sheet', () => closeOverlay('#update-check-overlay'));
     // اسحب شاشة التنبيهات لتحت عشان تقفلها، بنفس أسلوب سحب-للإغلاق

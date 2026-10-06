@@ -20431,6 +20431,158 @@ body.theme-night .update-check-hero { background: linear-gradient(145deg, #62694
   #update-check-overlay *, #update-check-overlay *::before, #update-check-overlay *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
+/* Minimal app-information layout inspired by Samsung's version screen. */
+#update-check-overlay .update-check-sheet {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0 26px calc(28px + env(safe-area-inset-bottom));
+  flex-direction: column;
+  overflow: auto;
+  color: #191a17;
+  background: #fff;
+}
+body.theme-night #update-check-overlay .update-check-sheet { color: #f4f4f1; background: #000; }
+.update-check-hero {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  margin: 0 -26px;
+  padding: calc(70px + env(safe-area-inset-top)) 28px 24px;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  color: inherit;
+  background: transparent;
+  border-radius: 0;
+  text-align: center;
+}
+.update-check-hero::after,
+.update-check-orbit,
+.update-check-brand { display: none; }
+.update-check-back {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  inset-inline-start: 18px;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  backdrop-filter: none;
+}
+.update-check-back svg { width: 25px; height: 25px; }
+.update-check-heading { width: min(100%, 500px); }
+.update-check-hero h1 {
+  margin: 0 0 34px;
+  color: inherit;
+  font-size: clamp(31px, 8vw, 39px);
+  font-weight: 800;
+  line-height: 1.2;
+}
+.update-check-version-line {
+  margin: 0 0 7px;
+  color: #858585;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.update-check-version-line strong {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
+  color: inherit;
+}
+.update-check-status-card {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.update-check-status-copy h2 {
+  margin: 0 0 3px;
+  color: #858585;
+  font-size: 16px;
+  font-weight: 700;
+}
+.update-check-status-copy p {
+  margin: 0;
+  color: #858585;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.update-check-status-card[data-state="latest"] .update-check-status-copy h2 { display: none; }
+.update-check-status-card[data-state="latest"] .update-check-status-copy p { color: #777; }
+body.theme-night .update-check-status-card[data-state="latest"] .update-check-status-copy p { color: #a5a5a5; }
+.update-check-new-version {
+  justify-content: center;
+  gap: 7px;
+  margin-top: 20px;
+  color: #858585;
+  font-size: 14px;
+}
+.update-check-new-version strong { direction: ltr; unicode-bidi: isolate; }
+.update-check-content {
+  display: flex;
+  width: min(100%, 440px);
+  margin: 0 auto;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 12px;
+}
+.update-check-actions { margin: 0; }
+.update-check-primary {
+  width: 100%;
+  min-height: 54px;
+  color: #fff;
+  background: #777f59;
+  border-radius: 999px;
+  box-shadow: none;
+}
+body.theme-night .update-check-primary { color: #111; background: #d4d4d4; }
+.update-check-licenses {
+  width: min(100%, 400px);
+  min-height: 54px;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 999px;
+  color: #202124;
+  background: #e5e5e7;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+body.theme-night .update-check-licenses { color: #f4f4f4; background: #333336; }
+.update-license-dialog {
+  width: min(90vw, 520px);
+  max-height: min(76vh, 680px);
+  padding: 24px;
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 24px;
+  color: var(--ap-ink);
+  background: var(--ap-bg);
+  font-family: var(--ap-font);
+  box-shadow: 0 22px 70px #0005;
+}
+.update-license-dialog::backdrop { background: #0009; backdrop-filter: blur(4px); }
+.update-license-dialog h2 { margin: 0 0 8px; font-size: 21px; }
+.update-license-dialog p { line-height: 1.6; color: var(--ap-ink-2); }
+.update-license-dialog ul { display: grid; gap: 7px; margin: 18px 0; padding: 0; list-style: none; }
+.update-license-dialog li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, currentColor 6%, transparent); font-size: 13px; }
+.update-license-dialog li strong { color: var(--section-accent, #777f59); direction: ltr; }
+.update-license-references { display: flex; gap: 16px; }
+.update-license-references a { color: var(--section-accent, #777f59); }
+.update-license-dialog > button { width: 100%; min-height: 46px; border: 0; border-radius: 999px; color: #fff; background: #777f59; font: inherit; font-weight: 800; }
+body.theme-night .update-license-dialog > button { color: #111; background: #c9cdb2; }
+
 /* صف قارئ (الصورة 2) */
 .ap-row {
   display: flex; align-items: center; gap: 12px;
