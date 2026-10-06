@@ -116,6 +116,7 @@ public class UpdateDownloadService extends Service {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setContentInfo(total > 0 ? progress + "%" : versionName)
             .setProgress(100, progress, total <= 0)
             .build();
     }

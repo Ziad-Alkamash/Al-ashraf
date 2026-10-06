@@ -56,6 +56,10 @@ body.theme-night .apk-update-version { color: #e2c681; }
 .apk-update-actions button { min-height: 48px; border: 0; border-radius: 15px; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
 .apk-update-install { color: #fff; background: var(--section-accent, #806326); box-shadow: 0 7px 18px color-mix(in srgb, var(--section-accent, #806326) 24%, transparent); }
 .apk-update-install:disabled { opacity: .65; cursor: wait; }
+.apk-update-cancel { color: #fff; background: #a63e35; box-shadow: 0 7px 18px rgba(166, 62, 53, .2); }
+.apk-update-dialog[data-state="downloading"] .apk-update-mark { animation: apk-update-spin 1.7s linear infinite; }
+.apk-update-dialog[data-state="ready"] .apk-update-mark { animation: none; }
+@keyframes apk-update-spin { to { transform: rotate(360deg); } }
 .apk-update-later { color: inherit; background: color-mix(in srgb, currentColor 8%, transparent); }
 .apk-update-background { color: var(--section-accent, #765b25); background: color-mix(in srgb, var(--section-accent, #927433) 10%, transparent); }
 .apk-update-background[hidden] { display: none; }

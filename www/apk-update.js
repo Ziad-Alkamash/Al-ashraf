@@ -166,10 +166,13 @@
 
     const dialog = document.createElement('section');
     dialog.className = 'apk-update-dialog';
+    dialog.dataset.state = state;
     dialog.setAttribute('role', 'dialog');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('aria-labelledby', 'apk-update-title');
     dialog.dir = 'rtl';
+    const downloading = state === 'downloading';
+    const ready = state === 'ready';
 
     const mark = document.createElement('div');
     mark.className = 'apk-update-mark';
@@ -179,12 +182,12 @@
 
     const title = document.createElement('h2');
     title.id = 'apk-update-title';
-    title.textContent = uiText(forced ? 'update.title' : 'update.available_title', forced ? 'تحديث التطبيق مطلوب' : 'A new version is available');
+    title.textContent = downloading ? uiText('update.downloading_title', 'جارٍ تنزيل التحديث') : ready ? uiText('update.download_ready_title', 'التحديث جاهز للتثبيت') : uiText(forced ? 'update.title' : 'update.available_title', forced ? 'تحديث التطبيق مطلوب' : 'A new version is available');
     dialog.appendChild(title);
 
     const intro = document.createElement('p');
     intro.className = 'apk-update-intro';
-    intro.textContent = uiText(forced ? 'update.subtitle' : 'update.available_message', forced
+    intro.textContent = downloading ? uiText('update.downloading_message', 'يتم تنزيل التحديث والتحقق منه. يمكنك إخفاء هذه النافذة وسيستمر التنزيل.') : ready ? uiText('update.download_ready_message', 'تم تنزيل التحديث والتحقق منه بنجاح. أصبح جاهزًا للتثبيت.') : uiText(forced ? 'update.subtitle' : 'update.available_message', forced
       ? 'حدّث التطبيق للمتابعة.'
       : 'A newer version of Al-Ashraf is available.');
     dialog.appendChild(intro);
@@ -199,7 +202,7 @@
     dialog.appendChild(version);
 
     const language = window.appI18n?.getSavedLang?.() || 'ar';
-    if (manifest.releaseNotes.length && language === 'ar') {
+    if (!downloading && !ready && manifest.releaseNotes.length && language === 'ar') {
       const notesTitle = document.createElement('h3');
       notesTitle.className = 'apk-update-notes-title';
       notesTitle.textContent = 'ما الجديد؟';
@@ -216,7 +219,7 @@
 
     const progress = document.createElement('div');
     progress.className = 'apk-update-progress';
-    progress.hidden = true;
+    progress.hidden = !downloading && !ready;
     const track = document.createElement('div');
     track.className = 'apk-update-progress-track';
     const fill = document.createElement('div');
@@ -239,28 +242,51 @@
     const install = document.createElement('button');
     install.type = 'button';
     install.className = 'apk-update-install';
-    install.textContent = uiText('update.install_now', 'Install now');
-    install.addEventListener('click', handleInstallClick);
-    actions.appendChild(install);
-
-    const later = document.createElement('button');
-    later.type = 'button';
-    later.className = 'apk-update-later';
-    later.textContent = uiText('update.later_button', 'Later');
-    later.addEventListener('click', dismissOptionalUpdate);
-    actions.appendChild(later);
-
-    const background = document.createElement('button');
-    background.type = 'button';
-    background.className = 'apk-update-background';
-    background.textContent = uiText('update.download_background', language === 'ar' ? 'التنزيل في الخلفية' : 'Download in background');
-    background.hidden = apkReady && apkReadyVersionCode === manifest.versionCode;
-    background.addEventListener('click', () => handleInstallClick({ runInBackground: true }));
-    actions.appendChild(background);
+    if (downloading) {
+      install.textContent = uiText('update.cancel_download', 'إلغاء التنزيل');
+      install.classList.add('apk-update-cancel');
+      install.addEventListener('click', async () => {
+        install.disabled = true;
+        setStatus(uiText('update.cancelling_download', 'جارٍ إلغاء التنزيل…'), false);
+        await cancelDownload();
+      });
+      actions.appendChild(install);
+      const hide = document.createElement('button');
+      hide.type = 'button';
+      hide.className = 'apk-update-later';
+      hide.textContent = uiText('update.hide_continue', 'إخفاء ومتابعة التنزيل');
+      hide.addEventListener('click', hideDownloadManager);
+      actions.appendChild(hide);
+    } else {
+      install.textContent = ready ? uiText('update.install_now', 'التثبيت الآن') : uiText('update.download_button', 'تنزيل التحديث');
+      install.addEventListener('click', () => handleInstallClick());
+      actions.appendChild(install);
+      const later = document.createElement('button');
+      later.type = 'button';
+      later.className = 'apk-update-later';
+      later.textContent = uiText('update.later_button', 'لاحقًا');
+      later.addEventListener('click', ready ? hideDownloadManager : dismissOptionalUpdate);
+      actions.appendChild(later);
+      if (!ready) {
+        const background = document.createElement('button');
+        background.type = 'button';
+        background.className = 'apk-update-background';
+        background.textContent = uiText('update.download_background', language === 'ar' ? 'التنزيل في الخلفية' : 'Download in background');
+        background.addEventListener('click', () => handleInstallClick({ runInBackground: true }));
+        actions.appendChild(background);
+      }
+    }
     dialog.appendChild(actions);
     updateDialog.appendChild(dialog);
     document.body.appendChild(updateDialog);
+    if (downloading) setProgress(-1, uiText('update.dialog_downloading', 'جارٍ تنزيل التحديث والتحقق منه…'));
+    else if (ready) setProgress(100, uiText('update.download_complete', 'اكتمل التنزيل والتحقق'));
     install.focus({ preventScroll: true });
+  }
+
+  function hideDownloadManager() {
+    updateDialog?.remove();
+    updateDialog = null;
   }
 
   function dismissOptionalUpdate() {
@@ -290,10 +316,9 @@
     if (!plugin || !currentUpdate || state === 'downloading') return;
     if (apkReadyVersionCode !== currentUpdate.manifest.versionCode) apkReady = false;
     state = 'downloading';
+    if (runInBackground) hideDownloadManager();
+    else renderDialog(currentUpdate.manifest, isForced);
     const button = updateDialog?.querySelector('.apk-update-install');
-    const later = updateDialog?.querySelector('.apk-update-later');
-    if (button) button.textContent = uiText('update.cancel_download', 'Cancel download');
-    if (later) later.disabled = true;
     setStatus(uiText('update.dialog_downloading', 'Downloading and verifying the update…'), false);
     try {
       if (!apkReady && plugin.addListener) {
@@ -304,27 +329,13 @@
       }
       if (!apkReady) {
         if (runInBackground) {
-          // Close immediately so a slow or unavailable Android foreground
-          // service cannot make the button appear unresponsive.
-          if (updateDialog) {
-            updateDialog.remove();
-            updateDialog = null;
-          }
-          showBackgroundReadyToast(
-            'جارٍ بدء تنزيل التحديث في الخلفية…',
-            'حسنًا',
-            () => {}
-          );
           try {
             const service = await plugin.startBackgroundDownload({ versionName: currentUpdate.manifest.versionName });
             if (service?.started !== true) throw new Error('background-service-not-started');
           } catch (serviceError) {
             console.warn('Background update service unavailable; continuing with an in-app download.', serviceError);
-            showBackgroundReadyToast(
-              'تعذر تشغيل خدمة الخلفية؛ سيستمر التنزيل والتطبيق مفتوح.',
-              'حسنًا',
-              () => {}
-            );
+            renderDialog(currentUpdate.manifest, isForced);
+            setStatus('تعذر تشغيل خدمة الخلفية؛ سيستمر التنزيل ما دام التطبيق مفتوحًا.', true);
           }
         }
         const downloadPromise = plugin.downloadAndVerify({
@@ -370,16 +381,8 @@
       if (progressListener?.remove) await progressListener.remove();
       progressListener = null;
       state = 'idle';
-      if (button && button.isConnected) { button.textContent = uiText('update.download_button', 'Download update'); button.disabled = false; }
-      if (later && later.isConnected) later.disabled = false;
+      if (currentUpdate) renderDialog(currentUpdate.manifest, isForced);
       setStatus(errorMessage(error), true);
-      if (runInBackground) {
-        showBackgroundReadyToast(
-          uiText('update.dialog_error', 'تعذر إكمال التحديث. تحقق من الاتصال وحاول مرة أخرى.'),
-          uiText('update.check_again', 'حاول مرة أخرى'),
-          () => renderDialog(currentUpdate.manifest, isForced)
-        );
-      }
       if (error?.code === 'DOWNLOAD_CANCELLED') {
         apkReady = false;
         const wrap = updateDialog?.querySelector('.apk-update-progress');
@@ -620,12 +623,6 @@
       if (updateDialog && event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
-      }
-    }, true);
-    document.addEventListener('click', (event) => {
-      if (event.target?.closest?.('.apk-update-install') && state === 'downloading') {
-        event.preventDefault();
-        cancelDownload();
       }
     }, true);
   }
