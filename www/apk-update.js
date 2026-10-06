@@ -39,6 +39,19 @@
     ]).finally(() => clearTimeout(timer));
   }
 
+  async function getInstalledAppInfo(plugin) {
+    try {
+      const response = await withTimeout(fetch('./app-version.json', { cache: 'no-store' }), 3000);
+      if (response.ok) {
+        const bundled = await response.json();
+        const versionCode = Number(bundled?.versionCode);
+        const versionName = String(bundled?.versionName || '');
+        if (Number.isSafeInteger(versionCode) && versionCode > 0 && versionName) return { versionCode, versionName };
+      }
+    } catch (_) {}
+    return plugin?.getAppInfo ? withTimeout(plugin.getAppInfo(), 8000) : null;
+  }
+
   function showPendingUpdateDialog() {
     if (pendingDialogTimer) {
       clearTimeout(pendingDialogTimer);
@@ -301,7 +314,7 @@
       if (!parsedUrl) return { status: 'error' };
       const manifest = await readJson(config.manifestUrl);
       if (!Core.isValidManifest(manifest, parsedUrl.ownerRepo)) return { status: 'error' };
-      const installed = await withTimeout(plugin.getAppInfo(), 10000);
+      const installed = await getInstalledAppInfo(plugin);
       const installedVersionCode = Number(installed?.versionCode);
       installedVersionName = String(installed?.versionName || '');
       const decision = Core.getUpdateDecision(installedVersionCode, manifest, parsedUrl.ownerRepo);
@@ -335,9 +348,9 @@
   window.AlAshrafApkUpdater = {
     getInstalledVersion: async () => {
       const plugin = getPlugin();
-      if (!window.Capacitor || window.Capacitor.getPlatform?.() !== 'android' || !plugin) return '';
+      if (!window.Capacitor || window.Capacitor.getPlatform?.() !== 'android') return '';
       try {
-        const installed = await withTimeout(plugin.getAppInfo(), 8000);
+        const installed = await getInstalledAppInfo(plugin);
         installedVersionName = String(installed?.versionName || '');
         return installedVersionName;
       } catch (_) {
