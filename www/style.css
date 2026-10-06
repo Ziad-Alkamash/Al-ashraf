@@ -16234,6 +16234,7 @@ body.theme-night #view-hadith .hadith-grade.is-weak { color: #f29b91; }
 .shamail-card-copy h3 { margin: 0 0 7px; color: var(--ap-ink); font: 900 15px/1.5 var(--ap-font); }
 .shamail-card-copy p { margin: 0; color: var(--ap-ink-2); font: 500 12px/1.85 var(--ap-font); }
 .shamail-card-copy small { display: block; margin-top: 9px; color: var(--ap-ink-3); font: 600 10px/1.6 var(--ap-font); }
+.sunnah-dhikr-original { display: block; margin-top: 6px; font-weight: 600; }
 @media (max-width: 380px) { .shamail-gallery { grid-template-columns: 1fr; } }
 
 /* تحدّي الحفظ: لوحة تقدم مرئية وقائمة تفاعلية */

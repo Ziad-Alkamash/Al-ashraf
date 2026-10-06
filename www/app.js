@@ -11597,19 +11597,23 @@
     if (!content || typeof SUNNAH_FEATURES_DATA === 'undefined') return;
     const config = SUNNAH_FEATURES[feature];
     if (!config) return;
+    const language = window.appI18n?.getSavedLang?.() || 'ar';
+    const localizedRows = window.SUNNAH_FEATURES_TRANSLATIONS?.[language]?.[feature];
+    const rows = localizedRows || SUNNAH_FEATURES_DATA[feature];
+    const localizedLabels = window.SUNNAH_FEATURE_LABELS?.[language]?.[feature];
     const featureOverlay = $('#sunnah-feature-overlay');
     if (featureOverlay) featureOverlay.dataset.activeFeature = feature;
-    $('#sunnah-feature-title').textContent = tUI(config[0], config[0]);
-    $('#sunnah-feature-subtitle').textContent = tUI(config[1], config[1]);
+    $('#sunnah-feature-title').textContent = localizedLabels?.[0] || tUI(config[0], config[0]);
+    $('#sunnah-feature-subtitle').textContent = localizedLabels?.[1] || tUI(config[1], config[1]);
 
     if (feature === 'seerah' || feature === 'shamail' || feature === 'daily') {
-      const rows = SUNNAH_FEATURES_DATA[feature];
       if (feature === 'seerah') {
         content.innerHTML = `<div class="seerah-storyline">${rows.map((row, i) => `<article class="seerah-story-card"><div class="seerah-story-image"><img src="images/sunnah/${escapeHTML(row[2])}.svg" alt="${escapeHTML(tUI('sunnah.illustration_alt', 'مشهد توضيحي'))}: ${escapeHTML(row[0])}" loading="lazy"><span class="seerah-story-period">${escapeHTML(row[3])}</span></div><div class="seerah-story-body"><span class="sunnah-feature-index">${toArabicDigits(i + 1)}</span><h3>${escapeHTML(row[0])}</h3><p>${escapeHTML(row[1])}</p></div></article>`).join('')}</div><p class="sunnah-feature-source-note">${escapeHTML(tUI('sunnah.seerah_note', 'عرض موجز للتسلسل التاريخي، وقد تُذكر بعض الوقائع بتواريخ تقريبية. للتوسع يُرجع إلى كتب السيرة المعتمدة.'))}</p>`;
       } else if (feature === 'shamail') {
-        content.innerHTML = `<div class="shamail-gallery">${rows.map((row, i) => `<article class="shamail-card shamail-tone-${i % 4}"><div class="shamail-card-art" aria-hidden="true"><span>${['رِفق','خُلُق','هَدي','نور'][i % 4]}</span><b>${toArabicDigits(i + 1)}</b></div><div class="shamail-card-copy"><h3>${escapeHTML(row[0])}</h3><p>${escapeHTML(row[1])}</p><small>${escapeHTML(row[2])}</small></div></article>`).join('')}</div><p class="sunnah-feature-source-note">${escapeHTML(tUI('sunnah.shamail_note', 'مختارات وصفية؛ راجع نص الحديث ودرجته في مصدره قبل الاستدلال. من المراجع: الشمائل المحمدية للترمذي والصحيحان.'))}</p>`;
+        const artLabels = window.SUNNAH_FEATURE_LABELS?.[language]?.shamailArt || ['رِفق','خُلُق','هَدي','نور'];
+        content.innerHTML = `<div class="shamail-gallery">${rows.map((row, i) => `<article class="shamail-card shamail-tone-${i % 4}"><div class="shamail-card-art" aria-hidden="true"><span>${escapeHTML(artLabels[i % 4])}</span><b>${toArabicDigits(i + 1)}</b></div><div class="shamail-card-copy"><h3>${escapeHTML(row[0])}</h3><p>${escapeHTML(row[1])}</p><small>${escapeHTML(row[2])}</small></div></article>`).join('')}</div><p class="sunnah-feature-source-note">${escapeHTML(tUI('sunnah.shamail_note', 'مختارات وصفية؛ راجع نص الحديث ودرجته في مصدره قبل الاستدلال. من المراجع: الشمائل المحمدية للترمذي والصحيحان.'))}</p>`;
       } else {
-        content.innerHTML = `<div class="sunnah-feature-list">${rows.map((row, i) => `<article class="sunnah-feature-card"><span class="sunnah-feature-index">${toArabicDigits(i + 1)}</span><div><h3>${escapeHTML(row[0])}</h3><p>${escapeHTML(row[1])}</p>${row[2] ? `<small class="sunnah-feature-meta">${escapeHTML(tUI('sunnah.source_label', 'المصدر'))}: ${escapeHTML(row[2])}</small>` : ''}</div></article>`).join('')}</div><p class="sunnah-feature-source-note">${escapeHTML(tUI('sunnah.daily_note', 'للأذكار اليومية التفصيلية والتسبيح، يمكنك أيضًا فتح قسم الأذكار والأدعية في التطبيق.'))}</p>`;
+        content.innerHTML = `<div class="sunnah-feature-list">${rows.map((row, i) => `<article class="sunnah-feature-card"><span class="sunnah-feature-index">${toArabicDigits(i + 1)}</span><div><h3>${escapeHTML(row[0])}</h3><p>${escapeHTML(row[1])}${language !== 'ar' ? ` <span class="sunnah-dhikr-original" lang="ar" dir="rtl">${escapeHTML(SUNNAH_FEATURES_DATA.daily[i][1])}</span>` : ''}</p>${row[2] ? `<small class="sunnah-feature-meta">${escapeHTML(tUI('sunnah.source_label', 'المصدر'))}: ${escapeHTML(row[2])}</small>` : ''}</div></article>`).join('')}</div><p class="sunnah-feature-source-note">${escapeHTML(tUI('sunnah.daily_note', 'للأذكار اليومية التفصيلية والتسبيح، يمكنك أيضًا فتح قسم الأذكار والأدعية في التطبيق.'))}</p>`;
       }
       return;
     }
