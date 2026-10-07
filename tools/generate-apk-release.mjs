@@ -37,8 +37,14 @@ if (!Number.isSafeInteger(config.minimumVersionCode) || config.minimumVersionCod
   throw new Error('release-config.json minimumVersionCode must be between 1 and this release versionCode.');
 }
 const releaseNotes = JSON.parse(fs.readFileSync(path.join(root, 'release-notes.json'), 'utf8'));
-if (!Array.isArray(releaseNotes) || releaseNotes.length > 10 || !releaseNotes.every((item) => typeof item === 'string' && item.trim() && item.length <= 300)) {
-  throw new Error('release-notes.json must be an array of up to 10 short, non-empty strings.');
+const validNotes = (items) => Array.isArray(items) && items.length > 0 && items.length <= 3 && items.every((item) => typeof item === 'string' && item.trim() && item.length <= 160);
+const supportedLanguages = ['ar', 'fa', 'en', 'fr', 'tr', 'ur', 'id', 'ru', 'es'];
+if (Array.isArray(releaseNotes)) {
+  if (releaseNotes.length > 3 || !releaseNotes.every((item) => typeof item === 'string' && item.trim() && item.length <= 160)) {
+    throw new Error('release-notes.json must contain up to 3 concise, non-empty strings.');
+  }
+} else if (!releaseNotes || typeof releaseNotes !== 'object' || Object.keys(releaseNotes).length !== supportedLanguages.length || !supportedLanguages.every((language) => validNotes(releaseNotes[language]))) {
+  throw new Error(`release-notes.json must contain short notes for all supported languages: ${supportedLanguages.join(', ')}.`);
 }
 
 const manifest = {
@@ -57,6 +63,9 @@ if (!isValidManifest(manifest, repo)) throw new Error('Generated update manifest
 const outputDir = path.join(root, '.release-work');
 fs.mkdirSync(outputDir, { recursive: true });
 fs.writeFileSync(path.join(outputDir, 'update.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-fs.writeFileSync(path.join(outputDir, 'release-notes.md'), releaseNotes.length ? releaseNotes.map((note) => `- ${note}`).join('\n') + '\n' : 'تحسينات عامة وإصلاحات\n');
+const releaseMarkdown = Array.isArray(releaseNotes)
+  ? releaseNotes.map((note) => `- ${note}`).join('\n')
+  : supportedLanguages.map((language) => `### ${language.toUpperCase()}\n${releaseNotes[language].map((note) => `- ${note}`).join('\n')}`).join('\n\n');
+fs.writeFileSync(path.join(outputDir, 'release-notes.md'), `${releaseMarkdown}\n`);
 fs.writeFileSync(path.join(root, 'www', 'update-config.json'), `${JSON.stringify({ manifestUrl: `https://raw.githubusercontent.com/${repo}/${defaultBranch}/update.json` }, null, 2)}\n`);
 console.log(`Prepared signed release metadata for ${tagName} (versionCode ${versionCode}).`);

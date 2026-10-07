@@ -31,7 +31,15 @@
     const releaseDate = new Date(`${manifest.releaseDate}T00:00:00Z`);
     if (Number.isNaN(releaseDate.getTime()) || releaseDate.toISOString().slice(0, 10) !== manifest.releaseDate) return false;
     if (typeof manifest.sha256 !== 'string' || !HASH.test(manifest.sha256)) return false;
-    if (!Array.isArray(manifest.releaseNotes) || manifest.releaseNotes.length > 10 || !manifest.releaseNotes.every((note) => typeof note === 'string' && note.trim().length > 0 && note.length <= 300)) return false;
+    const validNotes = (notes) => Array.isArray(notes) && notes.length > 0 && notes.length <= 3 && notes.every((note) => typeof note === 'string' && note.trim().length > 0 && note.length <= 160);
+    if (Array.isArray(manifest.releaseNotes)) {
+      if (manifest.releaseNotes.length > 3 || !manifest.releaseNotes.every((note) => typeof note === 'string' && note.trim().length > 0 && note.length <= 160)) return false;
+    } else {
+      const supportedLanguages = ['ar', 'fa', 'en', 'fr', 'tr', 'ur', 'id', 'ru', 'es'];
+      if (!manifest.releaseNotes || typeof manifest.releaseNotes !== 'object' || Object.keys(manifest.releaseNotes).length !== supportedLanguages.length) return false;
+      if (!supportedLanguages.every((language) => Object.hasOwn(manifest.releaseNotes, language))) return false;
+      if (!Object.entries(manifest.releaseNotes).every(([language, notes]) => supportedLanguages.includes(language) && validNotes(notes))) return false;
+    }
     if (typeof manifest.tagName !== 'string' || !TAG_NAME.test(manifest.tagName) || manifest.tagName !== `v${manifest.versionName}`) return false;
     if (typeof manifest.downloadUrl !== 'string') return false;
     try {

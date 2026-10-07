@@ -202,14 +202,18 @@
     dialog.appendChild(version);
 
     const language = window.appI18n?.getSavedLang?.() || 'ar';
-    if (!downloading && !ready && manifest.releaseNotes.length && language === 'ar') {
+    const releaseNotes = Array.isArray(manifest.releaseNotes)
+      ? (language === 'ar' ? manifest.releaseNotes : [])
+      : (manifest.releaseNotes?.[language] || manifest.releaseNotes?.en || []);
+    if (!downloading && !ready && releaseNotes.length) {
       const notesTitle = document.createElement('h3');
       notesTitle.className = 'apk-update-notes-title';
-      notesTitle.textContent = 'ما الجديد؟';
+      const titleByLanguage = { ar: 'ما الجديد؟', fa: 'چه چیز تازه‌ای؟', en: 'What’s new?', fr: 'Nouveautés', tr: 'Yenilikler', ur: 'نیا کیا ہے؟', id: 'Apa yang baru?', ru: 'Что нового?', es: 'Novedades' };
+      notesTitle.textContent = uiText('update.whats_new', titleByLanguage[language] || 'What’s new?');
       dialog.appendChild(notesTitle);
       const notes = document.createElement('ul');
       notes.className = 'apk-update-notes';
-      manifest.releaseNotes.forEach((note) => {
+      releaseNotes.forEach((note) => {
         const item = document.createElement('li');
         item.textContent = note;
         notes.appendChild(item);

@@ -46,3 +46,9 @@ test('disabled manifest and malformed or mismatched metadata never produce an up
   assert.equal(isValidManifest({ ...manifestUrl, minimumVersionCode: 15 }, repository), false);
   assert.equal(isValidManifest({ ...manifestUrl, downloadUrl: 'https://github.com/other/repo/releases/latest/download/AlAshraf.apk' }, repository), false);
 });
+
+test('accepts concise release notes localized for all app languages', () => {
+  const releaseNotes = Object.fromEntries(['ar', 'fa', 'en', 'fr', 'tr', 'ur', 'id', 'ru', 'es'].map((language) => [language, ['Fix some bugs']]));
+  assert.equal(isValidManifest({ ...manifestUrl, releaseNotes }, repository), true);
+  assert.equal(isValidManifest({ ...manifestUrl, releaseNotes: { ...releaseNotes, xx: ['Fix some bugs'] } }, repository), false);
+});
