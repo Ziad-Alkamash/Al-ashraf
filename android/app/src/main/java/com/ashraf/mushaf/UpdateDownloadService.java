@@ -107,7 +107,7 @@ public class UpdateDownloadService extends Service {
             : "جارٍ تنزيل ملف التحديث";
         int progress = total > 0 ? (int) Math.min(100, downloaded * 100 / total) : 0;
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_play)
+            .setSmallIcon(R.drawable.ic_stat_notify)
             .setContentTitle("تنزيل تحديث المصحف الأشرف")
             .setContentText(body)
             .setSubText(versionName)
@@ -144,7 +144,7 @@ public class UpdateDownloadService extends Service {
             ? "اكتمل التنزيل والتحقق. اضغط هنا للمتابعة إلى التثبيت."
             : "تعذر تنزيل التحديث. اضغط هنا لفتح التطبيق والمحاولة مرة أخرى.";
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_play)
+            .setSmallIcon(R.drawable.ic_stat_notify)
             .setContentTitle(success ? "التحديث جاهز للتثبيت" : "تعذر إكمال التحديث")
             .setContentText(message)
             .setContentIntent(openAppPendingIntent(context))

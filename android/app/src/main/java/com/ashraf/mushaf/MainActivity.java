@@ -35,6 +35,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MediaControlPlugin.class);
         registerPlugin(WidgetRefreshPlugin.class);
         registerPlugin(AdhanAlarmPlugin.class);
+        registerPlugin(AdhkarAlarmPlugin.class);
         registerPlugin(SalawatAlarmPlugin.class);
         registerPlugin(MediaSaverPlugin.class);
         registerPlugin(BackupExporterPlugin.class);

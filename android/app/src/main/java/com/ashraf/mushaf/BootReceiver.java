@@ -38,10 +38,22 @@ public class BootReceiver extends BroadcastReceiver {
         boolean isBoot = Intent.ACTION_BOOT_COMPLETED.equals(action)
                 || "android.intent.action.QUICKBOOT_POWERON".equals(action)
                 || "com.htc.intent.action.QUICKBOOT_POWERON".equals(action);
-        if (!isBoot) return;
+        boolean isTimeChange = Intent.ACTION_TIME_CHANGED.equals(action)
+                || Intent.ACTION_TIMEZONE_CHANGED.equals(action);
+        boolean isAppUpdated = Intent.ACTION_MY_PACKAGE_REPLACED.equals(action);
+        if (!isBoot && !isTimeChange && !isAppUpdated) return;
 
-        rescheduleAdhanAlarms(context);
-        rescheduleSalawatAlarm(context);
+        if (isBoot) {
+            rescheduleAdhanAlarms(context);
+            rescheduleSalawatAlarm(context);
+        }
+        if (isTimeChange) {
+            AdhkarAlarmScheduler.rescheduleForLocalTime(context, "sabah");
+            AdhkarAlarmScheduler.rescheduleForLocalTime(context, "masaa");
+        } else {
+            AdhkarAlarmScheduler.restore(context, "sabah");
+            AdhkarAlarmScheduler.restore(context, "masaa");
+        }
     }
 
     // نفس فكرة رجوع منبّه الأذان بعد الريستارت فوق، لكن لتذكير "صلِّ على محمد

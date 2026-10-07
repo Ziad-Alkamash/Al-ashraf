@@ -26440,6 +26440,18 @@
     // زي ده خالص — بقى منبّه أصلي ذاتي التجديد (SalawatAlarm)، راجع
     // scheduleNativeSalawatAlarm / SalawatAlarmService.java
   };
+  const ADHKAR_VARIATIONS = {
+    sabah: [
+      ['صباحٌ يبدأ بالذكر', 'لا تدع صباحكَ يمرُّ دون ذكرِ الله، ابدأ يومَك بأذكار الصباح.'],
+      ['لديك دقيقة واحدة لنفسك', 'اجعلها مع أذكار الصباح… المصحف الأشرف بانتظارك.'],
+      ['صباحك يبدأ من هنا', 'افتح المصحف الأشرف، وخذ أولى لحظات يومك مع ذكر الله.']
+    ],
+    masaa: [
+      ['اختم يومكَ بالذكر', 'قبل أن ينتهي يومُك، خذ لحظات مع أذكار المساء واطمئنَّ بذكر الله.'],
+      ['قبل أن تطوي صفحة اليوم', 'خذ دقيقة لأذكار المساء، ثم أكمل ليلتك بقلبٍ مطمئن.'],
+      ['هنا تنتهي حكاية يومك', 'أهدِ يومك لحظات من الذكر، ودع آخر ما يرافقك هو ذكر الله.']
+    ]
+  };
   // تذكير الفقيد: كان عدد المرات المجدولة مقدمًا ثابت (20 مرة)، فبفاصل 15
   // دقيقة كان بيغطي 5 ساعات بس (20×15=300 دقيقة) — لو المستخدم ما فتحش
   // التطبيق أكتر من كده، التذكيرات كانت بتوقف تمامًا لحد ما يفتحه تاني
@@ -26530,6 +26542,41 @@
         }]
       });
     } catch (e) { console.warn(`[notifications] تعذرت جدولة التذكير ${id}:`, e); }
+  }
+
+  function currentAdhkarVariantIndex() {
+    const now = new Date();
+    const dayNumber = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+    return ((dayNumber % 3) + 3) % 3;
+  }
+
+  function getAdhkarAlarmPlugin() {
+    return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdhkarAlarm) || null;
+  }
+
+  async function scheduleAdhkarReminder(kind, settings) {
+    const reminder = settings && settings[kind];
+    const enabled = !!(reminder && reminder.enabled);
+    const id = kind === 'sabah' ? OS_NOTIF_IDS.sabah : OS_NOTIF_IDS.masaa;
+    const variants = ADHKAR_VARIATIONS[kind];
+    const [fallbackTitle, fallbackBody] = variants[currentAdhkarVariantIndex()];
+    const { hour, minute } = timeToHM(reminder && reminder.time);
+    // إزالة الجدولة المتكررة القديمة بعد الترقية قبل تسليم التذكير للمنبّه
+    // الأصلي ذاتي التجديد، منعًا لوصول نص قديم بجوار النص الجديد.
+    await cancelOsNotification(id);
+
+    const plugin = getAdhkarAlarmPlugin();
+    if (plugin && plugin.configure) {
+      try {
+        await plugin.configure({ kind, enabled, hour, minute });
+        return;
+      } catch (e) {
+        console.warn(`[notifications] تعذر تحديث المنبّه الأصلي لأذكار ${kind}:`, e);
+      }
+    }
+
+    // مسار احتياطي للمنصات التي لا تحتوي على البلجن الأصلي الخاص بأندرويد.
+    if (enabled) await scheduleOsRepeatingDaily(id, hour, minute, fallbackTitle, fallbackBody, { kind: 'adhkar-reminder', adhkar: kind }, true, `mushaf-${kind}-azkar-v2`, `${kind}_reminder.mp3`);
   }
 
   // إشعار أسبوعي متكرر (سورة الكهف يوم الجمعة فقط)
@@ -26997,8 +27044,6 @@
           // الأذكار والورد والنوم مواعيد يومية ثابتة؛ الصلاة لها جدولة خاصة
           // لأنها تتغير كل يوم، وباقي التذكيرات لها منبّهاتها المخصصة.
           const simple = [
-            ['sabah', OS_NOTIF_IDS.sabah, 'أذكار الصباح ☀️', 'حان وقت أذكار الصباح، اضغط لفتح الأشرف وقراءتها.', 'mushaf-sabah-azkar-v2', 'sabah_reminder.mp3'],
-            ['masaa', OS_NOTIF_IDS.masaa, 'أذكار المساء 🌙', 'حان وقت أذكار المساء، اضغط لفتح الأشرف وقراءتها.', 'mushaf-masaa-azkar-v2', 'masaa_reminder.mp3'],
             ['wird', OS_NOTIF_IDS.wird, 'تذكير الورد اليومي 📅', 'حان وقت وردك اليومي من القرآن، اضغط لفتح المصحف ومتابعة القراءة.'],
             ['naom', OS_NOTIF_IDS.naom, 'أذكار النوم 🛏️', 'حان وقت أذكار النوم، تقبّل الله منك.']
           ];
@@ -27015,6 +27060,9 @@
               await cancelOsNotification(id);
             }
           }
+
+          await scheduleAdhkarReminder('sabah', settings);
+          await scheduleAdhkarReminder('masaa', settings);
 
           if (settings.kahf && settings.kahf.enabled) {
             const { hour, minute } = timeToHM(settings.kahf.time);
