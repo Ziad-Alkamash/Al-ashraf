@@ -25945,6 +25945,16 @@
     const banner = $('#update-banner');
     if (!banner) return;
 
+    // APK updates are handled by ApkUpdater. The service-worker controller
+    // changes when the APK's bundled web assets change too, so this PWA-only
+    // banner would otherwise claim that a second update is available and its
+    // reload button would only restart the app without installing anything.
+    const capacitor = window.Capacitor;
+    if (capacitor?.isNativePlatform?.() || capacitor?.getPlatform?.() === 'android') {
+      banner.remove();
+      return;
+    }
+
     const btn = $('#update-banner-btn');
     const closeBtn = $('#update-banner-close');
 
