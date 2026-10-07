@@ -1,18 +1,39 @@
 {
   "enabled": true,
-  "versionName": "5.5.16",
-  "versionCode": 43,
+  "versionName": "5.5.17",
+  "versionCode": 44,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-07",
-  "tagName": "v5.5.16",
+  "tagName": "v5.5.17",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "58c153857f5dbfcbc6d9b950c1bfc3435ce42caa65c12fea3de9048054c5436b",
-  "releaseNotes": [
-    "تفعيل تذكير المناسبات الإسلامية افتراضيًا وجدولته تلقائيًا بعد منح إذن الإشعارات",
-    "تجربة تحديث جديدة تعرض تقدم التنزيل وتسمح بإلغائه أو إخفائه مع استمراره في الخلفية",
-    "تحسين إشعار التحديث وإظهار التثبيت بعد اكتمال التنزيل والتحقق منه",
-    "فتح شاشة إدارة التنزيل عند الضغط على الإشعار حتى إذا بدأ التطبيق من جديد",
-    "مطابقة لون أيقونتي البحث والعلامة المرجعية للون أرقام الآيات في الوضع الفاتح",
-    "تحديث أيقونة التطبيق للصورة الجديدة عبر Android والويب باستخدام طبقتي الشعار والخلفية"
-  ]
+  "sha256": "b9a6b5070eba5e74eeaf662146767c51f883de8b278311b1ddd5223f01cbea43",
+  "releaseNotes": {
+    "ar": [
+      "إصلاح بعض الأخطاء"
+    ],
+    "fa": [
+      "رفع برخی از اشکالات"
+    ],
+    "en": [
+      "Fix some bugs"
+    ],
+    "fr": [
+      "Correction de quelques bugs"
+    ],
+    "tr": [
+      "Bazı hatalar düzeltildi"
+    ],
+    "ur": [
+      "چند خرابیوں کی اصلاح"
+    ],
+    "id": [
+      "Memperbaiki beberapa bug"
+    ],
+    "ru": [
+      "Исправлены некоторые ошибки"
+    ],
+    "es": [
+      "Corrección de algunos errores"
+    ]
+  }
 }
