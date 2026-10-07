@@ -51,4 +51,6 @@ test('accepts concise release notes localized for all app languages', () => {
   const releaseNotes = Object.fromEntries(['ar', 'fa', 'en', 'fr', 'tr', 'ur', 'id', 'ru', 'es'].map((language) => [language, ['Fix some bugs']]));
   assert.equal(isValidManifest({ ...manifestUrl, releaseNotes }, repository), true);
   assert.equal(isValidManifest({ ...manifestUrl, releaseNotes: { ...releaseNotes, xx: ['Fix some bugs'] } }, repository), false);
+  assert.equal(isValidManifest({ ...manifestUrl, releaseNotes: ['إصلاح بعض الأخطاء'], localizedReleaseNotes: releaseNotes }, repository), true);
+  assert.equal(isValidManifest({ ...manifestUrl, releaseNotes: ['إصلاح بعض الأخطاء'], localizedReleaseNotes: { ...releaseNotes, xx: ['Fix some bugs'] } }, repository), false);
 });

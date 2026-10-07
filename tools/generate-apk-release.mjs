@@ -56,7 +56,10 @@ const manifest = {
   tagName,
   downloadUrl: `https://github.com/${repo}/releases/latest/download/AlAshraf.apk`,
   sha256: hash.toLowerCase(),
-  releaseNotes
+  // Keep releaseNotes as an array for older installed apps whose updater
+  // predates localized maps, while newer apps use all nine translations.
+  releaseNotes: Array.isArray(releaseNotes) ? releaseNotes : releaseNotes.ar,
+  ...(Array.isArray(releaseNotes) ? {} : { localizedReleaseNotes: releaseNotes })
 };
 if (!isValidManifest(manifest, repo)) throw new Error('Generated update manifest failed schema/security validation.');
 

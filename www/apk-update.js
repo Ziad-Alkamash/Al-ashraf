@@ -202,9 +202,10 @@
     dialog.appendChild(version);
 
     const language = window.appI18n?.getSavedLang?.() || 'ar';
-    const releaseNotes = Array.isArray(manifest.releaseNotes)
-      ? (language === 'ar' ? manifest.releaseNotes : [])
-      : (manifest.releaseNotes?.[language] || manifest.releaseNotes?.en || []);
+    const localizedNotes = manifest.localizedReleaseNotes || (!Array.isArray(manifest.releaseNotes) ? manifest.releaseNotes : null);
+    const releaseNotes = localizedNotes
+      ? (localizedNotes[language] || localizedNotes.en || [])
+      : (language === 'ar' ? (manifest.releaseNotes || []) : []);
     if (!downloading && !ready && releaseNotes.length) {
       const notesTitle = document.createElement('h3');
       notesTitle.className = 'apk-update-notes-title';

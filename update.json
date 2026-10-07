@@ -7,7 +7,10 @@
   "tagName": "v5.5.18",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
   "sha256": "53106f3262bcf2ffb1239d78faab532077ef5b68d171e1ff6f50131d9ee86c81",
-  "releaseNotes": {
+  "releaseNotes": [
+    "إصلاح بعض الأخطاء"
+  ],
+  "localizedReleaseNotes": {
     "ar": [
       "إصلاح بعض الأخطاء"
     ],
@@ -36,4 +39,4 @@
       "Corrección de algunos errores"
     ]
   }
-}
+}\n
