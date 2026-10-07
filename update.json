@@ -1,13 +1,14 @@
 {
   "enabled": true,
-  "versionName": "5.5.15",
-  "versionCode": 42,
+  "versionName": "5.5.16",
+  "versionCode": 43,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-07",
-  "tagName": "v5.5.15",
+  "tagName": "v5.5.16",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "4478a196f6429b03d982b90b90cd599bc66eee70dffad6c1133deb05bee87451",
+  "sha256": "58c153857f5dbfcbc6d9b950c1bfc3435ce42caa65c12fea3de9048054c5436b",
   "releaseNotes": [
+    "تفعيل تذكير المناسبات الإسلامية افتراضيًا وجدولته تلقائيًا بعد منح إذن الإشعارات",
     "تجربة تحديث جديدة تعرض تقدم التنزيل وتسمح بإلغائه أو إخفائه مع استمراره في الخلفية",
     "تحسين إشعار التحديث وإظهار التثبيت بعد اكتمال التنزيل والتحقق منه",
     "فتح شاشة إدارة التنزيل عند الضغط على الإشعار حتى إذا بدأ التطبيق من جديد",
