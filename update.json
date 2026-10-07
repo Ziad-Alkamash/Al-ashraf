@@ -1,17 +1,17 @@
 {
   "enabled": true,
-  "versionName": "5.5.14",
-  "versionCode": 41,
+  "versionName": "5.5.15",
+  "versionCode": 42,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-07",
-  "tagName": "v5.5.14",
+  "tagName": "v5.5.15",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "d6bfea5538ab46c3c402c955733d9eea2284ace3a2cccaedeaaccbc5a6f8fa6e",
+  "sha256": "4478a196f6429b03d982b90b90cd599bc66eee70dffad6c1133deb05bee87451",
   "releaseNotes": [
     "تجربة تحديث جديدة تعرض تقدم التنزيل وتسمح بإلغائه أو إخفائه مع استمراره في الخلفية",
     "تحسين إشعار التحديث وإظهار التثبيت بعد اكتمال التنزيل والتحقق منه",
     "فتح شاشة إدارة التنزيل عند الضغط على الإشعار حتى إذا بدأ التطبيق من جديد",
     "مطابقة لون أيقونتي البحث والعلامة المرجعية للون أرقام الآيات في الوضع الفاتح",
-    "تحديث أيقونة التطبيق للصورة الجديدة عبر Android والويب"
+    "تحديث أيقونة التطبيق للصورة الجديدة عبر Android والويب باستخدام طبقتي الشعار والخلفية"
   ]
 }
