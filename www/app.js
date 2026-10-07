@@ -19478,7 +19478,9 @@
   // مع NATIVE_ADHAN_SCHEDULE_KEY فوق، ونعتبره المصدر الأساسي للقراءة لو
   // موجود، مع localStorage كنسخة احتياطية لنسخة الويب/PWA بلا Capacitor
   function getOccReminderPrefSync() {
-    try { return localStorage.getItem(OCC_REMINDER_KEY) === '1'; } catch (e) { return false; }
+    // التذكير مفعّل تلقائيًا للمستخدم الجديد. نعتبره مقفولًا فقط لو
+    // المستخدم اختار إيقافه صراحةً؛ غياب المفتاح لا يعني إيقافه.
+    try { return localStorage.getItem(OCC_REMINDER_KEY) !== '0'; } catch (e) { return true; }
   }
   async function getOccReminderPref() {
     const p = getPreferencesPlugin();
@@ -19519,7 +19521,8 @@
     const ln = (typeof getLocalNotifPlugin === 'function') ? getLocalNotifPlugin() : null;
     if (!ln) return;
     const on = await getOccReminderPref();
-    if (!on || !islamicOccasionsCache) {
+    if (on && !islamicOccasionsCache) ensureIslamicOccasionsCacheInstant();
+    if (!on) {
       for (let i = 0; i < 20; i++) { try { await cancelOsNotification(OCC_NOTIF_ID_BASE + i); } catch (e) {} }
       return;
     }
@@ -25266,6 +25269,9 @@
     syncReminderUI();
     checkReminders();
     scheduleAllOsNotifications(); // أول جدولة على مستوى النظام بعد الموافقة على الإذن
+    // تذكير المناسبات إعداد مستقل عن بقية التذكيرات، وجدولته قد تكون
+    // تخطّت عند بدء التطبيق قبل موافقة المستخدم على إذن الإشعارات.
+    await scheduleOccasionReminders();
   }
 
   // فاصل زمني بسيط بالميلي ثانية — نستخدمه بين طلبات الأذونات المتتالية
