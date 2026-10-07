@@ -1,42 +1,42 @@
 {
   "enabled": true,
-  "versionName": "5.5.23",
-  "versionCode": 50,
+  "versionName": "5.5.24",
+  "versionCode": 51,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-07",
-  "tagName": "v5.5.23",
+  "tagName": "v5.5.24",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "93094510e3013021e0308002afb7ea096d733e3bfe78fdf14678ed0b5335faf9",
+  "sha256": "6c9b7b065f30513a5a793828078a58218ee6c228a8a24113498a83ed44ad0268",
   "releaseNotes": [
-    "أيقونة جديدة بتصميم أوضح للمصحف الأشرف."
+    "تحسين حجم أيقونة التطبيق."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "أيقونة جديدة بتصميم أوضح للمصحف الأشرف."
+      "تحسين حجم أيقونة التطبيق."
     ],
     "fa": [
-      "نماد تازه و واضح‌تر برای المصحف الأشرف."
+      "اندازهٔ نماد برنامه بهبود یافت."
     ],
     "en": [
-      "A refreshed, clearer Al-Ashraf Quran app icon."
+      "Adjusted the app icon size."
     ],
     "fr": [
-      "Une nouvelle icône plus claire pour Al-Ashraf."
+      "Taille de l’icône de l’application ajustée."
     ],
     "tr": [
-      "Al-Ashraf için yenilenmiş ve daha net bir uygulama simgesi."
+      "Uygulama simgesinin boyutu düzenlendi."
     ],
     "ur": [
-      "المصحف الأشرف کے لیے نیا اور واضح ایپ آئیکن۔"
+      "ایپ آئیکن کا سائز بہتر کیا گیا۔"
     ],
     "id": [
-      "Ikon aplikasi Al-Ashraf yang diperbarui dan lebih jelas."
+      "Ukuran ikon aplikasi disesuaikan."
     ],
     "ru": [
-      "Обновлённый и более чёткий значок приложения «Аль-Ашраф»."
+      "Скорректирован размер значка приложения."
     ],
     "es": [
-      "Nuevo icono más claro para la aplicación Al-Ashraf."
+      "Se ajustó el tamaño del icono de la aplicación."
     ]
   }
 }
