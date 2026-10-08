@@ -5195,7 +5195,7 @@
   // الاتجاه الموجب أفقيًا هو الصفحة التالية كما كان في منطق المصحف الحالي.
   function getMushafSwipeDecision(delta, velocity, pageSize, currentPage, axis = 'x') {
     const displacement = Math.abs(delta);
-    const qualifies = displacement >= pageSize * 0.25 || (displacement >= 8 && Math.abs(velocity) >= 0.65);
+    const qualifies = displacement >= pageSize * 0.22 || (displacement >= 5 && Math.abs(velocity) >= 0.42);
     if (!qualifies) return null;
     const sign = displacement >= 12 ? Math.sign(delta) : Math.sign(velocity);
     const direction = axis === 'y' ? (sign < 0 ? 'next' : 'prev') : (sign > 0 ? 'next' : 'prev');
@@ -5412,7 +5412,7 @@
       if (axisState === 'idle') {
         const dx = point.clientX - startX;
         const dy = point.clientY - startY;
-        if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 3) return;
         if (document.body.classList.contains('mushaf-landscape-mode')) {
           activeAxis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'scroll-y';
           if (activeAxis === 'scroll-y') {
