@@ -1,12 +1,12 @@
 {
   "enabled": true,
-  "versionName": "5.5.32",
-  "versionCode": 59,
+  "versionName": "5.5.33",
+  "versionCode": 60,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-08",
-  "tagName": "v5.5.32",
+  "tagName": "v5.5.33",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "07ae47d5d7c17fa4c2e3f3540efce8344d164eafecf6453a900fb6b808025b91",
+  "sha256": "9f9d0f134396cd77e330a7d63f6604180757ceba4302e5083a4fc7099ff84833",
   "releaseNotes": [
     "ضبط هوامش صفحات المصحف والتسميع وتحسين التظليل والتقليب.",
     "تحسين مزامنة التلاوة وحذف ملفات SVG القديمة لتوفير مساحة.",
