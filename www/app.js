@@ -6033,6 +6033,11 @@
     if (backBtn) {
       const showBack = scrubberAnchorPage && scrubberAnchorPage !== pageNum;
       backBtn.classList.toggle('hidden', !showBack);
+      const backPage = $('#mushaf-fab-back-page');
+      if (backPage) backPage.textContent = showBack ? localeDigits(scrubberAnchorPage) : '';
+      backBtn.setAttribute('aria-label', showBack
+        ? `العودة إلى صفحة ${localeDigits(scrubberAnchorPage)}`
+        : 'رجوع لآخر صفحة');
     }
   }
 
@@ -6089,22 +6094,24 @@
       const maxScroll = Math.max(0, pageRuler.scrollWidth - pageRuler.clientWidth);
       const center = pageRuler.clientWidth / 2;
       const dx = x - center;
-      const start = scrubberMarkerDrag?.lastX ?? x;
+      const start = scrubberMarkerDrag?.startX ?? x;
       const initial = scrubberMarkerDrag?.scroll ?? pageRuler.scrollLeft;
-      // A centered thumb maps one page per tick; pointer movement stays 1:1.
-      const nextLeft = Math.max(0, Math.min(maxScroll, initial + (x - start)));
+      // Anchor the drag where the finger touched: tapping never jumps the ruler,
+      // and subsequent movement stays 1:1 even when starting away from the thumb.
+      const dragDelta = x - start;
+      const nextLeft = Math.max(0, Math.min(maxScroll, initial + dragDelta));
       pageRuler.scrollLeft = nextLeft;
       const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1, Math.round(nextLeft / PAGE_RULER_TICK_WIDTH)));
       const page = TOTAL_MUSHAF_PAGES - index;
       if (page !== scrubberActivePage) scrubberSetActiveVisual(page);
-      if (marker) marker.style.transform = `translate3d(${Math.max(-center + 8, Math.min(center - 8, dx))}px, -50%, 0)`;
-      if (tooltip) tooltip.style.left = `${Math.max(12, Math.min(pageRuler.clientWidth - 12, center + dx))}px`;
+      const markerDelta = scrubberMarkerDrag?.markerStartX != null
+        ? scrubberMarkerDrag.markerStartX + dragDelta
+        : dx;
+      if (marker) marker.style.transform = `translate3d(${Math.max(-center + 8, Math.min(center - 8, markerDelta))}px, -50%, 0)`;
+      if (tooltip) tooltip.style.left = `${Math.max(12, Math.min(pageRuler.clientWidth - 12, center + markerDelta))}px`;
       clearTimeout(scrubberSettleTimer);
       // Heavy page work is delayed until the finger pauses or releases.
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 120);
-      if (navigator.vibrate && page !== scrubberMarkerDrag?.lastPage) {
-        try { navigator.vibrate(5); } catch (_) {}
-      }
       if (scrubberMarkerDrag) scrubberMarkerDrag.lastPage = page;
     };
     const schedulePointerUpdate = (x) => {
@@ -6126,7 +6133,9 @@
       if (event.button !== undefined && event.button !== 0) return;
       scrubberRulerInteracting = true;
       const captureTarget = event.currentTarget;
-      scrubberMarkerDrag = { pointerId: event.pointerId, captureTarget, lastX: pageRuler.clientWidth / 2, scroll: pageRuler.scrollLeft, lastPage: scrubberActivePage };
+      const center = pageRuler.clientWidth / 2;
+      const markerStartX = marker?.getBoundingClientRect().left + (marker?.getBoundingClientRect().width || 0) / 2 - pageRuler.getBoundingClientRect().left - center || 0;
+      scrubberMarkerDrag = { pointerId: event.pointerId, captureTarget, startX: event.clientX, markerStartX, scroll: pageRuler.scrollLeft, lastPage: scrubberActivePage };
       pageRuler.classList.add('is-scrubbing');
       if (tooltip) tooltip.classList.add('visible');
       clearTimeout(tooltipTimer);
@@ -6135,7 +6144,7 @@
       window.addEventListener('pointerup', endRulerInteraction, { passive: true });
       window.addEventListener('pointercancel', endRulerInteraction, { passive: true });
       captureTarget.addEventListener('lostpointercapture', endRulerInteraction, { passive: true });
-      schedulePointerUpdate(event.clientX);
+      // Wait for pointermove: a tap alone must not change the selected page.
     };
     pageRuler.addEventListener('pointerdown', startRulerInteraction);
     // المؤشر البني عنصر شقيق للمسطرة، لذلك لم تكن ضغطة المؤشر تصل إلى

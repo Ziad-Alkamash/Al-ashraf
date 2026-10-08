@@ -1,47 +1,47 @@
 {
   "ar": [
-    "تحسين استجابة سحب صفحات المصحف أفقيًا ورأسيًا.",
-    "يبدأ تحريك الصفحة من سحب أقصر، مع تقليب أسرع عند الإفلات.",
-    "إصلاح لون شريط معلومات الصفحة في الوضع الداكن."
+    "مؤشر مسطرة الصفحات أصبح أعرض ومدببًا مثل التصميم المرجعي.",
+    "اللمس وحده لا يغيّر الصفحة، وأُلغي الاهتزاز أثناء السحب.",
+    "عرض رقم الصفحة التي سيعيد إليها زر الرجوع أسفل السهم."
   ],
   "fa": [
-    "پاسخ کشیدن صفحات قرآن به‌صورت افقی و عمودی بهبود یافت.",
-    "حرکت صفحه با کشیدن کوتاه‌تر آغاز می‌شود و پس از رها کردن سریع‌تر می‌چرخد.",
-    "رنگ نوار اطلاعات صفحه در حالت تاریک اصلاح شد."
+    "نشانگر خط‌کش صفحات عریض‌تر و نوک‌تیزتر شد.",
+    "لمس به‌تنهایی صفحه را تغییر نمی‌دهد و لرزش هنگام کشیدن حذف شد.",
+    "شماره صفحه مقصد دکمه بازگشت زیر پیکان نمایش داده می‌شود."
   ],
   "en": [
-    "Improved horizontal and vertical Quran page swipe responsiveness.",
-    "Page movement starts with a shorter drag and turns faster on release.",
-    "Fixed the page information bar color in dark mode."
+    "Widened and pointed the page ruler marker to match the reference.",
+    "A touch alone no longer changes the page, and drag vibration was removed.",
+    "The return button now shows its destination page number below the arrow."
   ],
   "fr": [
-    "Amélioration de la réactivité du glissement horizontal et vertical des pages.",
-    "Le mouvement démarre avec un geste plus court et la page tourne plus vite au relâchement.",
-    "Correction de la couleur de la barre d’informations en mode sombre."
+    "Le curseur de la règle est plus large et pointu, comme sur la référence.",
+    "Un toucher seul ne change plus de page et les vibrations du glissement sont supprimées.",
+    "Le numéro de la page de retour apparaît sous la flèche."
   ],
   "tr": [
-    "Kur’an sayfalarının yatay ve dikey kaydırma tepkisi iyileştirildi.",
-    "Sayfa daha kısa bir hareketle sürüklenmeye başlar ve bırakıldığında daha hızlı döner.",
-    "Karanlık modda sayfa bilgi çubuğunun rengi düzeltildi."
+    "Sayfa cetveli göstergesi referanstaki gibi genişletilip sivriltildi.",
+    "Tek dokunuş sayfayı değiştirmez ve sürükleme titreşimi kaldırıldı.",
+    "Geri düğmesi, hedef sayfa numarasını okun altında gösterir."
   ],
   "ur": [
-    "قرآن کے صفحات کے افقی اور عمودی سوائپ کی رفتار بہتر کی گئی۔",
-    "مختصر ڈریگ سے صفحہ حرکت شروع کرتا ہے اور چھوڑنے پر تیزی سے پلٹتا ہے۔",
-    "ڈارک موڈ میں صفحے کی معلومات کی پٹی کا رنگ درست کیا گیا۔"
+    "صفحے کے پیمانے کا اشارہ چوڑا اور نوک دار کیا گیا۔",
+    "صرف چھونے سے صفحہ نہیں بدلے گا اور ڈریگ کے دوران ارتعاش بند ہے۔",
+    "واپسی کے تیر کے نیچے منزل کے صفحے کا نمبر دکھایا جائے گا۔"
   ],
   "id": [
-    "Respons geser horizontal dan vertikal halaman Quran ditingkatkan.",
-    "Halaman mulai bergerak dengan geseran lebih pendek dan berbalik lebih cepat saat dilepas.",
-    "Memperbaiki warna bilah informasi halaman pada mode gelap."
+    "Penanda penggaris halaman diperlebar dan dibuat runcing seperti referensi.",
+    "Sentuhan saja tidak mengubah halaman dan getaran geser dihapus.",
+    "Tombol kembali menampilkan nomor halaman tujuan di bawah panah."
   ],
   "ru": [
-    "Улучшена реакция на горизонтальное и вертикальное перелистывание страниц.",
-    "Страница начинает двигаться от более короткого жеста и быстрее перелистывается при отпускании.",
-    "Исправлен цвет панели сведений о странице в тёмном режиме."
+    "Указатель линейки страниц стал шире и заострённым, как в образце.",
+    "Одно касание не меняет страницу, вибрация при перетаскивании отключена.",
+    "Под стрелкой возврата отображается номер целевой страницы."
   ],
   "es": [
-    "Se mejoró la respuesta al deslizar las páginas horizontal y verticalmente.",
-    "La página empieza a moverse con un gesto más corto y gira más rápido al soltarla.",
-    "Se corrigió el color de la barra de información en modo oscuro."
+    "El indicador de la regla ahora es más ancho y puntiagudo, como en la referencia.",
+    "Un toque no cambia la página y se eliminó la vibración al arrastrar.",
+    "El botón de volver muestra debajo de la flecha el número de página de destino."
   ]
 }
