@@ -1,62 +1,62 @@
 {
   "enabled": true,
-  "versionName": "5.5.36",
-  "versionCode": 63,
+  "versionName": "5.5.37",
+  "versionCode": 64,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-08",
-  "tagName": "v5.5.36",
+  "tagName": "v5.5.37",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "feeb8a3213294050f0443fe8dfe290b4d95c30644aabdaf2d8ae7d3c28a7824c",
+  "sha256": "911ecbd6821e5321f2b521d9e6fa7db430d5b0829561f94e27c0ebb1456f6d2f",
   "releaseNotes": [
-    "ضبط هوامش صفحات المصحف والتسميع وتحسين التظليل والتقليب.",
-    "تحسين مزامنة التلاوة وحذف ملفات SVG القديمة لتوفير مساحة.",
-    "مسطرة سرعة التمرير التلقائي تستجيب للسحب مباشرة مع مؤشر أصغر، وتحديثات فورية لكبسولات الصفحات."
+    "تحسين مسطرة تقليب الصفحات وزر الرجوع لآخر موضع قراءة.",
+    "تحديث لوحة التمرير التلقائي: مسطرة أوضح، خلفية مميزة، وزر إيقاف مؤقت.",
+    "تحسين شكل مؤشر السرعة واستجابته للسحب."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "ضبط هوامش صفحات المصحف والتسميع وتحسين التظليل والتقليب.",
-      "تحسين مزامنة التلاوة وحذف ملفات SVG القديمة لتوفير مساحة.",
-      "مسطرة سرعة التمرير التلقائي تستجيب للسحب مباشرة مع مؤشر أصغر، وتحديثات فورية لكبسولات الصفحات."
+      "تحسين مسطرة تقليب الصفحات وزر الرجوع لآخر موضع قراءة.",
+      "تحديث لوحة التمرير التلقائي: مسطرة أوضح، خلفية مميزة، وزر إيقاف مؤقت.",
+      "تحسين شكل مؤشر السرعة واستجابته للسحب."
     ],
     "fa": [
-      "حاشیه‌های صفحات قرآن و تلاوت تمرینی و نمایش هایلایت و ورق‌زدن بهبود یافت.",
-      "همگام‌سازی تلاوت بهتر شد و فایل‌های قدیمی SVG برای آزادسازی فضا حذف شدند.",
-      "خط‌کش سرعت پیمایش خودکار با کشیدن فوری پاسخ می‌دهد و نشانگر کوچک‌تر شد."
+      "خط‌کش ورق‌زدن صفحات و دکمه بازگشت به آخرین محل مطالعه بهبود یافت.",
+      "پنل پیمایش خودکار با خط‌کش واضح‌تر، پس‌زمینه مشخص و دکمه مکث به‌روزرسانی شد.",
+      "ظاهر نشانگر سرعت و پاسخ آن به کشیدن بهبود یافت."
     ],
     "en": [
-      "Improved Quran page and tasmee spacing, highlighting, and page turning.",
-      "Improved recitation timing and removed legacy SVG pages to free storage.",
-      "Auto-scroll speed now follows ruler drags directly with a smaller marker and live page details."
+      "Improved the page-turn ruler and return-to-reading-position button.",
+      "Updated auto-scroll controls with a clearer ruler, distinct background, and pause button.",
+      "Improved the speed indicator and drag response."
     ],
     "fr": [
-      "Amélioration des marges, du surlignage et du défilement des pages du Coran et de tasmee.",
-      "Synchronisation audio améliorée et suppression des anciens SVG pour libérer de l’espace.",
-      "La vitesse du défilement automatique suit le glissement de la règle avec un repère réduit."
+      "Amélioration de la règle de défilement des pages et du bouton de retour à la lecture.",
+      "Commandes de défilement automatique mises à jour avec une règle plus claire et un bouton pause.",
+      "Amélioration de l’indicateur de vitesse et du glissement."
     ],
     "tr": [
-      "Kur’an ve tesmiye sayfalarının boşlukları, vurgulaması ve çevrilmesi iyileştirildi.",
-      "Kıraat senkronizasyonu iyileştirildi; yer açmak için eski SVG sayfaları kaldırıldı.",
-      "Otomatik kaydırma hızı, cetvel sürüklemesini izler ve daha küçük bir gösterge kullanır."
+      "Sayfa çevirme cetveli ve son okuma konumuna dönme düğmesi iyileştirildi.",
+      "Otomatik kaydırma denetimleri daha belirgin cetvel ve duraklatma düğmesiyle yenilendi.",
+      "Hız göstergesi ve sürükleme tepkisi iyileştirildi."
     ],
     "ur": [
-      "قرآن اور تسمیع صفحات کے حاشیے، نمایاں کرنے اور صفحہ پلٹنے میں بہتری۔",
-      "تلاوت کی ہم آہنگی بہتر اور جگہ خالی کرنے کے لیے پرانے SVG صفحات حذف کیے گئے۔",
-      "خودکار اسکرول کی رفتار اب پیمانے کو کھینچنے پر فوراً بدلتی ہے اور اشارہ چھوٹا کیا گیا ہے۔"
+      "صفحہ پلٹنے کے پیمانے اور آخری مطالعہ مقام پر واپسی کے بٹن کو بہتر بنایا گیا۔",
+      "خودکار اسکرول کنٹرولز میں واضح پیمانہ، الگ پس منظر اور توقف کا بٹن شامل کیا گیا۔",
+      "رفتار کے اشارے اور ڈریگ کے ردعمل کو بہتر بنایا گیا۔"
     ],
     "id": [
-      "Margin, sorotan, dan perpindahan halaman Al-Qur’an serta tasmi ditingkatkan.",
-      "Sinkronisasi bacaan diperbaiki dan SVG lama dihapus untuk menghemat ruang.",
-      "Kecepatan gulir otomatis kini mengikuti geseran penggaris dengan penanda yang lebih kecil."
+      "Penggaris pergantian halaman dan tombol kembali ke posisi bacaan terakhir ditingkatkan.",
+      "Kontrol gulir otomatis diperbarui dengan penggaris lebih jelas dan tombol jeda.",
+      "Indikator kecepatan dan respons geser ditingkatkan."
     ],
     "ru": [
-      "Улучшены поля, подсветка и перелистывание страниц Корана и тасми.",
-      "Синхронизация чтения улучшена, старые SVG-страницы удалены для экономии места.",
-      "Скорость автопрокрутки сразу меняется при перетаскивании линейки; указатель стал меньше."
+      "Улучшены линейка перелистывания и кнопка возврата к последнему месту чтения.",
+      "Панель автопрокрутки обновлена: более заметная линейка и кнопка паузы.",
+      "Улучшены индикатор скорости и реакция на перетаскивание."
     ],
     "es": [
-      "Se mejoraron los márgenes, el resaltado y el paso de páginas del Corán y tasmee.",
-      "Se mejoró la sincronización y se eliminaron SVG antiguos para liberar espacio.",
-      "La velocidad de desplazamiento automático sigue el gesto en la regla y usa un indicador menor."
+      "Se mejoraron la regla de páginas y el botón para volver a la última posición de lectura.",
+      "Controles de desplazamiento automático actualizados con una regla más visible y botón de pausa.",
+      "Se mejoraron el indicador de velocidad y la respuesta al arrastre."
     ]
   }
 }
