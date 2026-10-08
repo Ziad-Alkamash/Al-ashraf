@@ -3967,11 +3967,6 @@
     // متبقي (لو الصفحة قصيرة نسبيًا لارتفاع الشاشة) ونوزّعه بالتساوي كـ
     // margin-bottom على كل سطر، عشان تطلع الصفحة ممتلئة ومتباعدة بانتظام
     // زي المصحف المطبوع بالظبط زي وضع القراءة العادي
-    // This first fit can run while the article is detached and has no real
-    // viewport height. Refit after insertion as well; startAutoScroll does
-    // another fit once the wrapper is visible.
-    requestAnimationFrame(() => fitAutoscrollBlock(el));
-
     return { pageNumber, el, pageData };
   }
 
@@ -4137,6 +4132,9 @@
       const track = $('#autoscroll-track');
       if (track) {
         track.appendChild(block.el);
+        // Fit only after insertion so width and height come from the actual
+        // visible reader viewport, not the detached element's fallback size.
+        fitAutoscrollBlock(block.el);
         autoScroll.blocks.push(block);
       }
     } catch (e) {
@@ -4369,9 +4367,9 @@
 
     autoScroll.active = true;
     document.body.classList.add('autoscroll-active');
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (autoScroll.active && autoScroll.blocks[0] === firstBlock) fitAutoscrollBlock(firstBlock.el);
-    }));
+    // Measure synchronously before the browser paints the first auto-scroll
+    // frame; a delayed refit here made the page visibly shrink and snap back.
+    fitAutoscrollBlock(firstBlock.el);
 
     // ابدأ وضع قراءة نظيفًا: أخفِ أدوات المصحف ولوحة السرعة حتى يطلب
     // القارئ أدوات التمرير صراحةً من الشريط العلوي.
