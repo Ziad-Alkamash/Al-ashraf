@@ -1201,7 +1201,7 @@ body.theme-night {
    (المطابق لطريقة العرض المرجعية لبيانات QCF4 نفسها) هو وضع الكلمات
    بجانب بعضها مباشرة بلا أي مسافة مضافة، وترك الخط يقوم بالتبرير. */
 .qcf-ayah {
-  transition: background-color .35s ease, box-shadow .35s ease;
+  transition: background-color .12s ease-out, box-shadow .12s ease-out;
   /* بقت صندوق فلكس حقيقي (كانت display:contents) عشان التظليل يترسم على
      صندوق واحد متصل للآية في السطر بدل ما يترسم على كل كلمة لوحدها — ده اللي
      كان بيطلّع مستطيلات صغيرة مدوّرة بينها فراغات ومش بتغطي ارتفاع السطر.
@@ -1235,12 +1235,12 @@ body.theme-night {
 .qcf-ayah.ayah-pressing,
 .qcf-ayah.ayah-selected {
   background: var(--ayah-hl) !important;
-  box-shadow: 0 calc(var(--line-gap) / 2 + 1px) 0 0 var(--ayah-hl),
-              0 calc(var(--line-gap) / -2 - 1px) 0 0 var(--ayah-hl) !important;
+  box-shadow: 0 calc(var(--line-gap) / 2 + 3px) 0 0 var(--ayah-hl),
+              0 calc(var(--line-gap) / -2 - 3px) 0 0 var(--ayah-hl) !important;
 }
 /* تظليل تدريجي أثناء الضغط المطوّل على الآية (قبل ما تفتح قائمة الخيارات) */
 .qcf-ayah.ayah-pressing {
-  transition: background-color .45s ease-out, box-shadow .45s ease-out;
+  transition: background-color .12s ease-out, box-shadow .12s ease-out;
 }
 
 
@@ -1250,7 +1250,7 @@ body.theme-night {
   color: var(--mushaf-ink);
   white-space: nowrap;
   cursor: pointer;
-  transition: background .2s;
+  transition: background-color .12s ease-out;
   /* تغليظ بسيط لسمك حروف خط القرآن (QCF4) عشان تبان أقرب لثقل الحبر في
      المصحف المطبوع، من غير ما نغيّر شكل الحروف نفسها (font-weight مالوش
      تأثير على خطوط QCF4 لأنها خطوط "outline" برسمة واحدة ثابتة لكل حرف) */
@@ -11929,7 +11929,7 @@ body.theme-night #segment-surah-picker-list .surah-item.tasmee-item-selected .su
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 4px;
   opacity: 0;
   pointer-events: none;
   transition: transform .32s cubic-bezier(.22, .61, .36, 1), opacity .26s ease;
@@ -11948,8 +11948,8 @@ body.mushaf-chrome-open:not(.header-hidden) #mushaf-top-toolbar {
      المستخدم، من غير ما يتغيّر الترتيب الداخلي لعناصر كل مجموعة مع بعضها */
   flex-direction: row-reverse;
   align-items: center;
-  gap: 4px;
-  padding: 5px;
+  gap: 3px;
+  padding: 3px;
   background: rgba(20, 16, 8, .88);
   border: 1px solid rgba(201, 162, 39, .28);
   border-radius: 999px;
@@ -11968,13 +11968,13 @@ body.theme-night .mtt-row {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
 }
 
 /* أيقونات صغيرة موحّدة (إعدادات/قلب الصفحة/تقليب تلقائي/فهرس) — نفس
    المقاس بالظبط عشان الشريط يفضل خفيف واحترافي، مش كبير ولا مبعثر */
 .mtt-icon-btn {
-  width: 34px; height: 34px;
+  width: 30px; height: 30px;
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   border-radius: 50%;
@@ -11983,7 +11983,7 @@ body.theme-night .mtt-row {
   border: none;
   transition: transform .12s, background .15s, color .15s;
 }
-.mtt-icon-btn svg { width: 17px; height: 17px; }
+.mtt-icon-btn svg { width: 16px; height: 16px; }
 .mtt-icon-btn:active { transform: scale(.88); background: rgba(201, 162, 39, .16); }
 .mtt-icon-btn.is-active { color: var(--emerald); background: var(--gold-soft); }
 
@@ -11995,31 +11995,31 @@ body.theme-night .mtt-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 12px;
+  gap: 5px;
+  height: 30px;
+  padding: 0 9px;
   border-radius: 999px;
   background: rgba(255, 255, 255, .06);
   border: none;
   color: var(--gold-soft);
   font-family: var(--font-kufic);
-  font-size: 12.5px;
+  font-size: 11.5px;
   transition: transform .12s;
 }
 .mtt-search-field span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mtt-search-field svg { width: 14px; height: 14px; flex-shrink: 0; opacity: .7; }
+.mtt-search-field svg { width: 13px; height: 13px; flex-shrink: 0; opacity: .7; }
 .mtt-search-field:active { transform: scale(.98); }
 
 /* كبسولة الرواية الحالية أسفل أدوات المصحف؛ تعرض اسم الرواية بوضوح وتفتح
    قائمة الطبعات عند الضغط، من دون إضافة عنصر دائم إلى شريط التنقل السفلي. */
 .mtt-edition-pill {
-  min-height: 34px;
+  min-height: 30px;
   max-width: calc(100% - 12px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 2px 10px;
+  gap: 5px;
+  padding: 1px 8px;
   border: 1px solid rgba(201, 162, 39, .3);
   border-radius: 999px;
   background: #929a78;
@@ -12034,11 +12034,11 @@ body.theme-night .mtt-row {
 body.theme-night .mtt-edition-pill { background: rgba(10, 10, 10, .94); color: var(--gold-soft); }
 .mtt-edition-pill:active { transform: scale(.97); background: rgba(201, 162, 39, .14); }
 .mtt-edition-pill:active { background: #7f8864; }
-.mtt-edition-pill > svg:first-child { width: 13px; height: 13px; flex: 0 0 auto; color: #fffdf3; }
-.mtt-edition-current-label { color: rgba(255, 253, 243, .78); font-size: 9px; }
-.mtt-edition-divider { width: 1px; height: 12px; flex: 0 0 auto; background: rgba(255, 253, 243, .4); }
-.mtt-edition-name { max-width: min(54vw, 190px); overflow: hidden; text-overflow: ellipsis; color: #fffdf3; font-size: 11px; font-weight: 800; }
-.mtt-edition-chevron { width: 10px; height: 10px; flex: 0 0 auto; opacity: .75; }
+.mtt-edition-pill > svg:first-child { width: 12px; height: 12px; flex: 0 0 auto; color: #fffdf3; }
+.mtt-edition-current-label { color: rgba(255, 253, 243, .78); font-size: 8px; }
+.mtt-edition-divider { width: 1px; height: 10px; flex: 0 0 auto; background: rgba(255, 253, 243, .4); }
+.mtt-edition-name { max-width: min(54vw, 190px); overflow: hidden; text-overflow: ellipsis; color: #fffdf3; font-size: 10px; font-weight: 800; }
+.mtt-edition-chevron { width: 9px; height: 9px; flex: 0 0 auto; opacity: .75; }
 body.theme-night .mtt-edition-pill > svg:first-child,
 body.theme-night .mtt-edition-name { color: var(--gold-bright); }
 body.theme-night .mtt-edition-current-label { color: color-mix(in srgb, var(--gold-soft) 72%, transparent); }
@@ -12049,16 +12049,16 @@ body.theme-night .mtt-edition-divider { background: rgba(201, 162, 39, .34); }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 28px;
-  padding: 0 16px;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
   max-width: 100%;
   background: rgba(20, 16, 8, .82);
   border: 1px solid rgba(201, 162, 39, .22);
   border-radius: 999px;
   color: var(--gold-soft);
   font-family: var(--font-kufic);
-  font-size: 11.5px;
+  font-size: 10.5px;
   box-shadow: 0 6px 16px color-mix(in srgb, var(--shadow) 26%, transparent);
   transition: transform .12s;
 }
@@ -12079,7 +12079,7 @@ body.theme-night .mtt-prayer-pill { background: rgba(10, 10, 10, .88); }
 /* سهم على الشمال (نفس شكل سهم عناصر أقسام "استكشف الأشرف") بيوضّح إن
    الكبسولة بتفتح صفحة مواقيت الصلاة */
 .mtt-prayer-arrow {
-  width: 14px; height: 14px;
+  width: 12px; height: 12px;
   flex-shrink: 0;
   color: var(--gold-bright);
   opacity: .9;
@@ -12476,7 +12476,7 @@ body.mushaf-chrome-open:not(.header-hidden) .mip-group {
   background: #FFFFFF;
   border: none;
   border-radius: 22px;
-  padding: 4px 18px 7px;
+  padding: 0 18px;
   box-shadow: 0 14px 34px color-mix(in srgb, var(--shadow) 32%, transparent);
 }
 body.theme-night #mushaf-info-popup { background: var(--paper-deep); }
@@ -12631,10 +12631,10 @@ body.theme-night #mushaf-info-group .mip-page-pill {
   top: 50%;
   left: 50%;
   box-sizing: border-box;
-  width: 16px;
-  height: 38px;
+  width: 5px;
+  height: 28px;
   border: 0;
-  border-radius: 3px 3px 5px 5px;
+  border-radius: 999px;
   background: var(--gold-deep);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, .88), 0 1px 3px rgba(0, 0, 0, .22);
   transform: translate(-50%, -50%);
@@ -12643,22 +12643,12 @@ body.theme-night #mushaf-info-group .mip-page-pill {
   touch-action: none;
 }
 .mip-page-ruler-marker::before {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  top: -12px;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 15px solid var(--gold-deep);
-  filter: drop-shadow(0 0 1px rgba(255,255,255,.75));
+  content: none;
 }
 .mip-page-ruler-marker::after {
   content: '';
   position: absolute;
-  inset: -12px -14px;
+  inset: -10px -14px;
   z-index: 2;
   background: transparent;
   pointer-events: auto;
@@ -12679,17 +12669,19 @@ body.theme-night #mushaf-info-group .mip-page-pill {
 .mip-scrub-tooltip.visible { opacity: 1; transform: translate3d(-50%, 0, 0); }
 .mip-return-button {
   box-sizing: border-box; width: 40px; min-width: 40px; min-height: 50px; flex: 0 0 40px; display: inline-flex;
-  flex-direction: column; gap: 1px; align-items: center; justify-content: center; border: 0; border-radius: 20px;
-  padding: 0; color: var(--ink-soft); background: color-mix(in srgb, var(--paper-deep) 82%, var(--gold) 18%); box-shadow: none;
+  flex-direction: column; gap: 5px; align-items: center; justify-content: center; border: 0; border-radius: 20px;
+  padding: 0; color: var(--gold-deep); background: color-mix(in srgb, var(--paper-deep) 82%, var(--gold) 18%); box-shadow: none !important;
   transition: transform .12s ease, background-color .12s ease; overflow: visible;
 }
 .mip-return-button > svg {
-  display: block !important; width: 20px !important; min-width: 20px !important;
-  height: 20px !important; min-height: 20px !important; flex: 0 0 20px !important;
+  display: block !important; width: 18px !important; min-width: 18px !important;
+  height: 18px !important; min-height: 18px !important; flex: 0 0 18px !important;
   fill: none !important; stroke: currentColor !important; stroke-width: 2 !important;
   stroke-linecap: round !important; stroke-linejoin: round !important;
+  filter: none !important; box-shadow: none !important; text-shadow: none !important;
+  transform: rotate(180deg) !important;
 }
-.mip-return-page { min-height: 12px; color: color-mix(in srgb, currentColor 76%, transparent); font: 700 9px/1 'Inter Digits', var(--font-kufic), sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.mip-return-page { min-height: 11px; direction: ltr; unicode-bidi: isolate; color: color-mix(in srgb, currentColor 76%, transparent); font: 700 8px/1 'Inter Digits', var(--font-kufic), sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 .mip-return-button:active { transform: scale(.92); }
 .mip-return-button.hidden { display: none; }
 body.theme-night .mip-return-button { color: var(--gold-soft); background: rgba(255,255,255,.1); }
@@ -12700,7 +12692,6 @@ body.theme-night.oled-true-black .mip-return-button { background: #303030; }
 body.theme-night .mip-page-ruler-tick::after { background: #858585; }
 body.theme-night .mip-page-ruler-tick.current::after { background: #a0a0a0; }
 body.theme-night .mip-page-ruler-marker { background: var(--gold-soft); box-shadow: 0 0 0 2px rgba(0, 0, 0, .86), 0 1px 3px rgba(0, 0, 0, .45); }
-body.theme-night .mip-page-ruler-marker::before { border-bottom-color: var(--gold-soft); filter: drop-shadow(0 0 1px rgba(0,0,0,.8)); }
 .mip-page-ruler-marker { transition: none !important; }
 #mushaf-info-popup { box-shadow: none; }
 #mip-surah, #mip-page-pill, #mip-ayah-pill, #surah-meta, #surah-progress,
@@ -25795,7 +25786,7 @@ body.theme-night .autoscroll-playpause-btn { color: var(--gold-soft); }
   width: 140px;
   min-width: 140px;
   max-width: 140px;
-  padding: 7px 6px;
+  padding: 0 6px;
   border: 1px solid color-mix(in srgb, var(--olive) 22%, transparent);
   border-radius: 16px;
   background: color-mix(in srgb, var(--paper) 97%, white) !important;

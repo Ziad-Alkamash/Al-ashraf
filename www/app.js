@@ -4636,7 +4636,18 @@
     function end(e) {
       if (e.pointerId !== pid) return;
       pid = null;
-      if (!dragStarted) return;
+      if (!dragStarted) {
+        const tapDistance = Math.max(Math.abs(e.clientX - startX), Math.abs(e.clientY - startY));
+        if (e.type === 'pointerup' && tapDistance < DRAG_START_PX && !suppressNextMushafTap) {
+          if (typeof toggleMushafChrome === 'function') toggleMushafChrome();
+          wrap.__consumeNextChromeClick = true;
+          clearTimeout(wrap.__consumeNextChromeClickTimer);
+          wrap.__consumeNextChromeClickTimer = setTimeout(() => {
+            wrap.__consumeNextChromeClick = false;
+          }, 500);
+        }
+        return;
+      }
       dragStarted = false;
       autoScroll.touching = false;
       if (autoScroll.landscapeMode) {
@@ -4703,6 +4714,21 @@
       // الآيات داخل كومة التمرير قد توقف انتشار click لفتح خيارات الآية؛
       // التقط اللمسة على مستوى الحاوية قبل وصولها للعناصر الداخلية، كما في
       // وضع الصفحة العادي، مع احترام click الذي تم ابتلاعه بعد سحبة الصفحة.
+      if (wrap.__consumeNextChromeClick) {
+        wrap.__consumeNextChromeClick = false;
+        clearTimeout(wrap.__consumeNextChromeClickTimer);
+        return;
+      }
+      if (autoScroll.justDragged) {
+        autoScroll.justDragged = false;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+      if (suppressNextMushafTap) {
+        suppressNextMushafTap = false;
+        return;
+      }
       if (e.defaultPrevented) return;
       if (typeof toggleMushafChrome === 'function') toggleMushafChrome();
     }, true);
@@ -5365,6 +5391,8 @@
     let lastTime = 0;
     let velocity = 0;
     let hadDrag = false;
+    let swallowNextTapClick = false;
+    let swallowTapClickTimer = 0;
     let activeNeighborPreview = null;
     let pendingAdjacentPage = null;
     let moveFrame = 0;
@@ -5573,7 +5601,16 @@
         return;
       }
       if (axisState !== 'dragging') {
+        const tapDistance = event && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
+          ? Math.max(Math.abs(event.clientX - startX), Math.abs(event.clientY - startY)) : 0;
+        const wasTap = axisState === 'idle' && !cancelled && tapDistance < 3;
         axisState = 'idle';
+        if (wasTap && !suppressNextMushafTap) {
+          if (typeof toggleMushafChrome === 'function') toggleMushafChrome();
+          swallowNextTapClick = true;
+          clearTimeout(swallowTapClickTimer);
+          swallowTapClickTimer = setTimeout(() => { swallowNextTapClick = false; }, 500);
+        }
         safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow');
         return;
       }
@@ -5612,6 +5649,11 @@
       }
       if (suppressNextMushafTap) {
         suppressNextMushafTap = false;
+        return;
+      }
+      if (swallowNextTapClick) {
+        swallowNextTapClick = false;
+        clearTimeout(swallowTapClickTimer);
         return;
       }
       if (typeof toggleMushafChrome === 'function') toggleMushafChrome();
@@ -6034,7 +6076,7 @@
       const showBack = scrubberAnchorPage && scrubberAnchorPage !== pageNum;
       backBtn.classList.toggle('hidden', !showBack);
       const backPage = $('#mushaf-fab-back-page');
-      if (backPage) backPage.textContent = showBack ? localeDigits(scrubberAnchorPage) : '';
+      if (backPage) backPage.textContent = showBack ? String(scrubberAnchorPage) : '';
       backBtn.setAttribute('aria-label', showBack
         ? `العودة إلى صفحة ${localeDigits(scrubberAnchorPage)}`
         : 'رجوع لآخر صفحة');
@@ -6092,8 +6134,6 @@
     let tooltipTimer = 0;
     const setFromPointer = (x) => {
       const maxScroll = Math.max(0, pageRuler.scrollWidth - pageRuler.clientWidth);
-      const center = pageRuler.clientWidth / 2;
-      const dx = x - center;
       const start = scrubberMarkerDrag?.startX ?? x;
       const initial = scrubberMarkerDrag?.scroll ?? pageRuler.scrollLeft;
       // Anchor the drag where the finger touched: tapping never jumps the ruler,
@@ -6104,11 +6144,7 @@
       const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1, Math.round(nextLeft / PAGE_RULER_TICK_WIDTH)));
       const page = TOTAL_MUSHAF_PAGES - index;
       if (page !== scrubberActivePage) scrubberSetActiveVisual(page);
-      const markerDelta = scrubberMarkerDrag?.markerStartX != null
-        ? scrubberMarkerDrag.markerStartX + dragDelta
-        : dx;
-      if (marker) marker.style.transform = `translate3d(${Math.max(-center + 8, Math.min(center - 8, markerDelta))}px, -50%, 0)`;
-      if (tooltip) tooltip.style.left = `${Math.max(12, Math.min(pageRuler.clientWidth - 12, center + markerDelta))}px`;
+      // Keep the marker fixed at the ruler's center; only the tick strip moves.
       clearTimeout(scrubberSettleTimer);
       // Heavy page work is delayed until the finger pauses or releases.
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 120);
@@ -6133,9 +6169,7 @@
       if (event.button !== undefined && event.button !== 0) return;
       scrubberRulerInteracting = true;
       const captureTarget = event.currentTarget;
-      const center = pageRuler.clientWidth / 2;
-      const markerStartX = marker?.getBoundingClientRect().left + (marker?.getBoundingClientRect().width || 0) / 2 - pageRuler.getBoundingClientRect().left - center || 0;
-      scrubberMarkerDrag = { pointerId: event.pointerId, captureTarget, startX: event.clientX, markerStartX, scroll: pageRuler.scrollLeft, lastPage: scrubberActivePage };
+      scrubberMarkerDrag = { pointerId: event.pointerId, captureTarget, startX: event.clientX, scroll: pageRuler.scrollLeft, lastPage: scrubberActivePage };
       pageRuler.classList.add('is-scrubbing');
       if (tooltip) tooltip.classList.add('visible');
       clearTimeout(tooltipTimer);
@@ -6162,7 +6196,6 @@
       scrubberRulerInteracting = false;
       scrubberMarkerDrag = null;
       pageRuler.classList.remove('is-scrubbing');
-      if (marker) marker.style.transform = '';
       clearTimeout(scrubberSettleTimer);
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 0);
       tooltipTimer = setTimeout(() => tooltip?.classList.remove('visible'), 650);
