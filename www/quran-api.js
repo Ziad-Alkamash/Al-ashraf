@@ -113,14 +113,6 @@ const QuranAPI = (() => {
     if (pageNumber < 1 || pageNumber > 604) throw new Error('رقم الصفحة يجب أن يكون بين 1 و 604');
 
     let data = null;
-    // Every standard Mushaf page ships with the app so first launch and
-    // rapid flips never wait for the Quran text API or a background download.
-    try {
-      const paddedPage = String(pageNumber).padStart(3, '0');
-      const bundledUrl = new URL(`quran-data/page-text/page-${paddedPage}.json`, document.baseURI);
-      const response = await fetch(bundledUrl);
-      if (response.ok) data = await response.json();
-    } catch (e) { /* older web deployments fall back to the existing cache/API */ }
     if (window.QuranOffline && window.QuranOffline.isNativeReady && window.QuranOffline.isNativeReady()) {
       if (!data) data = await window.QuranOffline.readPage(pageNumber).catch(() => null);
     }
@@ -520,30 +512,16 @@ const QuranAPI = (() => {
     return null;
   }
 
-  let bundledQcfAyahPagesPromise = null;
-  async function getBundledQcfAyahPages() {
-    if (!bundledQcfAyahPagesPromise) {
-      bundledQcfAyahPagesPromise = (async () => {
-        try {
-          const url = new URL('quran-data/qcf4/ayah-pages.json', document.baseURI);
-          const response = await fetch(url);
-          if (response.ok) return await response.json();
-        } catch (_) { /* إصدارات الويب القديمة تستخدم الفهرس الاحتياطي */ }
-        return null;
-      })();
-    }
-    return bundledQcfAyahPagesPromise;
-  }
-
   async function getAyahPage(surahNumber, ayahNumber) {
-    // Hafs is rendered from bundled QCF4 pages. Prefer their verse index so
+    // Hafs is rendered from QCF4 pages. Prefer their downloaded verse index so
     // audio follow and direct verse navigation land on the page the user sees;
     // the generic text API has different page breaks for some boundary ayahs.
     let edition = 'hafs';
     try { edition = localStorage.getItem('mushaf-edition') || 'hafs'; } catch (_) { /* default to Hafs */ }
     if (edition === 'hafs') {
       try {
-        const pages = await getBundledQcfAyahPages();
+        const pages = window.QuranOffline && window.QuranOffline.readStoredJSON
+          ? await window.QuranOffline.readStoredJSON('Quran/qcf4/ayah-pages.json') : null;
         const page = Number(pages && pages[`${Number(surahNumber)}:${Number(ayahNumber)}`]);
         if (page >= 1 && page <= 604) return page;
       } catch (_) { /* use existing local/API lookup below */ }
@@ -1616,13 +1594,7 @@ const QuranAPI = (() => {
   // لطبعة مجمع الملك فهد بالمدينة المنورة (بدون أي اتصال بخوادمنا الخاصة)
   async function getPageQCF4(pageNumber) {
     const p = String(pageNumber).padStart(3, '0');
-    try {
-      const bundledUrl = new URL(`quran-data/qcf4/pages/${p}.json`, document.baseURI);
-      const response = await fetch(bundledUrl);
-      if (response.ok) return await response.json();
-    } catch (e) { /* older web deployments fall back to the existing cache/API */ }
-    // نسخ الويب الأقدم التي لا تحتوي الأصول المحلية تستخدم التخزين والشبكة
-    // كحل احتياطي؛ الإصدارات الحالية تحمل كل الصفحات مع التطبيق.
+    // صفحات QCF4 تُنزّل للتخزين الدائم في أول تشغيل للتطبيق، والويب يستخدم الكاش والشبكة.
     const remoteUrl = `https://raw.githubusercontent.com/Ziad-Alkamash/quran-qcf4/main/pages/${p}.json`;
     if (window.QuranOffline && window.QuranOffline.isNativeReady && window.QuranOffline.isNativeReady()) {
       try {

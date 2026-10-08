@@ -37,6 +37,9 @@
   'use strict';
 
   const QCF4_JSON_BASE = 'https://raw.githubusercontent.com/Ziad-Alkamash/quran-qcf4/main/pages/';
+  const QCF4_FONT_BASE = 'https://cdn.jsdelivr.net/gh/Ziad-Alkamash/quran-qcf4@main/fonts-woff2/';
+  const QCF4_FONTS = Array.from({ length: 47 }, (_, i) => `QCF4_Hafs_${String(i + 1).padStart(2, '0')}_W.woff2`)
+    .concat('QCF4_QBSML.woff2');
 
   const CONFIG = {
     PAGE_TEXT_URL: (n) => `https://api.alquran.cloud/v1/page/${n}/quran-uthmani`,
@@ -50,7 +53,7 @@
     ROOT_DIR: 'Quran/pages',
     DIRECTORY: 'DATA', // يقابل Capacitor Directory.Data (تخزين خاص بالتطبيق)
 
-    PREF_DONE_KEY: 'quran_pages_decorated_downloaded_v2',
+    PREF_DONE_KEY: 'quran_pages_decorated_downloaded_v3',
     PREF_COUNT_KEY: 'quran_pages_file_count',
   };
 
@@ -171,7 +174,29 @@
       tasks.push({ type: 'json', url: `${QCF4_JSON_BASE}${p}.json`, dir: 'Quran/qcf4/pages', file: `${p}.json` });
     }
 
+    for (const file of QCF4_FONTS) {
+      tasks.push({ type: 'binary', url: `${QCF4_FONT_BASE}${file}`, dir: 'Quran/qcf4/fonts', file });
+    }
+
     return tasks;
+  }
+
+  async function buildQcfAyahPagesIndex(Filesystem) {
+    const pages = Object.create(null);
+    for (let page = 1; page <= CONFIG.TOTAL_PAGES; page++) {
+      const path = `Quran/qcf4/pages/${pad3(page)}.json`;
+      const stored = await Filesystem.readFile({ path, directory: CONFIG.DIRECTORY, encoding: 'utf8' });
+      const data = JSON.parse(stored.data);
+      for (const line of data.lines || []) {
+        for (const word of line.words || []) {
+          if (word.type === 'word' && word.verse_key && !pages[word.verse_key]) pages[word.verse_key] = page;
+        }
+      }
+    }
+    await Filesystem.writeFile({
+      path: 'Quran/qcf4/ayah-pages.json', data: JSON.stringify(pages),
+      directory: CONFIG.DIRECTORY, encoding: 'utf8', recursive: true,
+    });
   }
 
   /* ---------------------------------------------------------------- */
@@ -193,8 +218,9 @@
         `${CONFIG.ROOT_DIR}/page-${pad3(CONFIG.TOTAL_PAGES)}.json`,
         `Quran/qcf4/pages/${pad3(1)}.json`,
         `Quran/qcf4/pages/${pad3(CONFIG.TOTAL_PAGES)}.json`,
+        'Quran/qcf4/ayah-pages.json',
       ];
-      for (const path of samplePaths) {
+      for (const path of samplePaths.concat(QCF4_FONTS.map((file) => `Quran/qcf4/fonts/${file}`))) {
         try {
           await p.Filesystem.stat({ path, directory: CONFIG.DIRECTORY });
         } catch (e) {
@@ -342,6 +368,8 @@
         throw err;
       }
 
+      if (doneKey === CONFIG.PREF_DONE_KEY) await buildQcfAyahPagesIndex(Filesystem);
+
       await Preferences.set({ key: countKey, value: String(total) });
       await Preferences.set({ key: doneKey, value: 'true' });
       if (doneKey === CONFIG.PREF_DONE_KEY) downloadedStateCache = true;
@@ -420,6 +448,15 @@
     return JSON.parse(text);
   }
 
+  async function readStoredJSON(relPath) {
+    const p = getPlugins();
+    if (!p) return null;
+    try {
+      const res = await p.Filesystem.readFile({ path: relPath, directory: CONFIG.DIRECTORY, encoding: 'utf8' });
+      return JSON.parse(res.data);
+    } catch (e) { return null; }
+  }
+
   // Cache one text asset in app storage on first use.
   async function cacheFetchText(url, relPath) {
     const p = getPlugins();
@@ -472,6 +509,7 @@
     removeLegacyTajweed,
     readPage,
     cacheFetchJSON,
+    readStoredJSON,
     cacheFetchText,
     ensureFontCached,
   };

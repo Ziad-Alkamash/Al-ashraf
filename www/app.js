@@ -3254,13 +3254,11 @@
   /* الأساسي الآن دائمًا، والعرض المرن القديم يعمل فقط كتراجع تلقائي     */
   /* صامت عند تعذّر الاتصال بالإنترنت.                                  */
   /* ---------------------------------------------------------------- */
-  // بيانات الصفحات وخطوطها تُضمّن محليًا في www/quran-data قبل بناء التطبيق؛
-  // لذلك لا يحتاج تقليب الصفحات إلى تنزيل أو تجهيز في الخلفية وقت القراءة.
+  // صفحات QCF4 وخطوطها تُنزّل مرة واحدة إلى مساحة التطبيق الدائمة عند أول تشغيل.
   const QCF4_FONT_BASE_REMOTE = 'https://cdn.jsdelivr.net/gh/Ziad-Alkamash/quran-qcf4@main/fonts-woff2/';
-  const QCF4_FONT_BASE = new URL('quran-data/qcf4/fonts-woff2/', document.baseURI).href;
   // -------------------------------------------------------------------
   // خطوط QCF4 تظل مستخدمة في بعض واجهات الآيات وصور المشاركة؛
-  // عرض صفحة المصحف هنا يعتمد على ملف SVG كامل ولا يحتاج إلى تحميل الخط.
+  // عرض صفحة المصحف هنا يعتمد على بيانات QCF4 والخط الخاص بكل صفحة.
   const qcfFontPromises = new Map();
   // بيحاول ياخد الخط من التخزين الدائم (Capacitor Filesystem) اللي عبّاه
   // زر "تحميل المصحف" لو موجود بالفعل — فيرجع data URI جاهز يشتغل بدون
@@ -3268,14 +3266,12 @@
   // محمَّل مسبقًا، بيرجع رابط الشبكة الأصلي زي ما كان بالظبط (نفس سلوك
   // كاش المتصفح القديم يفضل شغّال كتراجع تلقائي)
   function resolveQcfFontURL(fileBase) {
-    const localUrl = `${QCF4_FONT_BASE}${fileBase}.woff2`;
     const remoteUrl = `${QCF4_FONT_BASE_REMOTE}${fileBase}.woff2`;
     if (window.QuranOffline && window.QuranOffline.isNativeReady && window.QuranOffline.isNativeReady() && window.QuranOffline.ensureFontCached) {
-      return window.QuranOffline.ensureFontCached(localUrl, `Quran/qcf4/fonts/${fileBase}.woff2`)
-        .catch(() => window.QuranOffline.ensureFontCached(remoteUrl, `Quran/qcf4/fonts/${fileBase}.woff2`))
+      return window.QuranOffline.ensureFontCached(remoteUrl, `Quran/qcf4/fonts/${fileBase}.woff2`)
         .catch(() => remoteUrl);
     }
-    return Promise.resolve(localUrl);
+    return Promise.resolve(remoteUrl);
   }
   function ensureQcfFontLoaded(fontName) {
     if (!fontName) return Promise.resolve();
@@ -14316,7 +14312,7 @@
     if (barEl) barEl.classList.toggle('indeterminate', state.completed === 0);
     if (fill && state.completed > 0) fill.style.width = pct + '%';
     if (label) {
-      // العدّاد بالملفات (نص + تخطيط QCF4 + صور الصفحات)، فبنعرض النسبة
+      // العدّاد بالملفات (نص + تخطيط QCF4 + الخطوط)، فبنعرض النسبة
       // بس كرقم رئيسي بدل "صفحة X من 604" اللي بقت غير دقيقة
       label.textContent = state.completed === 0
         ? 'جاري بدء التحميل...'
@@ -14389,8 +14385,7 @@
     (async () => {
       if (!window.QuranOffline || !window.QuranOffline.isNativeReady()) {
         // نسخة متصفح/PWA عادية (بدون Capacitor): لا داعي لهذا الزر، لأن
-        // رسم المصحف والخطوط مضمَّنان بالفعل، ونص الآيات يُخزَّن تلقائيًا
-        // في localStorage/Cache أثناء التصفح العادي
+        // صفحات المصحف وخطوطها تُحمّل من المصدر وتُخزّن في كاش المتصفح أثناء التصفح
         const row = btn.closest('.settings-card-row');
         if (row) row.classList.add('hidden');
         return;
