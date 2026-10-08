@@ -2925,7 +2925,7 @@
         const header = preview.querySelector('#surah-header');
         if (header) header.classList.add('hidden');
         const progress = preview.querySelector('#surah-progress');
-        if (progress) progress.textContent = 'صفحة ' + toArabicDigits(pageNumber) + ' / ٦٠٤';
+        if (progress) progress.textContent = `صفحة ${Number(pageNumber)} / 604`;
         const hizbInfo = preview.querySelector('#page-hizb-info');
         if (hizbInfo) hizbInfo.textContent = hizbInfoText(pageData.ayahs?.[0]);
         if (!stillWanted()) { preview.remove(); return null; }
@@ -3036,7 +3036,8 @@
         resolve();
       };
       activeMushafTransition = { finish };
-      moving.forEach((element) => element.style.setProperty('transition', 'transform 180ms cubic-bezier(.2,.75,.3,1)', 'important'));
+      const duration = document.body.classList.contains('theme-night') ? 145 : 180;
+      moving.forEach((element) => element.style.setProperty('transition', `transform ${duration}ms cubic-bezier(.2,.75,.3,1)`, 'important'));
       onEnd = (event) => {
         if (event.propertyName !== 'transform') return;
         moving.forEach((element) => element.removeEventListener('transitionend', onEnd));
@@ -3048,7 +3049,7 @@
         if (settled) return;
         if (current) current.style.transform = mushafPageTransformX(endCurrent, false, axis);
         if (neighbor) neighbor.style.transform = mushafPageTransformX(endNeighbor, true, axis);
-        fallbackTimer = setTimeout(() => finish(), 240);
+        fallbackTimer = setTimeout(() => finish(), duration + 60);
       });
     });
   }
@@ -3219,7 +3220,7 @@
       recordKhatmaPageRead(pageNumber);
       safeCall(() => startReadDwellTimer(pageNumber), 'startReadDwellTimer');
 
-      $('#surah-progress').textContent = `صفحة ${toArabicDigits(pageNumber)} / ٦٠٤`;
+      $('#surah-progress').textContent = `صفحة ${Number(pageNumber)} / 604`;
 
       $('#page-hizb-info').textContent = hizbInfoText(firstAyah);
 
@@ -3945,7 +3946,7 @@
     footBar.className = 'autoscroll-foot-bar';
     const progressSpan = document.createElement('span');
     progressSpan.className = 'autoscroll-foot-progress';
-    progressSpan.textContent = `صفحة ${toArabicDigits(pageNumber)} / ٦٠٤`;
+    progressSpan.textContent = `صفحة ${Number(pageNumber)} / 604`;
     const hizbSpan = document.createElement('span');
     hizbSpan.className = 'autoscroll-foot-hizb';
     hizbSpan.textContent = autoscrollHizbText(pageData);
@@ -4031,7 +4032,7 @@
     const firstAyah = pageData?.ayahs?.[0];
     const progress = $('#surah-progress');
     const hizb = $('#page-hizb-info');
-    if (progress) progress.textContent = `صفحة ${toArabicDigits(pageNumber)} / ٦٠٤`;
+    if (progress) progress.textContent = `صفحة ${Number(pageNumber)} / 604`;
     if (hizb) hizb.textContent = hizbInfoText(firstAyah);
     localStorage.setItem('almus-hraf:currentPage', String(pageNumber));
     safeCall(() => recordKhatmaPageRead(pageNumber), 'recordKhatmaPageRead(autoScroll)');
@@ -5281,7 +5282,7 @@
     } else {
       $('#surah-meta').textContent = juzName(preview.pageData.juzNumber) + ' · الصفحة ' + toArabicDigits(pageNumber);
     }
-    $('#surah-progress').textContent = 'صفحة ' + toArabicDigits(pageNumber) + ' / ٦٠٤';
+    $('#surah-progress').textContent = `صفحة ${Number(pageNumber)} / 604`;
     $('#page-hizb-info').textContent = hizbInfoText(firstAyah);
     $('#surah-header').classList.add('hidden');
     updateQuranHeaderInfo();
@@ -6069,7 +6070,7 @@
       ? `آية ${Number(pageMeta.ayah)}`
       : (Number(pageNum) === Number(state.currentPage) ? `آية ${state.currentPageData?.ayahs?.[0]?.numberInSurah || '—'}` : 'آية …');
     const tooltip = $('#mip-scrub-tooltip');
-    if (tooltip) tooltip.textContent = `${surah.name} · ${localeDigits(Number(pageNum))}`;
+    if (tooltip) tooltip.textContent = `${surah.name} · ${Number(pageNum)}`;
 
     const backBtn = $('#mushaf-fab-back');
     if (backBtn) {
@@ -6139,7 +6140,9 @@
       // Anchor the drag where the finger touched: tapping never jumps the ruler,
       // and subsequent movement stays 1:1 even when starting away from the thumb.
       const dragDelta = x - start;
-      const nextLeft = Math.max(0, Math.min(maxScroll, initial + dragDelta));
+      // Arabic Mushaf navigation follows the user's finger: drag right to
+      // move toward lower page numbers, and drag left to move toward higher ones.
+      const nextLeft = Math.max(0, Math.min(maxScroll, initial - dragDelta));
       pageRuler.scrollLeft = nextLeft;
       const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1, Math.round(nextLeft / PAGE_RULER_TICK_WIDTH)));
       const page = TOTAL_MUSHAF_PAGES - index;
@@ -14375,6 +14378,9 @@
         themeSwitch.setAttribute('aria-pressed', String(isNightNow));
       }
       applyOledBlack(mode);
+      // Keep the detached Mushaf footer's copied palette in sync with the
+      // active theme, including when the compact theme switch is used.
+      document.dispatchEvent(new Event('mushaf-theme-applied'));
     };
     let themeFallbackTimer = null;
     let themeTransitionGeneration = 0;
@@ -14488,6 +14494,7 @@
       applyPageColor(color);
       $$('.page-color-swatch').forEach((b) => b.classList.toggle('active', b.dataset.pageColor === color));
     };
+    document.addEventListener('mushaf-theme-applied', syncDefaultPageColor);
     // مستمع المظهر الأساسي يحدّث theme-night أولًا؛ هذا المستمع يضبط لون
     // صفحة المصحف بعده مباشرة، وكذلك عند تغيّر مظهر الجهاز في وضع «النظام».
     $$('.theme-choice').forEach((b) => b.addEventListener('click', syncDefaultPageColor));

@@ -1295,11 +1295,9 @@ body.theme-night .qcf-basmala { color: #EAEAE6; }
    الوضع الليلي بدل ما تتبع لون النص العادي زي باقي الكلمات — واضح زي ما
    كان الذهبي بالظبط، بس بهوية لونية خضراء */
 body.theme-night .qcf-word.qcf-end-marker {
-  background: linear-gradient(135deg, var(--beige) 0%, var(--gold) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  background: none;
+  color: var(--gold-soft);
+  -webkit-text-fill-color: var(--gold-soft);
 }
 body.theme-night .qcf-surah-header { color: var(--gold-soft); }
 
@@ -1483,11 +1481,9 @@ body.theme-night.oled-true-black #app-header.page-color-dark {
 /* دوائر أرقام الآيات بلون ذهبي في الوضع الليلي حتى مع اختيار لون صفحة
    مخصّص (specificity أعلى من القاعدة اللي فوق عشان تفضل هي اللي تكسب) */
 body.theme-night #mushaf-wrap[class*="page-color-"] .qcf-word.qcf-end-marker {
-  background: linear-gradient(135deg, var(--beige) 0%, var(--gold) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  background: none;
+  color: var(--gold-soft);
+  -webkit-text-fill-color: var(--gold-soft);
 }
 #mushaf-wrap[class*="page-color-"] #surah-meta,
 #mushaf-wrap[class*="page-color-"] #page-foot-bar,
@@ -1591,11 +1587,9 @@ body.theme-night.oled-true-black #autoscroll-wrap.page-color-dark {
 /* دوائر أرقام الآيات بلون ذهبي في الوضع الليلي حتى مع اختيار لون صفحة
    مخصّص (specificity أعلى من القاعدة اللي فوق عشان تفضل هي اللي تكسب) */
 body.theme-night #autoscroll-wrap[class*="page-color-"] .qcf-word.qcf-end-marker {
-  background: linear-gradient(135deg, var(--beige) 0%, var(--gold) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  background: none;
+  color: var(--gold-soft);
+  -webkit-text-fill-color: var(--gold-soft);
 }
 #autoscroll-wrap[class*="page-color-"] #surah-meta,
 #autoscroll-wrap[class*="page-color-"] #page-foot-bar,
@@ -4329,6 +4323,14 @@ html.theme-transitioning body *:not(.home-theme-switch):not(.theme-switch-icon):
 html.theme-transitioning body *:not(.home-theme-switch):not(.theme-switch-icon):not(.theme-switch-glint)::before,
 html.theme-transitioning body *:not(.home-theme-switch):not(.theme-switch-icon):not(.theme-switch-glint)::after {
   transition: background-color .76s cubic-bezier(.2,.75,.2,1), color .76s cubic-bezier(.2,.75,.2,1), border-color .76s cubic-bezier(.2,.75,.2,1), box-shadow .76s cubic-bezier(.2,.75,.2,1), fill .76s cubic-bezier(.2,.75,.2,1), stroke .76s cubic-bezier(.2,.75,.2,1);
+}
+/* Avoid animating thousands of Quran glyphs individually during theme changes;
+   the broad theme transition otherwise makes the next page turn feel stalled. */
+html.theme-transitioning #mushaf-wrap .qcf-word,
+html.theme-transitioning #autoscroll-wrap .qcf-word,
+html.theme-transitioning #mushaf-wrap .qcf-basmala,
+html.theme-transitioning #autoscroll-wrap .qcf-basmala {
+  transition: none !important;
 }
 @supports (view-transition-name: root) {
   ::view-transition-group(root) { animation-duration: .82s; animation-timing-function: cubic-bezier(.2,.75,.2,1); }
@@ -12694,8 +12696,9 @@ body.theme-night .mip-page-ruler-tick.current::after { background: #a0a0a0; }
 body.theme-night .mip-page-ruler-marker { background: var(--gold-soft); box-shadow: 0 0 0 2px rgba(0, 0, 0, .86), 0 1px 3px rgba(0, 0, 0, .45); }
 .mip-page-ruler-marker { transition: none !important; }
 #mushaf-info-popup { box-shadow: none; }
-#mip-surah, #mip-page-pill, #mip-ayah-pill, #surah-meta, #surah-progress,
-#page-hizb-info, #mip-scrub-tooltip {
+#mip-surah, #mip-page-pill, #mip-ayah-pill, #mtt-prayer-time, #surah-meta, #surah-progress,
+#page-hizb-info, #mip-scrub-tooltip,
+.autoscroll-foot-progress, .autoscroll-foot-hizb {
   font-family: 'Inter Digits', var(--font-kufic), -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
@@ -25627,11 +25630,9 @@ body.theme-night .qcf-text-page .qcf-text-surah-header { color: var(--gold-soft)
 body.theme-night .qcf-text-page .qcf-text-bismala,
 body.theme-night .qcf-text-page .qcf-word { color: #EAEAE6; }
 body.theme-night .qcf-text-page .qcf-word.qcf-end-marker {
-  background: linear-gradient(135deg, var(--beige) 0%, var(--gold) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  background: none;
+  color: var(--gold-soft);
+  -webkit-text-fill-color: var(--gold-soft);
 }
 body.mushaf-landscape-mode #mushaf-page.qcf-text-page-layout #ayat-container,
 body.mushaf-landscape-mode .autoscroll-page.qcf-text-page-layout .mushaf-text {
