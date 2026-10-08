@@ -101,8 +101,12 @@
     const text = String(moshaf && moshaf.name || '');
     if (/ورش/.test(text)) return 'warsh';
     if (/قالون/.test(text)) return 'qalun';
-    if (/السوسي|الدوري عن أبي عمرو/.test(text)) return 'susi';
-    return 'hafs';
+    if (/السوسي/.test(text)) return 'susi';
+    if (/حفص|المصحف المجود/.test(text)) return 'hafs';
+    // Keep every other riwaya identifiable instead of silently classifying it
+    // as Hafs. This prevents genuine alternate readings from being deduped as
+    // duplicate Hafs recordings.
+    return `reading:${normalizedName(text)}`;
   }
 
   function matchCatalogTiming(moshaf, reads) {
@@ -111,7 +115,11 @@
       const rewaya = normalizedName(read.rewaya);
       if (family === 'warsh') return /ورش/.test(rewaya);
       if (family === 'qalun') return /قالون/.test(rewaya);
-      if (family === 'susi') return /السوسي|الدوري/.test(rewaya);
+      if (family === 'susi') return /السوسي/.test(rewaya);
+      if (family.startsWith('reading:')) {
+        const target = family.slice('reading:'.length);
+        return !!target && (target === rewaya || target.includes(rewaya) || rewaya.includes(target));
+      }
       return /حفص|شعبة|المصحف المجود/.test(rewaya);
     };
     const source = normalizedUrl(moshaf.server);
@@ -124,7 +132,7 @@
 
   function registerSiteCatalog(apiReciters, reads, englishReciters) {
     if (!global.QuranAPI || typeof QuranAPI.registerCustomSurahReciter !== 'function') return [];
-    const registered = [];
+    const candidates = [];
     const englishById = new Map((englishReciters || []).map((person) => [String(person.id), person]));
     (apiReciters || []).forEach((person) => {
       (person.moshaf || []).forEach((moshaf) => {
@@ -133,7 +141,9 @@
         const reciterId = `mp3quran.${person.id}.${moshaf.id}`;
         const englishPerson = englishById.get(String(person.id));
         const englishMoshaf = (englishPerson && englishPerson.moshaf || []).find((item) => Number(item.id) === Number(moshaf.id));
-        const mode = /مجود|mujawwad/i.test(String(moshaf.name || '')) ? 'مجود' : 'مرتل';
+        const mode = /مجود|mujawwad/i.test(String(moshaf.name || ''))
+          ? 'مجود'
+          : (/معلم/.test(String(moshaf.name || '')) ? 'معلم' : 'مرتل');
         const timedRead = matchCatalogTiming(moshaf, reads || []);
         const reciter = {
           id: reciterId,
@@ -148,11 +158,27 @@
           timingReadId: timedRead ? timedRead.id : null,
           catalogSource: 'mp3quran'
         };
-        if (QuranAPI.registerCustomSurahReciter(reciter)) {
-          const stored = (QuranAPI.RECITERS || []).find((item) => item.id === reciterId);
-          if (stored) registered.push(stored);
-        }
+        const surahCount = String(reciter.surahList || '').split(',').filter(Boolean).length;
+        // Same reader + same riwaya + same recitation mode is a duplicate
+        // recording entry; alternate riwayat and murattal/mujawwad stay apart.
+        const key = `${normalizedName(person.name)}|${family}|${mode}`;
+        const standardRecording = /حفص عن عاصم|ورش عن نافع|قالون عن نافع|السوسي عن أبي عمرو/.test(String(moshaf.name || '')) ? 1 : 0;
+        candidates.push({ reciter, key, surahCount, standardRecording });
       });
+    });
+    const preferred = new Map();
+    candidates.forEach((candidate) => {
+      const current = preferred.get(candidate.key);
+      if (!current || candidate.surahCount > current.surahCount ||
+          (candidate.surahCount === current.surahCount && candidate.standardRecording > current.standardRecording)) {
+        preferred.set(candidate.key, candidate);
+      }
+    });
+    const registered = [];
+    preferred.forEach(({ reciter }) => {
+      if (!QuranAPI.registerCustomSurahReciter(reciter)) return;
+      const stored = (QuranAPI.RECITERS || []).find((item) => item.id === reciter.id);
+      if (stored) registered.push(stored);
     });
     return registered;
   }
@@ -215,6 +241,11 @@
     const id = String(reciter && reciter.id || '');
     const family = String(reciter && reciter.mushafEdition || (/^warsh\./.test(id) ? 'warsh' : /^qalun\./.test(id) ? 'qalun' : /^susi\./.test(id) ? 'susi' : 'hafs'));
     const kind = String(reciter && reciter.readKind || (/mjwd|mujawwad|مجود/i.test(`${id} ${reciter?.name || ''}`) ? 'مجود' : 'مرتل'));
+    if (family.startsWith('reading:')) {
+      const target = family.slice('reading:'.length);
+      const actual = normalizedName(narration);
+      if (!target || !(target === actual || target.includes(actual) || actual.includes(target))) return false;
+    }
     if (family === 'warsh' && !/ورش/i.test(narration)) return false;
     if (family === 'qalun' && !/قالون/i.test(narration)) return false;
     if (family === 'susi' && !/السوسي|أبي عمرو/i.test(narration)) return false;

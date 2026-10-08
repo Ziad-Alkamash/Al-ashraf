@@ -2787,7 +2787,11 @@
 
     const wrap = $('#autoscroll-wrap');
     const mushafWrap = $('#mushaf-wrap');
-    if (wrap) { wrap.classList.add('hidden'); wrap.setAttribute('aria-hidden', 'true'); }
+    if (wrap) {
+      wrap.classList.add('hidden');
+      wrap.style.removeProperty('visibility');
+      wrap.setAttribute('aria-hidden', 'true');
+    }
     const pill = $('#autoscroll-speed-pill');
     const startBtn = $('#mushaf-fab-autoscroll');
     if (pill) {
@@ -4339,9 +4343,10 @@
 
     const startPage = state.currentPage || 1;
     const pageInfoBar = $('#page-foot-bar');
+    const pageFootBarHeight = pageInfoBar?.offsetHeight || 0;
     const autoscrollSlideHeight = autoScroll.landscapeMode
       ? (mushafWrap.clientHeight || 0)
-      : (mushafWrap.clientHeight || 0) + (pageInfoBar?.offsetHeight || 0);
+      : (mushafWrap.clientHeight || 0) + pageFootBarHeight;
     wrap.style.setProperty('--mushaf-page-height', `${autoscrollSlideHeight}px`);
     let firstBlock;
     try {
@@ -4362,18 +4367,31 @@
 
     mushafWrap.classList.add('hidden');
     wrap.classList.remove('hidden');
+    // Lay out the replacement reader while invisible. This avoids exposing
+    // the narrow fallback measurement used while its parent was display:none.
+    wrap.style.visibility = 'hidden';
     wrap.setAttribute('aria-hidden', 'false');
     track.style.transform = 'translate3d(0, 0, 0)';
 
     autoScroll.active = true;
     document.body.classList.add('autoscroll-active');
-    // Measure synchronously before the browser paints the first auto-scroll
-    // frame; a delayed refit here made the page visibly shrink and snap back.
-    fitAutoscrollBlock(firstBlock.el);
 
     // ابدأ وضع قراءة نظيفًا: أخفِ أدوات المصحف ولوحة السرعة حتى يطلب
     // القارئ أدوات التمرير صراحةً من الشريط العلوي.
     if (typeof setMushafChromeOpen === 'function') setMushafChromeOpen(false);
+
+    // The reader's height/width changes when its toolbar closes. Wait for that
+    // layout to settle, then measure the now-visible-sized block before showing
+    // it. Measuring before this point uses the hidden/old reader geometry and
+    // can leave the first autoscroll page permanently shrunken.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (!autoScroll.active) return;
+    const settledHeight = autoScroll.landscapeMode
+      ? (wrap.clientHeight || autoscrollSlideHeight)
+      : (wrap.clientHeight || mushafWrap.clientHeight || 0) + pageFootBarHeight;
+    if (settledHeight > 0) wrap.style.setProperty('--mushaf-page-height', `${settledHeight}px`);
+    fitAutoscrollBlock(firstBlock.el);
+    wrap.style.removeProperty('visibility');
 
     const startBtn = $('#mushaf-fab-autoscroll');
     const pill = $('#autoscroll-speed-pill');
@@ -5924,31 +5942,35 @@
   });
 
   /* ---------------------------------------------------------------- */
-  /* منزلق رقم الصفحة (داخل بطاقة المعلومات العائمة): صف بأرقام صفحات      */
-  /* المصحف الـ604 كلها، قابل للسحب وبيتمركز كل رقم فيه في المنتصف        */
-  /* تلقائيًا (scroll-snap). لما تسيب إصبعك على رقم صفحة مختلف عن الحالي   */
-  /* بيقفز فعليًا للصفحة دي، وزرار "رجوع" (جنب السماعة) بيرجّعك لآخر        */
-  /* صفحة كنت فيها قبل أي قفزة مباشرة (من المنزلق، الفهرس، البحث...)      */
+  /* شريط صفحات المصحف: أرقام الصفحات ومسطرة لمس صغيرة أسفلها.            */
   /* ---------------------------------------------------------------- */
   const TOTAL_MUSHAF_PAGES = 604;
+  const PAGE_RULER_TICK_WIDTH = 8;
   let scrubberBuilt = false;
+  let scrubberRulerBuilt = false;
   let scrubberActivePage = null;
   let scrubberAnchorPage = null; // آخر صفحة كنّا فيها قبل هذا الانتقال، لزرار "رجوع" — بتتحدّث في loadPage نفسها مع كل انتقال
   let scrubberProgrammatic = false; // true أثناء تحريك الصف برمجيًا (مش من المستخدم)
   let scrubberSettleTimer = null;
+  let scrubberRulerProgrammatic = false;
+  let scrubberRulerInteracting = false;
 
   function scrubberSetActiveVisual(pageNum) {
     const container = $('#mip-ayah-scrubber');
-    if (!container) return;
+    const pageRuler = $('#mip-page-ruler');
+    if (!container && !pageRuler) return;
+    const previousPage = scrubberActivePage;
     scrubberActivePage = pageNum;
-    $$('.mas-num.active', container).forEach((el) => el.classList.remove('active'));
-    const btn = container.querySelector(`.mas-num[data-page="${pageNum}"]`);
-    if (btn) btn.classList.add('active');
-
-    const fill = $('#mip-progress-fill');
-    if (fill) {
-      const pct = Math.max(0, Math.min(100, (pageNum / TOTAL_MUSHAF_PAGES) * 100));
-      fill.style.setProperty('--pct', pct + '%');
+    if (container) {
+      const previousBtn = previousPage && container.querySelector(`.mas-num[data-page="${previousPage}"]`);
+      if (previousBtn) previousBtn.classList.remove('active');
+      const btn = container.querySelector(`.mas-num[data-page="${pageNum}"]`);
+      if (btn) btn.classList.add('active');
+    }
+    if (pageRuler) {
+      const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, Number(pageNum) || 1));
+      pageRuler.setAttribute('aria-valuenow', String(page));
+      pageRuler.setAttribute('aria-valuetext', `صفحة ${page}`);
     }
 
     const backBtn = $('#mushaf-fab-back');
@@ -5971,6 +5993,17 @@
     scrubberProgrammatic = true;
     container.scrollTo({ left: targetLeft, behavior: smooth ? 'smooth' : 'auto' });
     setTimeout(() => { scrubberProgrammatic = false; }, smooth ? 360 : 60);
+  }
+
+  function scrubberScrollRulerToPage(pageNum, smooth) {
+    const ruler = $('#mip-page-ruler');
+    if (!ruler || scrubberRulerInteracting) return;
+    const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, Number(pageNum) || 1));
+    const left = (TOTAL_MUSHAF_PAGES - page) * PAGE_RULER_TICK_WIDTH;
+    scrubberRulerProgrammatic = true;
+    ruler.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' });
+    clearTimeout(ruler.__programmaticTimer);
+    ruler.__programmaticTimer = setTimeout(() => { scrubberRulerProgrammatic = false; }, smooth ? 380 : 70);
   }
 
   // بعد ما المستخدم يسيب إصبعه على رقم صفحة مختلف عن الصفحة المفتوحة حاليًا،
@@ -5997,29 +6030,43 @@
       container.style.paddingInline = 'calc(50% - 17px)';
       scrubberBuilt = true;
     }
+    if (!scrubberRulerBuilt) {
+      const rulerTrack = $('#mip-page-ruler-track');
+      if (rulerTrack) {
+        let ticks = '';
+        for (let n = TOTAL_MUSHAF_PAGES; n >= 1; n--) {
+          ticks += `<span class="mip-page-ruler-tick${n % 10 === 0 ? ' major' : n % 5 === 0 ? ' medium' : ''}" data-page="${n}"></span>`;
+        }
+        rulerTrack.innerHTML = ticks;
+        scrubberRulerBuilt = true;
+      }
+    }
 
     // "آخر صفحة" (المستخدَمة في زرار الرجوع) بقت بتتحدّث مباشرة جوه
     // loadPage نفسها مع كل انتقال (قفزة أو تقليب عادي) — شوف هناك
     scrubberSetActiveVisual(currentPage);
     scrubberScrollPageIntoView(currentPage, false);
+    scrubberScrollRulerToPage(currentPage, false);
   }
 
   function initAyahScrubber() {
     const container = $('#mip-ayah-scrubber');
-    if (!container) return;
+    const pageRuler = $('#mip-page-ruler');
+    if (!container && !pageRuler) return;
 
-    container.addEventListener('click', (e) => {
+    if (container) container.addEventListener('click', (e) => {
       const btn = e.target.closest('.mas-num');
       if (!btn) return;
       const n = Number(btn.dataset.page);
       if (!n) return;
       scrubberSetActiveVisual(n);
       scrubberScrollPageIntoView(n, true);
+      scrubberScrollRulerToPage(n, true);
       clearTimeout(scrubberSettleTimer);
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 380);
     });
 
-    container.addEventListener('scroll', () => {
+    if (container) container.addEventListener('scroll', () => {
       if (scrubberProgrammatic) return;
       // بنلاقي أقرب رقم لمنتصف الصف الظاهر دلوقتي ونخلّيه هو "النشط"
       const mid = container.scrollLeft + container.clientWidth / 2;
@@ -6032,11 +6079,49 @@
       });
       if (closest) {
         const n = Number(closest.dataset.page);
-        if (n && n !== scrubberActivePage) scrubberSetActiveVisual(n);
+        if (n && n !== scrubberActivePage) {
+          scrubberSetActiveVisual(n);
+          scrubberScrollRulerToPage(n, true);
+        }
       }
       clearTimeout(scrubberSettleTimer);
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 260);
     }, { passive: true });
+
+    if (pageRuler) {
+      pageRuler.addEventListener('pointerdown', () => { scrubberRulerInteracting = true; });
+      const endRulerInteraction = () => {
+        if (!scrubberRulerInteracting) return;
+        scrubberRulerInteracting = false;
+        clearTimeout(scrubberSettleTimer);
+        scrubberSettleTimer = setTimeout(scrubberOnSettle, 80);
+      };
+      document.addEventListener('pointerup', endRulerInteraction, { passive: true });
+      document.addEventListener('pointercancel', endRulerInteraction, { passive: true });
+      pageRuler.addEventListener('scroll', () => {
+        if (scrubberRulerProgrammatic) return;
+        const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1,
+          Math.round(pageRuler.scrollLeft / PAGE_RULER_TICK_WIDTH)));
+        const page = TOTAL_MUSHAF_PAGES - index;
+        if (page !== scrubberActivePage) scrubberSetActiveVisual(page);
+        clearTimeout(scrubberSettleTimer);
+        // A short pause during a drag commits that page immediately; another
+        // drag continues from the newly loaded page without queueing requests.
+        scrubberSettleTimer = setTimeout(scrubberOnSettle, 180);
+      }, { passive: true });
+      pageRuler.addEventListener('keydown', (event) => {
+        const delta = event.key === 'ArrowLeft' ? 1 : event.key === 'ArrowRight' ? -1 :
+          event.key === 'PageDown' ? 10 : event.key === 'PageUp' ? -10 : 0;
+        if (!delta) return;
+        event.preventDefault();
+        const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, (scrubberActivePage || state.currentPage || 1) + delta));
+        scrubberSetActiveVisual(page);
+        scrubberScrollPageIntoView(page, true);
+        scrubberScrollRulerToPage(page, true);
+        clearTimeout(scrubberSettleTimer);
+        scrubberSettleTimer = setTimeout(scrubberOnSettle, 180);
+      });
+    }
 
     // زرار "رجوع" (جنب السماعة): يظهر بس بعد قفزة مباشرة لصفحة بعيدة عن
     // آخر صفحة كنت فيها، وبيرجّعك ليها بضغطة واحدة
@@ -6046,6 +6131,7 @@
         if (!scrubberAnchorPage) return;
         scrubberSetActiveVisual(scrubberAnchorPage);
         scrubberScrollPageIntoView(scrubberAnchorPage, true);
+        scrubberScrollRulerToPage(scrubberAnchorPage, true);
         clearTimeout(scrubberSettleTimer);
         scrubberSettleTimer = setTimeout(scrubberOnSettle, 380);
       });
@@ -8420,6 +8506,7 @@
   // "resolveAyahPlaybackSource is not defined" في كل مرة، وده كان السبب
   // الحقيقي وراء فشل زرار "استماع لهذه الآية فقط" في كل مرة ومع كل قارئ،
   // بينما التشغيل المتواصل (المُعرّف جوه نفس initSurahAudioPlayer) كان شغال عادي
+  const timingRetryAfter = new Map();
   async function resolveAyahPlaybackSource(surahNumber, ayahNumber, ed) {
     // Prefer the exact ayah recording whenever one exists. Timing maps can
     // only be used with the specific full-surah recording they were created for.
@@ -8434,9 +8521,25 @@
       // Offline with no downloaded ayah clip: try MP3Quran's matching full file.
     }
 
-    const timingData = window.Mp3QuranTiming
-      ? await Mp3QuranTiming.getAyahTimings(ed, surahNumber).catch(() => null)
-      : null;
+    const timingKey = `${ed}:${surahNumber}`;
+    let timingData = null;
+    if (window.Mp3QuranTiming && Date.now() >= (timingRetryAfter.get(timingKey) || 0)) {
+      const timingRequest = Mp3QuranTiming.getAyahTimings(ed, surahNumber).catch(() => null);
+      const timeoutSentinel = {};
+      // Let the official request finish in the background and warm its cache,
+      // but don't make the user wait through its long network timeout.
+      timingData = await Promise.race([
+        timingRequest,
+        new Promise((resolve) => setTimeout(() => resolve(timeoutSentinel), 1400))
+      ]);
+      if (timingData === timeoutSentinel || !timingData) {
+        // Avoid imposing the same timeout before every ayah when a reciter has
+        // no official timing or the timing server is temporarily slow.
+        timingRetryAfter.set(timingKey, Date.now() + 30000);
+        timingRequest.then((lateResult) => { if (lateResult) timingRetryAfter.delete(timingKey); });
+        timingData = null;
+      }
+    }
     // Some official tracks are incomplete (for example a late ayah may be
     // absent). Never treat a partial map as a valid seek for every ayah.
     const requestedTiming = timingData?.bounds?.find((bound) => Number(bound.ayah) === Number(ayahNumber));
@@ -8473,6 +8576,33 @@
     }));
   }
 
+  // Estimate verse positions for full-surah recordings without official timing.
+  // Prefer Quran text lengths, and fall back to equal intervals so playback
+  // remains available when both the timing service and text request are absent.
+  function buildApproximateAyahBounds(lengths, ayahCount, duration) {
+    if (!Number.isFinite(duration) || duration <= 0) return null;
+    const usable = Array.isArray(lengths)
+      ? lengths.map((item) => ({ ayah: Number(item.numberInSurah), length: Number(item.length) }))
+        .filter((item) => Number.isInteger(item.ayah) && item.ayah > 0 && Number.isFinite(item.length) && item.length > 0)
+      : [];
+    const count = usable.length ? Math.max(...usable.map((item) => item.ayah)) : Number(ayahCount);
+    if (!Number.isInteger(count) || count < 1) return null;
+    const byAyah = new Map(usable.map((item) => [item.ayah, item.length]));
+    const weights = Array.from({ length: count }, (_, index) => byAyah.get(index + 1) || 1);
+    const total = weights.reduce((sum, weight) => sum + weight, 0) || count;
+    let elapsed = 0;
+    return weights.map((weight, index) => {
+      const start = elapsed / total * duration;
+      elapsed += weight;
+      return { ayah: index + 1, start, end: elapsed / total * duration };
+    });
+  }
+
+  function knownSurahAyahCount(surahNumber) {
+    const entry = (state.surahList || []).find((item) => Number(item.number) === Number(surahNumber));
+    return entry ? Number(entry.ayahCount) || 0 : 0;
+  }
+
   async function toggleAyahAudio(btnEl) {
     const label = btnEl.querySelector('#ayah-audio-label') || $('#ayah-audio-label');
     if (state.audioEl && !state.audioEl.paused) {
@@ -8507,7 +8637,7 @@
 
         if (fullFileOnly) {
           let audioTimings = timedBounds;
-          const ayahLenList = null;
+          let ayahLenList = null;
           const audio = new Audio(resolvedUrl);
           state.audioEl = audio;
 
@@ -8536,20 +8666,16 @@
           }
           const dur = audio.duration;
           if (!dur || !isFinite(dur)) throw new Error('مدة ملف التلاوة غير متاحة');
+          if (!audioTimings && QuranAPI.getSurahAyahLengths) {
+            ayahLenList = await Promise.race([
+              QuranAPI.getSurahAyahLengths(surah).catch(() => null),
+              new Promise((resolve) => setTimeout(() => resolve(null), 700))
+            ]);
+          }
           if (timedBounds) audioTimings = alignTimingsToAudioDuration(timedBounds, dur);
-          if (timedBounds && !audioTimings) throw new Error('توقيت الآية غير متوافق مع مدة ملف الصوت');
-          if (ayah > 1 && !audioTimings) throw new Error('لا يتوفر توقيت متوافق مع ملف الصوت لهذه الآية');
           {
             let bounds = audioTimings;
-            if (!bounds && ayahLenList && ayahLenList.length) {
-              const totalLen = ayahLenList.reduce((s, a) => s + a.length, 0) || 1;
-              let acc = 0;
-              bounds = ayahLenList.map((a) => {
-                const start = (acc / totalLen) * dur;
-                acc += a.length;
-                return { ayah: a.numberInSurah, start };
-              });
-            }
+            if (!bounds) bounds = buildApproximateAyahBounds(ayahLenList, Math.max(knownSurahAyahCount(surah), ayah), dur);
             if (!bounds || !bounds.length) throw new Error('توقيت الآية غير متاح');
             const idx = bounds.findIndex((b) => Number(b.ayah) === ayah);
             if (idx === -1) throw new Error('توقيت الآية المطلوبة غير موجود');
@@ -11092,7 +11218,12 @@
         let ayahLenList = null;
         let timedAyahBounds = resolvedTimings || null;
         if (fullFileOnly) {
-          if (ayahNumber !== 1 && !timedAyahBounds) throw new Error('لا يتوفر توقيت موثوق لهذه الآية مع هذا القارئ؛ أعد الاتصال بالإنترنت أو اختر قارئًا بتوقيت رسمي');
+          if (!timedAyahBounds && QuranAPI.getSurahAyahLengths) {
+            ayahLenList = await Promise.race([
+              QuranAPI.getSurahAyahLengths(surahNumber).catch(() => null),
+              new Promise((resolve) => setTimeout(() => resolve(null), 500))
+            ]);
+          }
         }
         // قد يكون المستخدم غيّر الوضع أثناء الانتظار (مثلاً ضغط إيقاف)، أو
         // اختار قارئًا تانيًا بسرعة قبل ما الطلب القديم يخلص (كان ده سبب
@@ -11120,24 +11251,19 @@
           if (timedAyahBounds && timedAyahBounds.length) {
             ayahBounds = alignTimingsToAudioDuration(timedAyahBounds, dur);
             if (!ayahBounds) {
-              audioSeekPromise = Promise.resolve(false);
-              return;
+              timedAyahBounds = null;
+              ayahBounds = buildApproximateAyahBounds(ayahLenList, Math.max(knownSurahAyahCount(surahNumber), ayahNumber), dur);
+            } else {
+              // Keep every later consumer (single-ayah stop and highlighting)
+              // on the same duration-aligned boundaries used for the initial seek.
+              timedAyahBounds = ayahBounds;
             }
-            // Keep every later consumer (single-ayah stop and highlighting)
-            // on the same duration-aligned boundaries used for the initial seek.
-            timedAyahBounds = ayahBounds;
           }
-          else if (ayahLenList && ayahLenList.length) {
-            const totalLen = ayahLenList.reduce((s, a) => s + a.length, 0) || 1;
-            let acc = 0;
-            ayahBounds = ayahLenList.map((a) => {
-              const start = (acc / totalLen) * dur;
-              acc += a.length;
-              return { ayah: a.numberInSurah, start };
-            });
-          }
+          else ayahBounds = buildApproximateAyahBounds(ayahLenList, Math.max(knownSurahAyahCount(surahNumber), ayahNumber), dur);
           if (!ayahBounds || !ayahBounds.length) {
-            if (ayahNumber > 1) audioSeekPromise = Promise.resolve(false);
+            // Keep playback available even if both timing and Quran text data
+            // are offline. In that rare case start the surah from the beginning.
+            seekedToStart = true;
             return;
           }
           if (!seekedToStart && (ayahNumber > 1 || timedAyahBounds)) {
