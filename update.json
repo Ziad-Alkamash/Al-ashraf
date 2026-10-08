@@ -1,52 +1,62 @@
 {
   "enabled": true,
-  "versionName": "5.5.38",
-  "versionCode": 65,
+  "versionName": "5.5.39",
+  "versionCode": 66,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-08",
-  "tagName": "v5.5.38",
+  "tagName": "v5.5.39",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "2a9ffc928052f8438a37268b03afe90f6c2ed53c43434a50add0abda2ac117cf",
+  "sha256": "f4da820ccc17a7744a81d9be61b010a4fb6d3cb94dc0b18ada4af8338bdb3dea",
   "releaseNotes": [
     "إصلاح لون شريط معلومات الصفحة في الوضع الداكن.",
-    "تسريع حركة تقليب الصفحات وتحسين سلاستها."
+    "تسريع حركة تقليب الصفحات وتحسين سلاستها.",
+    "أصبح لمس أي موضع في مسطرة الصفحات يبدأ التنقل، بما فيه المؤشر."
   ],
   "localizedReleaseNotes": {
     "ar": [
       "إصلاح لون شريط معلومات الصفحة في الوضع الداكن.",
-      "تسريع حركة تقليب الصفحات وتحسين سلاستها."
+      "تسريع حركة تقليب الصفحات وتحسين سلاستها.",
+      "أصبح لمس أي موضع في مسطرة الصفحات يبدأ التنقل، بما فيه المؤشر."
     ],
     "fa": [
       "رنگ نوار اطلاعات صفحه در حالت تاریک اصلاح شد.",
-      "حرکت ورق‌زدن صفحات سریع‌تر و روان‌تر شد."
+      "حرکت ورق‌زدن صفحات سریع‌تر و روان‌تر شد.",
+      "لمس هر نقطه از خط‌کش صفحات، حتی نشانگر، پیمایش را آغاز می‌کند."
     ],
     "en": [
       "Fixed the page information bar color in dark mode.",
-      "Made page turns faster and smoother."
+      "Made page turns faster and smoother.",
+      "Touching anywhere on the page ruler, including the thumb, now starts navigation."
     ],
     "fr": [
       "Correction de la couleur de la barre d’informations en mode sombre.",
-      "Défilement des pages plus rapide et plus fluide."
+      "Défilement des pages plus rapide et plus fluide.",
+      "Le déplacement démarre en touchant n’importe quel point de la règle, même le curseur."
     ],
     "tr": [
       "Karanlık modda sayfa bilgi çubuğunun rengi düzeltildi.",
-      "Sayfa geçişleri hızlandırıldı ve yumuşatıldı."
+      "Sayfa geçişleri hızlandırıldı ve yumuşatıldı.",
+      "Cetvelin herhangi bir yerine, göstergeye de dokunarak gezinme başlatılabilir."
     ],
     "ur": [
       "ڈارک موڈ میں صفحے کی معلومات کی پٹی کا رنگ درست کیا گیا۔",
-      "صفحہ پلٹنے کی حرکت تیز اور ہموار کی گئی۔"
+      "صفحہ پلٹنے کی حرکت تیز اور ہموار کی گئی۔",
+      "صفحے کے پیمانے پر کسی بھی جگہ، حتیٰ کہ اشارے پر چھونے سے بھی نیویگیشن شروع ہوگی۔"
     ],
     "id": [
       "Memperbaiki warna bilah informasi halaman pada mode gelap.",
-      "Pergantian halaman dibuat lebih cepat dan halus."
+      "Pergantian halaman dibuat lebih cepat dan halus.",
+      "Navigasi kini dimulai dengan menyentuh bagian mana pun pada penggaris, termasuk penanda."
     ],
     "ru": [
       "Исправлен цвет панели сведений о странице в тёмном режиме.",
-      "Перелистывание страниц стало быстрее и плавнее."
+      "Перелистывание страниц стало быстрее и плавнее.",
+      "Навигация начинается при касании любой точки линейки, включая указатель."
     ],
     "es": [
       "Se corrigió el color de la barra de información en modo oscuro.",
-      "El cambio de página ahora es más rápido y fluido."
+      "El cambio de página ahora es más rápido y fluido.",
+      "La navegación comienza al tocar cualquier punto de la regla, incluido el indicador."
     ]
   }
 }
