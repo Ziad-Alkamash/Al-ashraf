@@ -1,6 +1,6 @@
 /* =========================================================================
    quran-offline.js
-   نظام تحميل مكوّنات المصحف (نص + تخطيط + صور صفحات كاملة)
+   نظام تحميل مكوّنات المصحف (نص + تخطيط + خطوط)
    للعمل الكامل بدون إنترنت، باستخدام Capacitor Filesystem + Capacitor
    Preferences (تخزين حقيقي على الجهاز نفسه).
 
@@ -16,7 +16,7 @@
    دلوقتي زرار التحميل الواحد ده بيحمّل ويخزّن فعليًا (مش مجرد كاش مؤقت):
      ١) نص الآيات (604 صفحة)                    — api.alquran.cloud
      ٢) تخطيط صفحات QCF4 (604 صفحة) لاستخدامات بيانات المصحف
-     ٣) صفحات مصحف المدينة كاملة (604 ملفات مصدر)، وتُعرض كـPNG دون إنترنت.
+     ٣) خطوط QCF4 اللازمة لعرض الصفحات دون إنترنت.
 
    الاستخدام من app.js (نفس الواجهة القديمة تمامًا، فمفيش تغيير مطلوب في
    أي كود قديم بينادي عليها):
@@ -37,7 +37,6 @@
   'use strict';
 
   const QCF4_JSON_BASE = 'https://raw.githubusercontent.com/Ziad-Alkamash/quran-qcf4/main/pages/';
-  const HAFS_PAGE_IMAGE_BASE = 'https://raw.githubusercontent.com/quran-ws/quran-svg/main/mushafs/hafs/kfqc/svg/';
 
   const CONFIG = {
     PAGE_TEXT_URL: (n) => `https://api.alquran.cloud/v1/page/${n}/quran-uthmani`,
@@ -126,18 +125,18 @@
   let currentAbortController = null;
   let currentlyCancelled = false;
   let downloadedStateCache = null;
-  let ayahImageCleanupPromise = null;
+  let legacyPageSvgCleanupPromise = null;
 
-  // احذف ملفات الآيات المنفصلة القديمة؛ الصور الكاملة للصفحات محفوظة
-  // الآن كصفحات كاملة من مصحف المدينة داخل Quran/hafs/images.
-  async function clearStoredAyahImages() {
+  // Hafs pages are rendered from QCF4 text/font data now. Remove the 604
+  // legacy full-page SVGs left by older versions to reclaim app storage.
+  async function clearLegacyPageSvgFiles() {
     const p = getPlugins();
     if (!p) return;
-    if (!ayahImageCleanupPromise) {
-      ayahImageCleanupPromise = p.Filesystem.rmdir({ path: 'Quran/ayah-images', directory: CONFIG.DIRECTORY, recursive: true })
+    if (!legacyPageSvgCleanupPromise) {
+      legacyPageSvgCleanupPromise = p.Filesystem.rmdir({ path: 'Quran/hafs/images', directory: CONFIG.DIRECTORY, recursive: true })
         .catch(() => { /* لا يوجد مجلد قديم */ });
     }
-    await ayahImageCleanupPromise;
+    await legacyPageSvgCleanupPromise;
   }
 
   /* ---------------------------------------------------------------- */
@@ -157,7 +156,7 @@
     return set;
   }
 
-  // كل مهام التحميل (نص + QCF4 + SVG) كقائمة واحدة موحّدة، كل عنصر فيها:
+  // كل مهام التحميل (نص + تخطيط QCF4) كقائمة واحدة موحّدة، كل عنصر فيها:
   // { type: 'json'|'text'|'binary', url, dir, file } — الـ dir/file بيتجمّعوا هنا
   // لسهولة التحقق من "موجود بالفعل على القرص" قبل إعادة تحميله من الأول
   function buildTaskList() {
@@ -172,17 +171,12 @@
       tasks.push({ type: 'json', url: `${QCF4_JSON_BASE}${p}.json`, dir: 'Quran/qcf4/pages', file: `${p}.json` });
     }
 
-    for (let n = 1; n <= CONFIG.TOTAL_PAGES; n++) {
-      const p = pad3(n);
-      tasks.push({ type: 'image', url: `${HAFS_PAGE_IMAGE_BASE}${p}.svg`, dir: 'Quran/hafs/images', file: `${p}.svg` });
-    }
-
     return tasks;
   }
 
   /* ---------------------------------------------------------------- */
   async function isDownloaded() {
-    await clearStoredAyahImages();
+    await clearLegacyPageSvgFiles();
     if (downloadedStateCache === true) return true;
     const p = getPlugins();
     if (!p) return false;
@@ -199,9 +193,6 @@
         `${CONFIG.ROOT_DIR}/page-${pad3(CONFIG.TOTAL_PAGES)}.json`,
         `Quran/qcf4/pages/${pad3(1)}.json`,
         `Quran/qcf4/pages/${pad3(CONFIG.TOTAL_PAGES)}.json`,
-        `Quran/hafs/images/${pad3(1)}.svg`,
-        `Quran/hafs/images/${pad3(300)}.svg`,
-        `Quran/hafs/images/${pad3(CONFIG.TOTAL_PAGES)}.svg`,
       ];
       for (const path of samplePaths) {
         try {
@@ -220,7 +211,7 @@
 
   /* ---------------------------------------------------------------- */
   async function download(onProgress) {
-    await clearStoredAyahImages();
+    await clearLegacyPageSvgFiles();
     return runDownload(buildTaskList, CONFIG.PREF_DONE_KEY, CONFIG.PREF_COUNT_KEY, onProgress);
   }
 
@@ -371,7 +362,7 @@
     if (!p) return;
     try { await p.Filesystem.rmdir({ path: CONFIG.ROOT_DIR, directory: CONFIG.DIRECTORY, recursive: true }); } catch (e) {}
     try { await p.Filesystem.rmdir({ path: 'Quran/qcf4', directory: CONFIG.DIRECTORY, recursive: true }); } catch (e) {}
-    try { await p.Filesystem.rmdir({ path: 'Quran/hafs', directory: CONFIG.DIRECTORY, recursive: true }); } catch (e) {}
+    try { await p.Filesystem.rmdir({ path: 'Quran/hafs/images', directory: CONFIG.DIRECTORY, recursive: true }); } catch (e) {}
     try { await p.Filesystem.rmdir({ path: 'Quran/ayah-images', directory: CONFIG.DIRECTORY, recursive: true }); } catch (e) {}
     try { await p.Filesystem.rmdir({ path: 'Quran/tajweed', directory: CONFIG.DIRECTORY, recursive: true }); } catch (e) {}
     try { await p.Filesystem.rmdir({ path: 'Quran/warsh', directory: CONFIG.DIRECTORY, recursive: true }); } catch (e) {}
@@ -405,21 +396,6 @@
     }
   }
 
-  async function readPageImage(pageNumber) {
-    const p = getPlugins();
-    if (!p) return null;
-    try {
-      const res = await p.Filesystem.readFile({
-        path: `Quran/hafs/images/${pad3(pageNumber)}.svg`,
-        directory: CONFIG.DIRECTORY,
-        encoding: 'utf8',
-      });
-      return res.data;
-    } catch (e) {
-      return null;
-    }
-  }
-
   async function cacheFetchJSON(url, relPath) {
     const p = getPlugins();
     if (!p) {
@@ -444,7 +420,7 @@
     return JSON.parse(text);
   }
 
-  // Cache one text asset (for example a page SVG) in app storage on first use.
+  // Cache one text asset in app storage on first use.
   async function cacheFetchText(url, relPath) {
     const p = getPlugins();
     if (!p) {
@@ -495,9 +471,11 @@
     reset,
     removeLegacyTajweed,
     readPage,
-    readPageImage,
     cacheFetchJSON,
     cacheFetchText,
     ensureFontCached,
   };
+  // Clean up the obsolete 604-page SVG bundle as soon as the app starts,
+  // rather than waiting for the user to open the offline-download screen.
+  void clearLegacyPageSvgFiles();
 })(window);

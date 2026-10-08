@@ -4,6 +4,7 @@
   "main": "app.js",
   "scripts": {
     "postinstall": "patch-package",
+    "prepare:mushaf-assets": "node tools/prepare-mushaf-assets.mjs",
     "test": "node --test"
   },
   "keywords": [],

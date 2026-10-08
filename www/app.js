@@ -38,6 +38,16 @@
     playlistQueue: null
   };
 
+  let currentPageLoadSequence = 0;
+  function setCurrentMushafPage(pageNumber, pageData) {
+    const page = Number(pageNumber);
+    if (!Number.isInteger(page) || page < 1 || page > 604 || !pageData) return false;
+    state.currentPage = page;
+    state.currentPageData = pageData;
+    document.dispatchEvent(new Event('mushaf-page-changed'));
+    return true;
+  }
+
   /* ---------------------------------------------------------------- */
   /* أدوات مساعدة عامة                                                 */
   /* ---------------------------------------------------------------- */
@@ -1979,6 +1989,21 @@
      طبق أصل الفيديو المرجعي -------- */
   const LAST_READ_KEY = 'almus-hraf:lastRead';
 
+  function getFirstVisibleMushafAyah() {
+    // The page metadata is authoritative. DOM order can briefly belong to a
+    // stale/promoted preview during a swipe and differs between text and SVG.
+    const first = state.currentPageData?.ayahs?.[0];
+    if (first?.surah?.number && first.numberInSurah) {
+      return { surah: first.surah.number, ayah: first.numberInSurah };
+    }
+    const verseKey = $('#mushaf-page .qcf-text-page .qcf-word[data-verse-key]')?.dataset.verseKey;
+    if (verseKey) {
+      const [surah, ayah] = verseKey.split(':').map(Number);
+      if (surah > 0 && ayah > 0) return { surah, ayah };
+    }
+    return null;
+  }
+
   function getLastReadMark() {
     try {
       const raw = localStorage.getItem(LAST_READ_KEY);
@@ -2842,11 +2867,7 @@
   // احتفظ بمعاينتي الجارتين الأقرب فقط؛ تقليل عقد الصفحات يمنع
   // بقاء معاينات بعيدة متراكبة عند تبديل الاتجاه بسرعة.
   const mushafNeighborPreviews = new Map();
-  const mushafPreviewAttempted = new Set();
   let mushafPreviewDesired = new Set();
-  let mushafPreviewBuildScheduled = false;
-  let mushafPreviewBuildInProgress = false;
-  let mushafPreviewBasePage = 1;
 
   async function buildMushafNeighborPreview(pageNumber) {
     const existing = mushafNeighborPreviews.get(pageNumber);
@@ -2865,18 +2886,36 @@
     preview.style.removeProperty('--mushaf-slide-from');
     const ayat = preview.querySelector('#ayat-container');
     if (!ayat) return null;
+    // loadPage temporarily hides the live text container while QCF fonts are
+    // measured. cloneNode copies inline visibility, so a preview made during
+    // that window would stay invisible even after it became the active page.
+    ayat.style.removeProperty('visibility');
     ayat.replaceChildren();
+    preview.querySelector('#page-foot-bar')?.remove();
     wrap.appendChild(preview);
 
     const entry = { pageNumber, element: preview, pageData: null, ready: null };
     const stillWanted = () => mushafNeighborPreviews.get(pageNumber) === entry && mushafPreviewDesired.has(pageNumber);
     entry.ready = (async () => {
       try {
-        const pageData = await QuranAPI.getPage(pageNumber);
+        // Start both page metadata and its QCF4 line stream together. Waiting
+        // for the generic page API before requesting the glyph page made a
+        // fast second swipe outrun the incoming slide/font preparation.
+        const pageDataPromise = QuranAPI.getPage(pageNumber);
+        const qcfPagePromise = ['warsh', 'qalun', 'susi'].includes(getCurrentMushafEdition())
+          ? Promise.resolve(null)
+          : getCachedQcfPage(pageNumber);
+        const [pageData] = await Promise.all([pageDataPromise, qcfPagePromise]);
         if (!stillWanted()) { preview.remove(); return null; }
         const rendered = await renderMushafMainPage(pageNumber, pageData, ayat);
         if (rendered?.fontsPromise) await rendered.fontsPromise;
         if (!stillWanted()) { preview.remove(); return null; }
+        // renderMushafMainPage keeps the reader alive by rendering an inline
+        // error when QCF data/font loading fails. Never promote that preview
+        // as a successful page: otherwise the swipe animation can commit an
+        // empty slide and leave only the header/footer visible.
+        const hasRenderedPage = ayat.querySelector('.qcf-text-page .qcf-line, .warsh-svg-page, .riwaya-svg-page, .susi-page-text');
+        if (!hasRenderedPage) throw new Error(`لم يكتمل رسم الصفحة ${pageNumber}`);
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         if (!stillWanted()) { preview.remove(); return null; }
 
@@ -2888,8 +2927,11 @@
         if (progress) progress.textContent = 'صفحة ' + toArabicDigits(pageNumber) + ' / ٦٠٤';
         const hizbInfo = preview.querySelector('#page-hizb-info');
         if (hizbInfo) hizbInfo.textContent = hizbInfoText(pageData.ayahs?.[0]);
-        fitMushafPageInner(preview);
         if (!stillWanted()) { preview.remove(); return null; }
+        refitQcfTextPage(ayat);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        if (!stillWanted()) { preview.remove(); return null; }
+        refitQcfTextPage(ayat);
         entry.pageData = pageData;
         return entry;
       } catch (error) {
@@ -2902,40 +2944,15 @@
     return entry.ready;
   }
 
-  function queueMushafNeighborBuild() {
-    if (mushafPreviewBuildScheduled || mushafPreviewBuildInProgress) return;
-    const schedule = (callback) => {
-      if (typeof requestIdleCallback === 'function') requestIdleCallback(callback, { timeout: 180 });
-      else setTimeout(callback, 40);
-    };
-    mushafPreviewBuildScheduled = true;
-    schedule(() => {
-      mushafPreviewBuildScheduled = false;
-      const direction = lastFlipDirection === 'prev' ? -1 : 1;
-      const ordered = [direction, -direction].map((step) => mushafPreviewBasePage + step);
-      const nextPage = ordered.find((n) => mushafPreviewDesired.has(n) &&
-        n >= 1 && n <= 604 && !mushafNeighborPreviews.has(n) && !mushafPreviewAttempted.has(n));
-      if (!nextPage) return;
-      mushafPreviewAttempted.add(nextPage);
-      mushafPreviewBuildInProgress = true;
-      void buildMushafNeighborPreview(nextPage).finally(() => {
-        mushafPreviewBuildInProgress = false;
-        queueMushafNeighborBuild();
-      });
-    });
-  }
-
   function scheduleMushafNeighborPreviews(pageNumber, allowIncoming = false) {
     const validCurrent = () => state.currentPage === pageNumber ||
       (allowIncoming && isFlipAnimating && Math.abs(state.currentPage - pageNumber) === 1);
-    mushafPreviewBasePage = pageNumber;
     const desired = new Set([pageNumber - 1, pageNumber + 1]
       .filter((n) => n >= 1 && n <= 604 && n !== state.currentPage));
     // During a transition the incoming page is still a preview centered on
     // this page number. Keep it wanted until that same node is promoted.
     if (allowIncoming && pageNumber >= 1 && pageNumber <= 604) desired.add(pageNumber);
     mushafPreviewDesired = desired;
-    mushafPreviewAttempted.clear();
     mushafNeighborPreviews.forEach((entry, cachedPage) => {
       if (!desired.has(cachedPage)) {
         entry.element.remove();
@@ -2943,34 +2960,22 @@
       }
     });
     if (!validCurrent()) return;
-    queueMushafNeighborBuild();
+    // Both adjacent slides are mounted and rendered as soon as the current
+    // page commits. A gesture can therefore reveal its neighbor immediately.
+    [...desired].forEach((neighborPage) => {
+      if (neighborPage === pageNumber || mushafNeighborPreviews.has(neighborPage)) return;
+      void buildMushafNeighborPreview(neighborPage);
+    });
   }
 
   function mushafPageTransformX(offset = 0, isPreview = false, axis = 'x') {
     const x = axis === 'x' ? offset : 0;
     const y = axis === 'y' ? offset : 0;
-    const centeredX = `calc(-50% + ${x}px)`;
-    const centeredY = `calc(-50% + ${y}px)`;
-    if (document.querySelector('#mushaf-page.qcf-page-image-layout')) {
-      // QCF pages fill the reader width; previews are centered horizontally.
-      return isPreview
-        ? `translate3d(${centeredX}, ${y}px, 0)`
-        : `translate3d(${x}px, ${y}px, 0)`;
-    }
-    const landscape = document.body.classList.contains('mushaf-landscape-mode');
-    if (landscape) return isPreview
-      ? `translate3d(${centeredX}, ${y}px, 0)`
-      : `translate3d(${x}px, ${y}px, 0)`;
-    return `translate3d(${centeredX}, ${centeredY}, 0)`;
+    return `translate3d(${x}px, ${y}px, 0)`;
   }
   function resetMushafPageTransform(page) {
     if (!page) return;
-    if (page.classList.contains('qcf-page-image-layout') && !page.classList.contains('mushaf-neighbor-preview')) {
-      // الصفحة النشطة تشغل مساحة القارئ نفسها؛ اترك تمركزها لقواعد التخطيط.
-      page.style.removeProperty('transform');
-      return;
-    }
-    page.style.transform = mushafPageTransformX(0, page.classList.contains('mushaf-neighbor-preview'));
+    page.style.transform = 'translate3d(0,0,0)';
   }
   function placeMushafNeighborPreview(entry, direction, delta, pageSize, axis = 'x') {
     const preview = entry?.element;
@@ -2978,7 +2983,24 @@
     const nextOffset = direction === 'next'
       ? (axis === 'x' ? -pageSize : pageSize)
       : (axis === 'x' ? pageSize : -pageSize);
+    const isNewlyActive = !preview.classList.contains('mushaf-neighbor-active');
     preview.classList.add('mushaf-neighbor-active');
+    if (isNewlyActive) {
+      const readingArea = preview.querySelector('#ayat-container');
+      const currentReadingArea = $('#mushaf-page #ayat-container');
+      const refitBothVisiblePages = () => {
+        if (preview.classList.contains('mushaf-neighbor-active')) refitQcfTextPage(readingArea);
+        if (currentReadingArea && $('#mushaf-page #ayat-container') === currentReadingArea) {
+          refitQcfTextPage(currentReadingArea);
+        }
+      };
+      refitBothVisiblePages();
+      // First-turn previews were measured while hidden. Refit as soon as the
+      // user reveals it and refit the page underneath at the same time. Run
+      // once more after both slides have had a visible layout frame so their
+      // line spacing agrees while the finger is still down.
+      requestAnimationFrame(refitBothVisiblePages);
+    }
     preview.style.transition = 'none';
     preview.style.transform = mushafPageTransformX(nextOffset + delta, true, axis);
   }
@@ -3039,6 +3061,7 @@
     promoted.id = 'mushaf-page';
     promoted.classList.remove('mushaf-neighbor-preview', 'mushaf-neighbor-active');
     promoted.style.transition = 'none';
+    promoted.querySelector('#ayat-container')?.style.removeProperty('visibility');
     resetMushafPageTransform(promoted);
     promoted.style.zIndex = '';
     current.remove();
@@ -3054,6 +3077,15 @@
     // القفز من الفهرس أو البحث يعرض الصفحة مباشرة، بينما السحب وأزرار السابق
     // والتالي تستخدم حركة الشريحة الموحدة عبر flipToPage.
     const shouldSlide = !!options.slide;
+    if (!shouldSlide && !options.fromFlip) {
+      mushafFlipSequence++;
+      if (isFlipAnimating) {
+        activeMushafTransition?.finish();
+        isFlipAnimating = false;
+        document.dispatchEvent(new Event('mushaf-flip-settled'));
+      }
+    }
+    const pageLoadSequence = ++currentPageLoadSequence;
     deactivateAutoScrollUI();
 
     // الصفحة اللي كنّا فيها قبل هذا الانتقال — بتتسجّل كـ"آخر صفحة" لزرار
@@ -3067,30 +3099,24 @@
     container.style.visibility = '';
     // في التقليب اليدوي اترك الصفحة الحالية ظاهرة أثناء جلب بيانات الهدف؛
     // لا تستبدلها برسالة تحميل تسبق الحركة. القفزات المباشرة تحتفظ برسالتها.
-    if (!shouldSlide && !options.preRendered) {
+    if (!shouldSlide && !options.preRendered && !options.fromFlip) {
       container.innerHTML = `<p class="loading-text">جارٍ تحميل الصفحة ${toArabicDigits(pageNumber)}...</p>`;
     }
 
     try {
-      const pageData = options.pageData || await QuranAPI.getPage(pageNumber);
-      state.currentPage = pageNumber;
-      state.currentPageData = pageData;
-      document.dispatchEvent(new Event('mushaf-page-changed'));
+      // Hafs needs both the ayah metadata and the QCF4 line map. Start the
+      // line-map request before awaiting metadata so a cold page does not pay
+      // for two network round trips in series. The renderer joins this same
+      // cached promise when it builds the page below.
+      const needsQcf4 = !['warsh', 'qalun', 'susi'].includes(getCurrentMushafEdition());
+      const qcfPagePromise = needsQcf4 ? getCachedQcfPage(pageNumber) : Promise.resolve(null);
+      const pageDataPromise = options.pageData ? Promise.resolve(options.pageData) : QuranAPI.getPage(pageNumber);
+      const [pageData] = await Promise.all([pageDataPromise, qcfPagePromise]);
+      if (pageLoadSequence !== currentPageLoadSequence) return;
       // في وضع العرض بالعرض تكون #mushaf-wrap قابلة للتمرير رأسيًا.
       // عند استبدال SVG الصفحة مع الاحتفاظ بـ scrollTop القديم، يبدأ الرسم
       // الجديد من منتصفه فتظهر بقايا سطر من الصفحة السابقة أعلى الشاشة.
       // كل صفحة مصحف تبدأ من أعلى موضعها، لذلك صفّر التمرير عند الانتقال.
-      if (previousPage !== pageNumber) {
-        const mushafWrap = $('#mushaf-wrap');
-        if (mushafWrap && mushafWrap.scrollTop) mushafWrap.scrollTop = 0;
-      }
-      if (previousPage && previousPage !== pageNumber) {
-        scrubberAnchorPage = previousPage;
-      }
-      localStorage.setItem('almus-hraf:currentPage', String(pageNumber));
-      recordKhatmaPageRead(pageNumber);
-      safeCall(() => startReadDwellTimer(pageNumber), 'startReadDwellTimer');
-
       const cleanHeaderName = localizedSurahName(pageData.headerSurahName, pageData.headerSurahNumber);
       $('#surah-name-ar').textContent = `${tUI('surah.word', 'سورة')} ${cleanHeaderName}`;
 
@@ -3114,14 +3140,14 @@
         // fontsPromise هنا كمرجع بس، ونستنّاه إحنا بنفسنا تحت جوّه
         // revealPromise بعد ما نخفي الحاوية، مش قبل كده
         let renderResult = null;
-        if (state.currentPage === pageNumber && !options.preRendered) {
+        if (pageLoadSequence === currentPageLoadSequence && !options.preRendered) {
           renderResult = await renderMushafMainPage(pageNumber, pageData);
         }
         // Apply after the page renderer has installed its text/SVG nodes.
         // This also handles pages prepared by the turn animation (preRendered).
         if (tasmeeLiveState.active) safeCall(tasmeeApplyPageHighlights, 'apply tasmee highlights after page render');
         const fontsReady = renderResult ? renderResult.fontsPromise : null;
-        if (fontsReady && state.currentPage === pageNumber) {
+        if (fontsReady && pageLoadSequence === currentPageLoadSequence) {
           // الصفحة بتتخفي (visibility) من لحظة الرسم لحد ما خطوط الصفحة تخلص
           // تحميل وقياس --autofit-scale يتظبط، وبعدين تظهر مرة واحدة بشكلها
           // النهائي. قبل كده كانت بتظهر فورًا بخط الاحتياط (مربعات رمادية)
@@ -3149,33 +3175,48 @@
                   await withTimeout(waitForFonts, Math.max(0, QCF_MAX_REVEAL_WAIT_MS - QCF_PREFETCH_TIMEOUT_MS));
                 }
               }
-              if (state.currentPage === pageNumber) {
+              if (pageLoadSequence === currentPageLoadSequence) {
                 await new Promise((resolve) => fitMushafPage(resolve));
                 // صفحات بداية السورة تضيف بانرًا وبسملة بخطين مستقلين؛
                 // بعد تبديل الخط قد يتغير عرض السطر الطبيعي في WebView
                 // بإعادة layout لاحقة. أعد القياس بعد إطارين قبل الكشف
                 // لتفادي ظهور الصفحة لحظة بمقياسها الأولي ثم تمددها.
                 const hasSurahIntro = container.querySelector('.qcf-surah-header, .qcf-basmala');
-                if (hasSurahIntro && state.currentPage === pageNumber) {
+                if (hasSurahIntro && pageLoadSequence === currentPageLoadSequence) {
                   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                  if (state.currentPage === pageNumber) {
+                  if (pageLoadSequence === currentPageLoadSequence) {
                     await new Promise((resolve) => fitMushafPage(resolve));
                   }
                 }
               }
             } finally {
               // بس لو لسه دي الصفحة الحالية (تقليب/قفزة أحدث ممكن تكون بدأت)
-              if (state.currentPage === pageNumber) container.style.visibility = '';
+              if (pageLoadSequence === currentPageLoadSequence) container.style.visibility = '';
             }
           })();
         }
       } catch (e) {
         container.style.visibility = '';
-        if (state.currentPage === pageNumber) {
+        if (pageLoadSequence === currentPageLoadSequence) {
           $('#ayat-container').innerHTML =
             '<p class="loading-text">تعذّر تحميل هذه الصفحة بدون إنترنت.<br>اذهب إلى الإعدادات ← "التنزيل للقراءة بدون إنترنت" لتحميلها.</p>';
         }
       }
+      if (pageLoadSequence !== currentPageLoadSequence) return;
+      setCurrentMushafPage(pageNumber, pageData);
+      if (!options.preRendered && !options.deferNeighborSchedule) {
+        // Start the adjacent page/font work while the current page is still
+        // being revealed and measured, so the first swipe is not the first
+        // time we ask for its incoming page.
+        scheduleMushafNeighborPreviews(pageNumber);
+      }
+      if (previousPage !== pageNumber) {
+        if (container) container.scrollTop = 0;
+        if (previousPage) scrubberAnchorPage = previousPage;
+      }
+      localStorage.setItem('almus-hraf:currentPage', String(pageNumber));
+      recordKhatmaPageRead(pageNumber);
+      safeCall(() => startReadDwellTimer(pageNumber), 'startReadDwellTimer');
 
       $('#surah-progress').textContent = `صفحة ${toArabicDigits(pageNumber)} / ٦٠٤`;
 
@@ -3203,7 +3244,6 @@
     }
     await runMushafSlide(shouldSlide, options.direction, options.axis);
     prefetchAround(pageNumber);
-    if (!options.preRendered && !options.deferNeighborSchedule) scheduleMushafNeighborPreviews(pageNumber);
   }
 
   /* ---------------------------------------------------------------- */
@@ -3214,14 +3254,10 @@
   /* الأساسي الآن دائمًا، والعرض المرن القديم يعمل فقط كتراجع تلقائي     */
   /* صامت عند تعذّر الاتصال بالإنترنت.                                  */
   /* ---------------------------------------------------------------- */
-  // تراجعنا عن تضمين مجلد quran-qcf4 محليًا داخل www (كان بيكبّر حجم الـ
-  // APK بحوالي 148 ميجا) — الخطوط بترجع تُجلب من jsDelivr (على مستودعنا
-  // الخاص Ziad-Alkamash/quran-qcf4 بدل مستودع الطرف التالت الأصلي)، ومتصفح/
-  // WebView التطبيق بيخزّنها في الكاش المحلي بعد أول تحميل (jsDelivr بيبعت
-  // رؤوس Cache-Control طويلة المدى)، فبتشتغل فعليًا بدون إنترنت في أي فتح
-  // تالي للتطبيق طالما كاش النظام لسه موجود.
+  // بيانات الصفحات وخطوطها تُضمّن محليًا في www/quran-data قبل بناء التطبيق؛
+  // لذلك لا يحتاج تقليب الصفحات إلى تنزيل أو تجهيز في الخلفية وقت القراءة.
   const QCF4_FONT_BASE_REMOTE = 'https://cdn.jsdelivr.net/gh/Ziad-Alkamash/quran-qcf4@main/fonts-woff2/';
-  const QCF4_FONT_BASE = QCF4_FONT_BASE_REMOTE;
+  const QCF4_FONT_BASE = new URL('quran-data/qcf4/fonts-woff2/', document.baseURI).href;
   // -------------------------------------------------------------------
   // خطوط QCF4 تظل مستخدمة في بعض واجهات الآيات وصور المشاركة؛
   // عرض صفحة المصحف هنا يعتمد على ملف SVG كامل ولا يحتاج إلى تحميل الخط.
@@ -3232,11 +3268,14 @@
   // محمَّل مسبقًا، بيرجع رابط الشبكة الأصلي زي ما كان بالظبط (نفس سلوك
   // كاش المتصفح القديم يفضل شغّال كتراجع تلقائي)
   function resolveQcfFontURL(fileBase) {
-    const remoteUrl = `${QCF4_FONT_BASE}${fileBase}.woff2`;
+    const localUrl = `${QCF4_FONT_BASE}${fileBase}.woff2`;
+    const remoteUrl = `${QCF4_FONT_BASE_REMOTE}${fileBase}.woff2`;
     if (window.QuranOffline && window.QuranOffline.isNativeReady && window.QuranOffline.isNativeReady() && window.QuranOffline.ensureFontCached) {
-      return window.QuranOffline.ensureFontCached(remoteUrl, `Quran/qcf4/fonts/${fileBase}.woff2`).catch(() => remoteUrl);
+      return window.QuranOffline.ensureFontCached(localUrl, `Quran/qcf4/fonts/${fileBase}.woff2`)
+        .catch(() => window.QuranOffline.ensureFontCached(remoteUrl, `Quran/qcf4/fonts/${fileBase}.woff2`))
+        .catch(() => remoteUrl);
     }
-    return Promise.resolve(remoteUrl);
+    return Promise.resolve(localUrl);
   }
   function ensureQcfFontLoaded(fontName) {
     if (!fontName) return Promise.resolve();
@@ -3249,9 +3288,16 @@
         try {
           const face = new FontFace(fontName, `url("${url}") format("woff2")`, { display: 'swap' });
           document.fonts.add(face);
-          return face.load().then(() => face).catch(() => null);
+          return face.load().then((loadedFace) => {
+            if (document.fonts && document.fonts.ready) return document.fonts.ready.then(() => loadedFace);
+            return loadedFace;
+          }).catch((error) => {
+            qcfFontPromises.delete(fontName);
+            throw error;
+          });
         } catch (e) {
-          return null;
+          qcfFontPromises.delete(fontName);
+          throw e;
         }
       }
       // تراجع للمتصفحات القديمة اللي مبتدعمش FontFace API: نضيف
@@ -3259,7 +3305,15 @@
       const style = document.createElement('style');
       style.textContent = `@font-face { font-family: "${fontName}"; src: url("${url}") format("woff2"); font-display: swap; }`;
       document.head.appendChild(style);
-      return null;
+      return document.fonts?.load
+        ? document.fonts.load(`100px "${fontName}"`).then((loadedFaces) => {
+          if (!loadedFaces.length) throw new Error(`تعذّر تحميل خط المصحف ${fontName}`);
+          return null;
+        }).catch((error) => {
+          qcfFontPromises.delete(fontName);
+          throw error;
+        })
+        : Promise.reject(new Error('هذا المتصفح لا يدعم تحميل خطوط المصحف'));
     });
     qcfFontPromises.set(fontName, promise);
     return promise;
@@ -3420,19 +3474,6 @@
     el.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
-  async function getQuranHafsPageSvg(pageNumber) {
-    const page = Math.max(1, Math.min(604, Number(pageNumber) || 1));
-    const pad = String(page).padStart(3, '0');
-    if (window.QuranOffline?.isNativeReady?.()) {
-      const local = await window.QuranOffline.readPageImage(page);
-      if (local) return local;
-    }
-    const url = `https://raw.githubusercontent.com/quran-ws/quran-svg/main/mushafs/hafs/kfqc/svg/${pad}.svg`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`تعذّر تحميل صفحة المصحف (${response.status})`);
-    return response.text();
-  }
-
   // أزل نسخ أسماء السورة والجزء المنقولة للهيدر عند مغادرة صفحة المصحف
   // أو قبل إعادة رسمها. كانت الدالة مستدعاة من مسار العرض من دون تعريف،
   // فيتوقف تفعيل إخفاء التسميات الأصلية قبل إنشاء عناصر التحكم.
@@ -3475,63 +3516,200 @@
     svg.style.aspectRatio = `${width} / ${height}`;
     return true;
   }
-  async function renderPageContentQCF4Svg(targetContainer, pageAyahs, pageNumber) {
+  const qcfPageRenderCache = new Map();
+  async function getCachedQcfPage(pageNumber) {
+    const page = Math.max(1, Math.min(604, Number(pageNumber) || 1));
+    let promise = qcfPageRenderCache.get(page);
+    if (!promise) {
+      promise = QuranAPI.getPageQCF4(page).catch((error) => {
+        qcfPageRenderCache.delete(page);
+        throw error;
+      });
+      qcfPageRenderCache.set(page, promise);
+      while (qcfPageRenderCache.size > 5) {
+        const oldest = qcfPageRenderCache.keys().next().value;
+        if (oldest === page) break;
+        qcfPageRenderCache.delete(oldest);
+      }
+    } else {
+      qcfPageRenderCache.delete(page);
+      qcfPageRenderCache.set(page, promise);
+    }
+    return promise;
+  }
+
+  async function renderPageContentQCF4Text(targetContainer, pageNumber, pageAyahs = []) {
     const container = targetContainer || $('#ayat-container');
     clearQcfSvgMetaControls();
     const pageHost = container.closest('.autoscroll-page') ||
       container.closest('#mushaf-page') || (!targetContainer ? $('#mushaf-page') : null);
-    if (pageHost) pageHost.classList.add('qcf-page-image-layout');
+    if (pageHost) {
+      pageHost.classList.remove('qcf-page-image-layout');
+      pageHost.classList.add('qcf-text-page-layout');
+    }
     const renderToken = (container.__qcfPageRenderToken || 0) + 1;
     container.__qcfPageRenderToken = renderToken;
-    const svgText = await getQuranHafsPageSvg(pageNumber);
+    const pageData = await getCachedQcfPage(pageNumber);
     if (container.__qcfPageRenderToken !== renderToken) return false;
-    const parsed = new DOMParser().parseFromString(svgText, 'image/svg+xml');
-    const sourceSvg = parsed.documentElement;
-    if (!sourceSvg || sourceSvg.localName !== 'svg' || parsed.querySelector('parsererror')) {
-      throw new Error('تعذّر قراءة صفحة المصحف');
-    }
-    const pageSvg = document.importNode(sourceSvg, true);
-    pageSvg.classList.add('qcf-page-image-svg');
-    pageSvg.dataset.mushafPage = String(pageNumber);
-    pageSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    pageSvg.setAttribute('role', 'group');
-    pageSvg.setAttribute('aria-label', `صفحة المصحف ${toArabicDigits(Number(pageNumber) || 1)}`);
-    // Give the SVG its final viewport dimensions before attaching it. The
-    // source viewBox and preserveAspectRatio="meet" determine the page scale
-    // synchronously, so the first visible frame cannot use a 300×150 default.
-    // Auto-scroll retains its content-height pages instead of a viewport box.
-    const viewBoxParts = (pageSvg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
-    const pageRatio = viewBoxParts.length === 4 && viewBoxParts.every(Number.isFinite) && viewBoxParts[2] > 0 && viewBoxParts[3] > 0
-      ? `${viewBoxParts[2]} / ${viewBoxParts[3]}`
-      : '345 / 550';
-    const isAutoScrollPage = !!container.closest('.autoscroll-page');
-    // Keep the SVG page ratio while fitting both reader bounds. A full-width and full-height SVG box letterboxes the page inside it.
-    pageSvg.style.cssText = `display:block;flex:none;align-self:center;min-width:0;min-height:0;width:100%;height:auto;aspect-ratio:${pageRatio};max-width:100%;max-height:${isAutoScrollPage ? 'none' : '100%'};margin:0;`;
-    pageSvg.querySelectorAll('#content, #ayah_markers').forEach((group) => { group.style.pointerEvents = 'none'; });
-    pageSvg.querySelectorAll('.ayahPolygon').forEach((path) => {
-      const surahNum = Number(path.getAttribute('surah'));
-      const ayahNum = Number(path.getAttribute('ayah'));
-      if (!surahNum || !ayahNum) return;
-      path.classList.add('qcf-ayah');
-      path.dataset.surah = String(surahNum);
-      path.dataset.ayah = String(ayahNum);
-      path.style.pointerEvents = 'all';
-      path.style.cursor = 'pointer';
-      const surahInfo = pageAyahs?.find((item) => Number(item.surah?.number) === surahNum)?.surah;
-      bindAyahLongPress(path, () => {
-        const text = getCleanAyahText(surahNum, ayahNum) || pageAyahs?.find((item) =>
-          Number(item.surah?.number) === surahNum && Number(item.numberInSurah) === ayahNum
-        )?.text;
-        openAyahModal(surahNum, ayahNum, text || '', surahInfo?.nameAr || surahInfo?.name_arabic || '');
-      });
+    const lines = Array.isArray(pageData?.lines) ? pageData.lines : [];
+    if (!lines.length) throw new Error(`بيانات أسطر صفحة ${pageNumber} غير متاحة`);
+    const headerGlyphs = new Map();
+    const sourceWords = lines.flatMap((line) => line.words || []).filter((word) => word.char);
+    const headerSurahs = [...new Set(sourceWords.filter((word) => word.type === 'surah_header')
+      .map((word) => Number(word.sura)).filter(Boolean))];
+    await Promise.all(headerSurahs.map(async (surah) => {
+      try {
+        const glyph = await QuranAPI.getSurahHeaderGlyph(surah);
+        if (glyph?.char) headerGlyphs.set(surah, glyph);
+      } catch (error) { /* بيانات الصفحة تحتوي الرمز الأصلي كبديل */ }
+    }));
+    if (container.__qcfPageRenderToken !== renderToken) return false;
+
+    // Surah headers may be replaced with the canonical QBSML glyph returned by
+    // getSurahHeaderGlyph. Include that font in the decode barrier as well as
+    // the per-page Hafs/QBSML fonts before inserting any visible glyphs.
+    const normalizedLines = lines.map((line) => ({
+      lineNumber: Number(line.line),
+      words: (line.words || []).map((sourceWord) => {
+        const word = sourceWord.type === 'surah_header' && headerGlyphs.get(Number(sourceWord.sura))
+          ? { ...sourceWord, ...headerGlyphs.get(Number(sourceWord.sura)) }
+          : sourceWord;
+        return { ...word, font: word.font || pageData.font };
+      }).filter((word) => word.char)
+    })).filter((line) => line.words.length);
+    const fonts = [...new Set(normalizedLines.flatMap((line) => line.words.map((word) => word.font).filter(Boolean)))];
+    if (!fonts.length) throw new Error(`خط صفحة ${pageNumber} غير محدد`);
+    await Promise.all(fonts.map(ensureQcfFontLoaded));
+    if (container.__qcfPageRenderToken !== renderToken) return false;
+
+    const measureCanvas = document.createElement('canvas');
+    const measure = measureCanvas.getContext('2d');
+    if (!measure) throw new Error('تعذّر قياس خط صفحة المصحف');
+    const maxWidthAt100 = Math.max(1, ...normalizedLines.map((line) => line.words.reduce((sum, word) => {
+      measure.font = `100px "${word.font}"`;
+      return sum + measure.measureText(word.char).width;
+    }, 0)));
+    const hostWidth = container.clientWidth || container.parentElement?.clientWidth || window.innerWidth || 360;
+    const containerStyle = getComputedStyle(container);
+    const inlinePadding = (parseFloat(containerStyle.paddingLeft) || 0) + (parseFloat(containerStyle.paddingRight) || 0);
+    const fontSize = Math.max(8, ((hostWidth - inlinePadding) / maxWidthAt100) * 100);
+
+    const page = document.createElement('div');
+    page.className = 'qcf-text-page';
+    page.dataset.mushafPage = String(pageNumber);
+    page.dataset.maxWidthAt100 = String(maxWidthAt100);
+    page.setAttribute('role', 'group');
+    page.setAttribute('aria-label', `صفحة المصحف ${toArabicDigits(Number(pageNumber) || 1)}`);
+    page.style.setProperty('--qcf-page-font-size', `${fontSize}px`);
+    const ayahModalData = new Map();
+    (pageAyahs || []).forEach((ayah) => {
+      const surah = Number(ayah.surah?.number), number = Number(ayah.numberInSurah);
+      if (surah && number) ayahModalData.set(`${surah}:${number}`, ayah);
     });
-    container.replaceChildren(pageSvg);
-    // Crop only empty artwork bounds; every page retains the SVG aspect ratio.
-    fitQcfSvgViewBoxToArtwork(pageSvg);
-    pageSvg.setAttribute('preserveAspectRatio', pageNumber === 1 || pageNumber === 2 ? 'xMidYMid meet' : 'none');
-    container.classList.add('qcf-image-rendered');
+    normalizedLines.forEach((line) => {
+      const row = document.createElement('div');
+      row.className = 'qcf-line';
+      row.dataset.lineNumber = String(line.lineNumber || '');
+      row.setAttribute('dir', 'rtl');
+      const firstAyah = line.words.find((word) => word.verse_key);
+      if (firstAyah) {
+        const [surah, ayah] = firstAyah.verse_key.split(':').map(Number);
+        row.dataset.surah = String(surah || '');
+        row.dataset.ayah = String(ayah || '');
+      }
+      if (line.words.some((word) => word.type === 'surah_header')) row.classList.add('qcf-text-surah-header');
+      if (line.words.some((word) => word.type === 'bismillah')) row.classList.add('qcf-text-bismala');
+      line.words.forEach((word) => {
+        const glyph = document.createElement('span');
+        const isAyahContent = ['word', 'end'].includes(word.type) && !!word.verse_key;
+        glyph.className = `qcf-word${isAyahContent ? ' qcf-ayah ayah' : ''}${word.type === 'end' ? ' qcf-end-marker' : ''}`;
+        glyph.textContent = word.char;
+        glyph.style.fontFamily = `"${word.font}"`;
+        glyph.dataset.glyphCode = String(word.code || '');
+        if (word.verse_key) {
+          const [surah, ayah] = word.verse_key.split(':').map(Number);
+          glyph.dataset.verseKey = word.verse_key;
+          glyph.dataset.surah = String(surah || '');
+          glyph.dataset.ayah = String(ayah || '');
+          if (word.position) glyph.dataset.wordPosition = String(word.position);
+          if (isAyahContent) {
+            glyph.style.cursor = 'pointer';
+            bindAyahLongPress(glyph, () => {
+              const data = ayahModalData.get(word.verse_key);
+              const surahInfo = data?.surah;
+              const text = getCleanAyahText(surah, ayah) || data?.text || '';
+              openAyahModal(surah, ayah, text, surahInfo?.nameAr || surahInfo?.name_arabic || '');
+            });
+          }
+        }
+        if (word.type === 'end') glyph.setAttribute('aria-label', word.text || 'نهاية آية');
+        row.appendChild(glyph);
+      });
+      page.appendChild(row);
+    });
+    container.replaceChildren(page);
+    container.classList.add('qcf-text-rendered');
+    layoutQcfTextPage(container, page, fontSize, normalizedLines.length);
     if (window.__playerControls && window.__playerControls.reapplyAyahHighlight) window.__playerControls.reapplyAyahHighlight();
     return true;
+  }
+
+  function layoutQcfTextPage(container, page, fontSize, lineCount) {
+    if (!container || !page) return;
+    const isLandscape = document.body.classList.contains('mushaf-landscape-mode');
+    let naturalLineHeight = fontSize * 1.42;
+    let naturalGap = fontSize * 0.26;
+    const topInset = 6;
+    // Reserve half a printed line under the final row while keeping the page
+    // fitted to the same viewport height.
+    const bottomInset = 12 + fontSize * 0.71;
+    if (!isLandscape) {
+      const availableHeight = Math.max(0, container.clientHeight - topInset - bottomInset);
+      const naturalHeight = lineCount * naturalLineHeight + Math.max(0, lineCount - 1) * naturalGap;
+      if (naturalHeight > availableHeight && availableHeight > 0) {
+        fontSize = Math.max(8, fontSize * (availableHeight / naturalHeight) * 0.99);
+        naturalLineHeight = fontSize * 1.42;
+        naturalGap = fontSize * 0.26;
+        page.style.setProperty('--qcf-page-font-size', `${fontSize}px`);
+      }
+    }
+    page.style.setProperty('--qcf-natural-line-height', `${naturalLineHeight}px`);
+    page.style.setProperty('--qcf-natural-line-gap', `${naturalGap}px`);
+    page.style.setProperty('--qcf-page-inset-top', `${topInset}px`);
+    page.style.setProperty('--qcf-page-inset-bottom', `${bottomInset}px`);
+    if (isLandscape) {
+      page.style.minHeight = `${Math.ceil(lineCount * naturalLineHeight + Math.max(0, lineCount - 1) * naturalGap + topInset + bottomInset)}px`;
+      page.style.justifyContent = 'flex-start';
+      page.style.setProperty('--qcf-line-gap', `${naturalGap}px`);
+      return;
+    }
+    page.style.minHeight = '100%';
+    const availableHeight = Math.max(0, container.clientHeight - topInset - bottomInset);
+    const naturalHeight = lineCount * naturalLineHeight + Math.max(0, lineCount - 1) * naturalGap;
+    if (lineCount >= 15 && lineCount > 1 && naturalHeight <= availableHeight) {
+      // A standard Madinah page has 15 printed lines. Fill the reader between
+      // its fixed header/footer instead of centering a compact text block and
+      // leaving conspicuous blank bands at both ends. Short opening pages keep
+      // their natural centered composition below.
+      const gap = Math.max(naturalGap, (availableHeight - lineCount * naturalLineHeight) / (lineCount - 1));
+      page.style.setProperty('--qcf-line-gap', `${gap}px`);
+      page.style.justifyContent = 'flex-start';
+      return;
+    }
+    page.style.setProperty('--qcf-line-gap', `${naturalGap}px`);
+    page.style.justifyContent = 'center';
+  }
+
+  function refitQcfTextPage(container) {
+    const page = container?.querySelector('.qcf-text-page');
+    if (!page) return;
+    const maxWidthAt100 = Number(page.dataset.maxWidthAt100) || 1;
+    const style = getComputedStyle(container);
+    const padding = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+    const width = container.clientWidth || container.parentElement?.clientWidth || window.innerWidth || 360;
+    const fontSize = Math.max(8, ((width - padding) / maxWidthAt100) * 100);
+    page.style.setProperty('--qcf-page-font-size', `${fontSize}px`);
+    layoutQcfTextPage(container, page, fontSize, page.querySelectorAll('.qcf-line').length);
   }
 
   // -------- الدالة المشتركة اللي بتقرّر أي رسم نستخدم للصفحة (التجويد
@@ -3556,8 +3734,10 @@
     if (!targetContainer && (isWarsh || isQalun || isSusi)) clearQcfSvgMetaControls();
     // Pre-rendering targets a cloned page node. Apply edition layout classes
     // to that clone, not to the visible/current page while it is animating.
-    const mushafPage = targetContainer?.closest('#mushaf-page') || $('#mushaf-page');
-    if (mushafPage) mushafPage.classList.toggle('qcf-page-image-layout', !isSusi);
+    const mushafPage = targetContainer?.closest('.autoscroll-page') ||
+      targetContainer?.closest('#mushaf-page') || (!targetContainer ? $('#mushaf-page') : null);
+    if (mushafPage) mushafPage.classList.toggle('qcf-page-image-layout', isWarsh || isQalun);
+    if (mushafPage) mushafPage.classList.toggle('qcf-text-page-layout', !isWarsh && !isQalun && !isSusi);
     if (mushafPage) mushafPage.classList.toggle('warsh-edition-layout', isWarsh);
     if (mushafPage) mushafPage.classList.toggle('riwaya-svg-layout', isQalun);
     if (mushafPage) mushafPage.classList.toggle('susi-edition-layout', isSusi);
@@ -3656,12 +3836,12 @@
       return { fontsPromise: Promise.resolve() };
     }
     try {
-      await renderPageContentQCF4Svg(targetContainer, pageData && pageData.ayahs, pageNumber);
+      await renderPageContentQCF4Text(targetContainer, pageNumber, pageData?.ayahs || []);
     } catch (e) {
-      // لا نعرض الآيات بخط عند تعذّر صورة الصفحة؛ نمسح محتوى العرض فقط.
-      console.warn('تعذّر عرض صورة صفحة المصحف:', e);
+      // لا نعرض خطوطًا احتياطية قد تغيّر رسم المصحف أو تكسر تطابق الآيات.
+      console.warn('تعذّر تجهيز خطوط صفحة المصحف:', e);
       const imageContainer = targetContainer || $('#ayat-container');
-      if (imageContainer) imageContainer.replaceChildren();
+      if (imageContainer) imageContainer.innerHTML = '<p class="loading-text">تعذّر تحميل خط صفحة المصحف. تحقّق من الاتصال وحاول مرة أخرى.</p>';
     }
     return { fontsPromise: Promise.resolve() };
   }
@@ -3717,6 +3897,11 @@
     lastTs: 0,
     blocks: [], // [{ pageNumber, el, pageData }] بترتيب ظهورها من فوق لتحت
     loadingNext: false,
+    landscapeMode: false,
+    landscapePrevBlock: null,
+    landscapeNextBlock: null,
+    landscapeNextPromise: null,
+    landscapeFlipPromise: null,
     // موضع التمرير "الحقيقي" (float بدقة كسور البكسل) بمعزل تمامًا عن
     // scrollTop في الـ DOM. اتحوّلنا لتحريك #autoscroll-track بـ
     // transform بدل تعديل scrollTop كل فريم، لسببين: (١) scrollTop في
@@ -3786,6 +3971,9 @@
     // متبقي (لو الصفحة قصيرة نسبيًا لارتفاع الشاشة) ونوزّعه بالتساوي كـ
     // margin-bottom على كل سطر، عشان تطلع الصفحة ممتلئة ومتباعدة بانتظام
     // زي المصحف المطبوع بالظبط زي وضع القراءة العادي
+    // This first fit can run while the article is detached and has no real
+    // viewport height. Refit after insertion as well; startAutoScroll does
+    // another fit once the wrapper is visible.
     requestAnimationFrame(() => fitAutoscrollBlock(el));
 
     return { pageNumber, el, pageData };
@@ -3801,23 +3989,15 @@
     const textEl = el.querySelector('.mushaf-text');
     if (!wrap || !textEl) return;
 
+    if (textEl.classList.contains('qcf-text-rendered')) {
+      refitQcfTextPage(textEl);
+      textEl.style.marginBottom = '0';
+      return;
+    }
+
     const items = Array.from(textEl.children);
     if (!items.length) return;
     items.forEach((it) => { it.style.marginBottom = ''; it.style.removeProperty('--line-gap'); });
-
-    // صفحة حفص هنا صورة SVG كاملة؛ اترك ارتفاعها الطبيعي حسب نسبة أبعادها
-    // ولا توزّع الفراغ عليها كأنه مسافات بين سطور، لأن ذلك يصغّر الصفحة
-    // ويُظهر طرف الصفحة التالية فور تشغيل التمرير.
-    if (textEl.classList.contains('qcf-image-rendered')) {
-      textEl.style.marginBottom = '0';
-      const pageImage = textEl.querySelector('.qcf-page-image-svg');
-      if (pageImage) {
-        pageImage.style.width = '100%';
-        pageImage.style.height = 'auto';
-        pageImage.style.alignSelf = 'stretch';
-      }
-      return;
-    }
 
     const cs = getComputedStyle(el);
     const paddingV = parseFloat(cs.paddingTop || 0) + parseFloat(cs.paddingBottom || 0);
@@ -3855,13 +4035,79 @@
   // كبسولة اسم السورة/الجزء العلوية) عشان كل حاجة تفضل متزامنة أثناء
   // التمرير التلقائي بالظبط زي التقليب اليدوي العادي
   function autoscrollMarkCurrent(pageNumber, pageData) {
-    state.currentPage = pageNumber;
-    state.currentPageData = pageData;
+    setCurrentMushafPage(pageNumber, pageData);
+    const firstAyah = pageData?.ayahs?.[0];
+    const progress = $('#surah-progress');
+    const hizb = $('#page-hizb-info');
+    if (progress) progress.textContent = `صفحة ${toArabicDigits(pageNumber)} / ٦٠٤`;
+    if (hizb) hizb.textContent = hizbInfoText(firstAyah);
     localStorage.setItem('almus-hraf:currentPage', String(pageNumber));
     safeCall(() => recordKhatmaPageRead(pageNumber), 'recordKhatmaPageRead(autoScroll)');
     safeCall(() => startReadDwellTimer(pageNumber), 'startReadDwellTimer(autoScroll)');
     safeCall(updateQuranHeaderInfo, 'updateQuranHeaderInfo(autoScroll)');
     safeCall(updateMushafInfoPopup, 'updateMushafInfoPopup(autoScroll)');
+  }
+
+  async function autoscrollPrepareLandscapeNeighbor(direction = 'next') {
+    const key = direction === 'prev' ? 'landscapePrevBlock' : 'landscapeNextBlock';
+    if (!autoScroll.active || !autoScroll.landscapeMode || autoScroll[key] || autoScroll.landscapeNextPromise) return;
+    const current = autoScroll.blocks[0];
+    if (!current) return;
+    const pageNumber = direction === 'next'
+      ? (current.pageNumber < 604 ? current.pageNumber + 1 : 1)
+      : (current.pageNumber > 1 ? current.pageNumber - 1 : 604);
+    autoScroll.landscapeNextPromise = buildAutoscrollBlock(pageNumber).then((block) => {
+      if (!autoScroll.active || !autoScroll.landscapeMode || autoScroll.blocks[0] !== current) return null;
+      const wrap = $('#autoscroll-wrap');
+      const track = $('#autoscroll-track');
+      if (!wrap || !track) return null;
+      block.el.style.position = 'absolute';
+      block.el.style.inset = '0';
+      block.el.style.transform = `translate3d(${direction === 'next' ? -wrap.clientWidth : wrap.clientWidth}px,0,0)`;
+      track.appendChild(block.el);
+      fitAutoscrollBlock(block.el);
+      autoScroll[key] = block;
+      return block;
+    }).catch(() => null).finally(() => { autoScroll.landscapeNextPromise = null; });
+    await autoScroll.landscapeNextPromise;
+  }
+
+  async function autoscrollFlipLandscape(direction = 'next') {
+    if (!autoScroll.active || !autoScroll.landscapeMode || autoScroll.landscapeFlipPromise) return;
+    const current = autoScroll.blocks[0];
+    const key = direction === 'prev' ? 'landscapePrevBlock' : 'landscapeNextBlock';
+    let incoming = autoScroll[key];
+    if (!incoming) {
+      if (autoScroll.landscapeNextPromise) await autoScroll.landscapeNextPromise;
+      await autoscrollPrepareLandscapeNeighbor(direction);
+      incoming = autoScroll[key];
+    }
+    if (!current || !incoming || autoScroll.blocks[0] !== current) return;
+    const wrap = $('#autoscroll-wrap');
+    if (!wrap) return;
+    const area = incoming.el.querySelector('.mushaf-text');
+    if (area) area.scrollTop = 0;
+    const farKey = direction === 'next' ? 'landscapePrevBlock' : 'landscapeNextBlock';
+    autoScroll.landscapeFlipPromise = transitionMushafPages(current.el, incoming.el, direction, wrap.clientWidth, true, () => {
+      autoScroll[farKey]?.el.remove();
+      current.el.style.position = 'absolute';
+      current.el.style.inset = '0';
+      current.el.style.transform = `translate3d(${direction === 'next' ? wrap.clientWidth : -wrap.clientWidth}px,0,0)`;
+      const oldArea = current.el.querySelector('.mushaf-text');
+      if (oldArea) oldArea.scrollTop = 0;
+      autoScroll[farKey] = current;
+      incoming.el.style.position = 'absolute';
+      incoming.el.style.inset = '0';
+      resetMushafPageTransform(incoming.el);
+      autoScroll.blocks = [incoming];
+      autoScroll[key] = null;
+      autoScroll.pos = 0;
+      autoscrollMarkCurrent(incoming.pageNumber, incoming.pageData);
+    }, 'x').then(() => {
+      autoScroll.landscapeFlipPromise = null;
+      void autoscrollPrepareLandscapeNeighbor(direction === 'next' ? 'next' : 'prev');
+    }, () => { autoScroll.landscapeFlipPromise = null; });
+    await autoScroll.landscapeFlipPromise;
   }
 
   function autoscrollSyncSpeedUI() {
@@ -4007,6 +4253,27 @@
     if (!autoScroll.active) return;
     const wrap = $('#autoscroll-wrap');
     const track = $('#autoscroll-track');
+    if (wrap && autoScroll.landscapeMode) {
+      const current = autoScroll.blocks[0];
+      const scrollArea = current?.el.querySelector('.mushaf-text');
+      const dt = autoScroll.lastTs ? Math.min(ts - autoScroll.lastTs, 100) : 16;
+      if (scrollArea && !autoScroll.paused && !autoScroll.touching && !autoScroll.landscapeFlipPromise) {
+        const secondsPerPage = AUTOSCROLL_SECONDS_PER_PAGE[autoScroll.speed] || 32;
+        const contentHeight = Math.max(scrollArea.scrollHeight, scrollArea.clientHeight);
+        scrollArea.scrollTop = Math.min(
+          Math.max(0, contentHeight - scrollArea.clientHeight),
+          scrollArea.scrollTop + (contentHeight * dt) / (secondsPerPage * 1000)
+        );
+        if (scrollArea.scrollTop + scrollArea.clientHeight >= scrollArea.scrollHeight - 2) {
+          void autoscrollFlipLandscape('next');
+        }
+      }
+      if (!autoScroll.landscapeNextBlock && !autoScroll.landscapeNextPromise) void autoscrollPrepareLandscapeNeighbor('next');
+      if (!autoScroll.landscapePrevBlock && !autoScroll.landscapeNextPromise) void autoscrollPrepareLandscapeNeighbor('prev');
+      autoScroll.lastTs = ts;
+      autoScroll.rafId = requestAnimationFrame(autoscrollTick);
+      return;
+    }
     if (wrap && track) {
       const dt = autoScroll.lastTs ? Math.min(ts - autoScroll.lastTs, 100) : 16;
 
@@ -4064,6 +4331,11 @@
     autoScroll.vel = 0;
     autoScroll.lastTs = 0;
     autoScroll.pos = 0;
+    autoScroll.landscapeMode = document.body.classList.contains('mushaf-landscape-mode');
+    autoScroll.landscapeNextBlock = null;
+    autoScroll.landscapePrevBlock = null;
+    autoScroll.landscapeNextPromise = null;
+    autoScroll.landscapeFlipPromise = null;
     autoscrollSetSpeed(getStoredAutoscrollSpeed());
 
     // نفس لون صفحة المصحف المخصّص من الإعدادات (لو المستخدم غيّره) بننسخه
@@ -4072,6 +4344,11 @@
     wrap.className = pageColorClass || '';
 
     const startPage = state.currentPage || 1;
+    const pageInfoBar = $('#page-foot-bar');
+    const autoscrollSlideHeight = autoScroll.landscapeMode
+      ? (mushafWrap.clientHeight || 0)
+      : (mushafWrap.clientHeight || 0) + (pageInfoBar?.offsetHeight || 0);
+    wrap.style.setProperty('--mushaf-page-height', `${autoscrollSlideHeight}px`);
     let firstBlock;
     try {
       firstBlock = await buildAutoscrollBlock(startPage);
@@ -4081,6 +4358,13 @@
     if (autoScroll.active) return; // احتياطًا لو المستخدم دوس مرتين بسرعة
     track.appendChild(firstBlock.el);
     autoScroll.blocks.push(firstBlock);
+    if (autoScroll.landscapeMode) {
+      firstBlock.el.style.position = 'absolute';
+      firstBlock.el.style.inset = '0';
+      track.classList.add('autoscroll-landscape-track');
+    } else {
+      track.classList.remove('autoscroll-landscape-track');
+    }
 
     mushafWrap.classList.add('hidden');
     wrap.classList.remove('hidden');
@@ -4089,6 +4373,9 @@
 
     autoScroll.active = true;
     document.body.classList.add('autoscroll-active');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (autoScroll.active && autoScroll.blocks[0] === firstBlock) fitAutoscrollBlock(firstBlock.el);
+    }));
 
     // ابدأ وضع قراءة نظيفًا: أخفِ أدوات المصحف ولوحة السرعة حتى يطلب
     // القارئ أدوات التمرير صراحةً من الشريط العلوي.
@@ -4117,7 +4404,11 @@
     }
 
     autoScroll.rafId = requestAnimationFrame(autoscrollTick);
-    safeCall(autoscrollAppendNextBlock, 'autoscrollAppendNextBlock(initial)');
+    if (autoScroll.landscapeMode) {
+      void autoscrollPrepareLandscapeNeighbor('next');
+      void autoscrollPrepareLandscapeNeighbor('prev');
+    }
+    else safeCall(autoscrollAppendNextBlock, 'autoscrollAppendNextBlock(initial)');
   }
 
   function stopAutoScroll() {
@@ -4125,6 +4416,12 @@
     const finalPage = state.currentPage;
 
     deactivateAutoScrollUI();
+    autoScroll.landscapeMode = false;
+    autoScroll.landscapeNextBlock = null;
+    autoScroll.landscapePrevBlock = null;
+    autoScroll.landscapeNextPromise = null;
+    autoScroll.landscapeFlipPromise = null;
+    $('#autoscroll-track')?.classList.remove('autoscroll-landscape-track');
     if (typeof setMushafChromeOpen === 'function') setMushafChromeOpen(true);
 
     // نرجّع وضع القراءة العادي (صفحة واحدة مقاسة بالكامل تملأ الشاشة) عند
@@ -4224,8 +4521,9 @@
     const DRAG_START_PX = 6;
     const MAX_FLING = 6000; // بكسل/ثانية
     let pid = null;
-    let startY = 0, lastY = 0, lastT = 0, vel = 0;
-    let dragStarted = false;
+    let startX = 0, startY = 0, lastY = 0, lastT = 0, vel = 0;
+    let dragStarted = false, gestureAxis = 'idle', landscapeDeltaX = 0, landscapeVelocityX = 0;
+    let landscapeStartScrollTop = 0, landscapeNeighbor = null;
 
     // لو السحبة انتهت لسه لمسة "click" هتتولّد فوقها: نبلعها عشان ما تفتحش
     // نافذة آية ولا تبدّل ظهور الشريط بالغلط
@@ -4240,15 +4538,69 @@
     wrap.addEventListener('pointerdown', (e) => {
       if (!autoScroll.active || pid !== null) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (e.target.closest('button, #autoscroll-speed-pill')) return;
       pid = e.pointerId;
+      startX = e.clientX;
       startY = lastY = e.clientY;
       lastT = performance.now();
       vel = 0;
       dragStarted = false;
+      gestureAxis = 'idle';
+      landscapeDeltaX = landscapeVelocityX = 0;
+      const activeScrollArea = autoScroll.blocks[0]?.el.querySelector('.mushaf-text');
+      landscapeStartScrollTop = activeScrollArea?.scrollTop || 0;
+      landscapeNeighbor = null;
     });
 
     wrap.addEventListener('pointermove', (e) => {
       if (e.pointerId !== pid || !autoScroll.active) return;
+      if (autoScroll.landscapeMode) {
+        if (!dragStarted) {
+          const dx = e.clientX - startX, dy = e.clientY - startY;
+          if (Math.max(Math.abs(dx), Math.abs(dy)) < DRAG_START_PX) return;
+          gestureAxis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+          dragStarted = true;
+          autoScroll.touching = true;
+          autoScroll.vel = 0;
+          startX = e.clientX;
+          startY = lastY = e.clientY;
+          lastT = performance.now();
+          const activeArea = autoScroll.blocks[0]?.el.querySelector('.mushaf-text');
+          landscapeStartScrollTop = activeArea?.scrollTop || 0;
+          try { wrap.setPointerCapture(pid); } catch (err) { /* WebView fallback */ }
+          if (gestureAxis === 'x') {
+            const direction = dx > 0 ? 'next' : 'prev';
+            landscapeNeighbor = direction === 'next' ? autoScroll.landscapeNextBlock : autoScroll.landscapePrevBlock;
+            if (!landscapeNeighbor) void autoscrollPrepareLandscapeNeighbor(direction);
+          }
+        }
+        e.preventDefault();
+        const current = autoScroll.blocks[0]?.el;
+        const area = current?.querySelector('.mushaf-text');
+        const now = performance.now();
+        const dt = Math.max(1, now - lastT);
+        if (gestureAxis === 'y' && area) {
+          area.scrollTop = Math.max(0, landscapeStartScrollTop - (e.clientY - startY));
+        } else if (gestureAxis === 'x' && current) {
+          const dx = e.clientX - startX;
+          const nextDelta = landscapeDeltaX = (startX + dx) - (startX);
+          landscapeVelocityX = nextDelta / dt;
+          const direction = nextDelta >= 0 ? 'next' : 'prev';
+          const entry = direction === 'next' ? autoScroll.landscapeNextBlock : autoScroll.landscapePrevBlock;
+          if (entry !== landscapeNeighbor) landscapeNeighbor = entry;
+          const wrapWidth = wrap.clientWidth || 320;
+          current.style.transition = 'none';
+          current.style.transform = `translate3d(${nextDelta}px,0,0)`;
+          if (landscapeNeighbor?.el) {
+            const offset = direction === 'next' ? -wrapWidth : wrapWidth;
+            landscapeNeighbor.el.style.transition = 'none';
+            landscapeNeighbor.el.style.transform = `translate3d(${offset + nextDelta}px,0,0)`;
+          }
+        }
+        lastY = e.clientY;
+        lastT = now;
+        return;
+      }
       if (!dragStarted) {
         if (Math.abs(e.clientY - startY) < DRAG_START_PX) return;
         dragStarted = true;
@@ -4279,6 +4631,24 @@
       if (!dragStarted) return;
       dragStarted = false;
       autoScroll.touching = false;
+      if (autoScroll.landscapeMode) {
+        autoScroll.justDragged = true;
+        setTimeout(() => { autoScroll.justDragged = false; }, 350);
+        try { wrap.releasePointerCapture(e.pointerId); } catch (err) { /* no-op */ }
+        if (gestureAxis === 'x') {
+          const direction = landscapeDeltaX >= 0 ? 'next' : 'prev';
+          const current = autoScroll.blocks[0]?.el;
+          const neighbor = direction === 'next' ? autoScroll.landscapeNextBlock : autoScroll.landscapePrevBlock;
+          const shouldFlip = Math.abs(landscapeDeltaX) >= (wrap.clientWidth || 320) * 0.25 || Math.abs(landscapeVelocityX) >= 0.65;
+          if (shouldFlip) void autoscrollFlipLandscape(direction);
+          else void transitionMushafPages(current, neighbor?.el, direction, wrap.clientWidth || 320, false, null, 'x').then(() => {
+            if (current) resetMushafPageTransform(current);
+            if (neighbor?.el) resetMushafPageTransform(neighbor.el);
+          });
+        }
+        gestureAxis = 'idle';
+        return;
+      }
       // لو الإصبع وقف قبل الرفع بلحظة، مفيش قذف
       const idle = performance.now() - lastT;
       autoScroll.vel = idle > 90 ? 0 : Math.max(-MAX_FLING, Math.min(MAX_FLING, vel));
@@ -4363,7 +4733,7 @@
     if (!bar || bar.classList.contains('hidden')) return;
     const page = document.querySelector('#mushaf-page');
     const ayat = page && page.querySelector('#ayat-container');
-    const footer = page && page.querySelector('#page-foot-bar');
+    const footer = document.querySelector('#page-foot-bar');
     if (!page || !ayat || !footer) return;
 
     let contentBottom = 0;
@@ -4497,50 +4867,17 @@
       // the SVG viewport vertically to the reader/footer boundary so the
       // Quran page uses the available height without moving the footer up.
       if (page.classList.contains('qcf-page-image-layout')) {
-        // SVG editions do not use the text-page zoom state. Leaving that
-        // class active changes the reader viewport and makes the first page
-        // after an edition switch render with stale dimensions.
         document.body.classList.remove('mushaf-zoomed');
         document.documentElement.style.setProperty('--autofit-scale', '1');
-        const svg = page.querySelector(':is(.qcf-page-image-svg, .warsh-svg-page, .riwaya-svg-page)');
         const ayat = page.querySelector('#ayat-container');
         if (ayat) ayat.style.transform = '';
-        const viewBox = (svg?.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
-        if (svg && viewBox.length === 4 && viewBox[2] > 0 && viewBox[3] > 0) {
-          const sourcePageNumber = Number(svg.dataset.mushafPage);
-          if ((sourcePageNumber === 1 || sourcePageNumber === 2) && svg.classList.contains('qcf-page-image-svg')) {
-            // Keep opening artwork proportions and use the same fixed verse inset.
-            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-            svg.style.removeProperty('--qcf-svg-height');
-            const ayatStyle = ayat ? getComputedStyle(ayat) : null;
-            const horizontalPadding = ayatStyle
-              ? (parseFloat(ayatStyle.paddingLeft) || 0) + (parseFloat(ayatStyle.paddingRight) || 0)
-              : 0;
-            const contentWidth = Math.max(0, wrap.clientWidth - horizontalPadding);
-            const naturalHeight = contentWidth * viewBox[3] / viewBox[2];
-            if (ayat) ayat.style.transform = `translateY(${MUSHAF_AYAT_TOP_INSET}px)`;
-            svg.style.transform = 'none';
-            if (!targetPage) positionVisibleMushafReadingBar();
-            return;
-          }
-          // Keep the previous page fill, but reduce its vertical extension by
-          // half a natural line so the lines are only slightly less spread.
-          svg.setAttribute('preserveAspectRatio', 'none');
-          const footer = page.querySelector('#page-foot-bar');
-          const ayatStyle = ayat ? getComputedStyle(ayat) : null;
-          const horizontalPadding = ayatStyle
-            ? (parseFloat(ayatStyle.paddingLeft) || 0) + (parseFloat(ayatStyle.paddingRight) || 0)
-            : 0;
-          const contentWidth = Math.max(0, wrap.clientWidth - horizontalPadding);
-          const naturalHeight = contentWidth * viewBox[3] / viewBox[2];
-          const availableHeight = Math.max(0, wrap.clientHeight - (footer?.offsetHeight || 0));
-          const previousHeight = naturalHeight + Math.max(0, availableHeight - naturalHeight) * 0.9;
-          const halfLineHeight = naturalHeight / 30; // 15-line page, half a line
-          const fittedHeight = Math.max(naturalHeight, previousHeight - halfLineHeight);
-          svg.style.setProperty('--qcf-svg-height', `${fittedHeight}px`);
-          svg.style.transform = 'none';
-          if (ayat) ayat.style.transform = `translateY(${MUSHAF_AYAT_TOP_INSET}px)`;
-        }
+        page.querySelectorAll(':is(.warsh-svg-page, .riwaya-svg-page)')
+          .forEach((svg) => {
+            // Hafs text is fitted independently to both available dimensions.
+            // Match that page box for Warsh/Qalun instead of letterboxing their
+            // portrait SVG artwork vertically with xMidYMid meet.
+            svg.setAttribute('preserveAspectRatio', 'none');
+          });
         if (!targetPage) positionVisibleMushafReadingBar();
         return;
       }
@@ -4576,6 +4913,13 @@
       // ارتفاع الشاشة القصير حاليًا زي الوضع العادي — الصفحة بقت قابلة
       // للتمرير الرأسي بدل القص (شوف .mushaf-landscape-mode في style.css)
       const isLandscapeWide = document.body.classList.contains('mushaf-landscape-mode');
+
+      if (page.classList.contains('qcf-text-page-layout')) {
+        document.body.classList.remove('mushaf-zoomed');
+        refitQcfTextPage(page.querySelector('#ayat-container'));
+        if (!targetPage) positionVisibleMushafReadingBar();
+        return;
+      }
 
       // العرض المتاح يُخصم منه padding الصفحة الفعلي مرة واحدة فقط،
       // فلا نكرر هامش اللاندسكيب ضمن حساب المقياس.
@@ -4661,7 +5005,10 @@
           const boxStyle = getComputedStyle(ayatContainer);
           const innerHeight = Math.max(1, ayatContainer.clientHeight -
             (parseFloat(boxStyle.paddingTop) || 0) - (parseFloat(boxStyle.paddingBottom) || 0));
-          const targetHeight = innerHeight * 0.88;
+          // Susi is a flowing text layout rather than a fixed SVG page. Fit it
+          // almost to the full Hafs reading height, retaining a small safety
+          // margin for diacritics so top/bottom whitespace does not dominate.
+          const targetHeight = innerHeight * 0.98;
           const measureTextHeight = () => {
             const range = document.createRange();
             range.selectNodeContents(susiText);
@@ -4827,6 +5174,7 @@
   /* والسحب من اليمين إلى اليسار يرجع للصفحة السابقة (goPrevPage).     */
   /* ---------------------------------------------------------------- */
   let isFlipAnimating = false;
+  let mushafFlipSequence = 0;
   let mushafPointerActive = false;
   let mushafEditionSwitchInProgress = false;
   function getMushafFlipAxis() {
@@ -4842,24 +5190,20 @@
 
   function syncMushafWrapTouchAction() {
     const wrap = $('#mushaf-wrap');
-    if (!wrap) return;
-    // الوضع العرضي يقلب الصفحات أفقيًا، بينما نترك حركة الإصبع الرأسية
-    // للـ overflow-y:auto كي تمرّر الصفحة الطويلة بدل اعتبارها قلبة صفحة.
-    wrap.style.touchAction = document.body.classList.contains('mushaf-landscape-mode') ? 'pan-y' : 'none';
+    if (wrap) wrap.style.touchAction = 'none';
   }
 
   // القرار مستقل عن DOM عشان يفضل حد السحب والـflick واضحًا وقابلًا للفحص.
   // الاتجاه الموجب أفقيًا هو الصفحة التالية كما كان في منطق المصحف الحالي.
-  function getMushafSwipeDecision(delta, velocity, pageSize, currentPage) {
-    const flick = Math.abs(velocity) >= 0.65 && Math.abs(delta) > 24;
-    const crossedDistance = Math.abs(delta) >= pageSize * 0.25;
-    if (!crossedDistance && !flick) return null;
-    const sign = flick ? Math.sign(velocity) : Math.sign(delta);
-    const direction = sign > 0 ? 'next' : 'prev';
-    const pages = flick ? Math.min(3, Math.max(1, Math.round(Math.abs(velocity) / 0.7))) : 1;
-    const targetPage = Math.max(1, Math.min(604, currentPage + (direction === 'next' ? pages : -pages)));
-    if (targetPage === currentPage) return null;
-    return { direction, targetPage, pages: Math.abs(targetPage - currentPage) };
+  function getMushafSwipeDecision(delta, velocity, pageSize, currentPage, axis = 'x') {
+    const displacement = Math.abs(delta);
+    const qualifies = displacement >= pageSize * 0.25 || (displacement >= 8 && Math.abs(velocity) >= 0.65);
+    if (!qualifies) return null;
+    const sign = displacement >= 12 ? Math.sign(delta) : Math.sign(velocity);
+    const direction = axis === 'y' ? (sign < 0 ? 'next' : 'prev') : (sign > 0 ? 'next' : 'prev');
+    const targetPage = currentPage + (direction === 'next' ? 1 : -1);
+    if (targetPage < 1 || targetPage > 604) return null;
+    return { direction, targetPage, pages: 1 };
   }
 
   // يعيد الصفحة الحالية ومعاينتها إلى موضعهما بعد سحب لم يكتمل.
@@ -4886,13 +5230,23 @@
       currentPageElement.style.transition = 'none';
       resetMushafPageTransform(currentPageElement);
     }
-    const wrap = $('#mushaf-wrap');
-    if (wrap && previousPage !== pageNumber) wrap.scrollTop = 0;
+    const readingArea = currentPageElement?.querySelector('#ayat-container');
+    if (readingArea && previousPage !== pageNumber) readingArea.scrollTop = 0;
+    if (readingArea) requestAnimationFrame(() => {
+      if ($('#mushaf-page #ayat-container') !== readingArea) return;
+      refitQcfTextPage(readingArea);
+      // The first promoted preview can inherit measurements made while it
+      // was hidden behind the current page. Refit once more after it has had
+      // a frame in the active layout, which also removes the first-turn gap.
+      requestAnimationFrame(() => {
+        if ($('#mushaf-page #ayat-container') === readingArea) refitQcfTextPage(readingArea);
+        safeCall(() => window.__playerControls?.reapplyAyahHighlight?.(), 'reapply recitation highlight after page flip');
+      });
+    });
     if (previousPage && previousPage !== pageNumber) scrubberAnchorPage = previousPage;
 
-    state.currentPage = pageNumber;
-    state.currentPageData = preview.pageData;
-    document.dispatchEvent(new Event('mushaf-page-changed'));
+    ++currentPageLoadSequence;
+    setCurrentMushafPage(pageNumber, preview.pageData);
     const firstAyah = preview.pageData.ayahs?.[0];
     const cleanHeaderName = localizedSurahName(preview.pageData.headerSurahName, preview.pageData.headerSurahNumber);
     $('#surah-name-ar').textContent = tUI('surah.word', 'سورة') + ' ' + cleanHeaderName;
@@ -4931,13 +5285,14 @@
       }
     }
     if (direction === 'next' || direction === 'prev') lastFlipDirection = direction;
+    const turnSequence = ++mushafFlipSequence;
     if (direction === 'next' || direction === 'prev') {
       // A manual turn temporarily takes control of the visible page. The
       // audio follower resumes when playback advances to a different ayah.
       safeCall(() => window.__playerControls?.noteManualMushafPageFlip?.(), 'note manual mushaf page flip');
     }
     const flipEl = $('#mushaf-page');
-    if (!flipEl) { loadPage(pageNumber, { slide: true, direction }); return; }
+    if (!flipEl) { loadPage(pageNumber, { slide: true, direction, fromFlip: true }); return; }
     isFlipAnimating = true;
     void (async () => {
       try {
@@ -4948,9 +5303,10 @@
         } else if (preview && !preview.pageData && preview.ready) {
           preview = await preview.ready;
         }
+        if (turnSequence !== mushafFlipSequence) return;
         if (!preview?.pageData) {
           if (drag) await animateMushafDragRelease(flipEl, 0, drag.axis || 'x', 220, null, direction, drag.pageSize);
-          await loadPage(pageNumber);
+          await loadPage(pageNumber, { fromFlip: true });
           isFlipAnimating = false;
           return;
         }
@@ -4969,12 +5325,16 @@
           placeMushafNeighborPreview(preview, direction, 0, pageSize, axis);
         }
         await transitionMushafPages(flipEl, preview.element, direction, pageSize, true,
-          () => commitMushafPageFlip(pageNumber, preview), axis);
+          () => { if (turnSequence === mushafFlipSequence) commitMushafPageFlip(pageNumber, preview); }, axis);
       } catch (e) {
-        try { if (drag) await loadPage(pageNumber); }
+        if (turnSequence !== mushafFlipSequence) return;
+        try { if (drag) await loadPage(pageNumber, { fromFlip: true }); }
         finally { isFlipAnimating = false; }
       } finally {
-        document.dispatchEvent(new Event('mushaf-flip-settled'));
+        if (turnSequence === mushafFlipSequence) {
+          isFlipAnimating = false;
+          document.dispatchEvent(new Event('mushaf-flip-settled'));
+        }
       }
     })();
   }
@@ -4993,453 +5353,262 @@
   function initSwipeNavigation() {
     const wrap = $('#mushaf-wrap');
     if (!wrap) return;
-    // portrait custom gestures own both axes; landscape gives native vertical
-    // scrolling to the overflowing reader and retains custom horizontal turns.
     syncMushafWrapTouchAction();
 
-    const SWIPE_VELOCITY_THRESHOLD = 0.65;
     let tracking = false;
-    let axisState = null;
-    let startX = 0, startY = 0, currentDelta = 0, activeAxis = 'x';
+    let axisState = 'idle';
+    let activeAxis = 'x';
+    let startX = 0;
+    let startY = 0;
+    let currentDelta = 0;
     let pageSize = 0;
-    let lastPos = 0, lastT = 0, velocity = 0;
+    let gestureStartScrollTop = 0;
+    let lastPosition = 0;
+    let lastTime = 0;
+    let velocity = 0;
     let hadDrag = false;
-    let swipePrefetchPage = null;
     let activeNeighborPreview = null;
-    let queueOnlyGesture = false;
-    const pendingTurns = [];
-    function queueTurns(direction, count = 1) {
-      for (let i = 0; i < Math.min(6, count) && pendingTurns.length < 12; i++) pendingTurns.push(direction);
-    }
-    function drainPendingTurns() {
-      // لا تصرّف طلبًا أفقيًا بعد تغيير الاختيار إلى الرأسي؛ كان ذلك يسمح
-      // لطابور اتجاه قديم أن يبدأ حركة مختلفة بعد انتهاء الحركة الحالية.
-      if (getMushafFlipAxis() !== 'x') { pendingTurns.length = 0; return; }
-      if (isFlipAnimating || mushafEditionSwitchInProgress || !pendingTurns.length) return;
-      const direction = pendingTurns.shift();
-      const target = state.currentPage + (direction === 'next' ? 1 : -1);
-      if (target < 1 || target > 604) { drainPendingTurns(); return; }
-      flipToPage(target, direction);
+    let pendingAdjacentPage = null;
+    let moveFrame = 0;
+    let latestPoint = null;
+    let landscapeScrollVelocity = 0;
+    let landscapeScrollLastTop = 0;
+    let landscapeScrollLastTime = 0;
+    let landscapeInertiaFrame = 0;
+
+    function stopLandscapeScrollInertia() {
+      if (landscapeInertiaFrame) cancelAnimationFrame(landscapeInertiaFrame);
+      landscapeInertiaFrame = 0;
     }
 
-    function clearActiveNeighborPreview(entry) {
+    function startLandscapeScrollInertia(scrollArea) {
+      stopLandscapeScrollInertia();
+      if (!scrollArea || Math.abs(landscapeScrollVelocity) < 0.08) return;
+      let lastFrame = performance.now();
+      const step = (now) => {
+        const elapsed = Math.min(32, Math.max(1, now - lastFrame));
+        lastFrame = now;
+        const maxScroll = Math.max(0, scrollArea.scrollHeight - scrollArea.clientHeight);
+        const nextTop = Math.max(0, Math.min(maxScroll, scrollArea.scrollTop + landscapeScrollVelocity * elapsed));
+        scrollArea.scrollTop = nextTop;
+        const atEdge = nextTop === 0 || nextTop === maxScroll;
+        landscapeScrollVelocity *= Math.exp(-elapsed / 230);
+        if (!atEdge && Math.abs(landscapeScrollVelocity) >= 0.025) {
+          landscapeInertiaFrame = requestAnimationFrame(step);
+        } else {
+          landscapeInertiaFrame = 0;
+          landscapeScrollVelocity = 0;
+        }
+      };
+      landscapeInertiaFrame = requestAnimationFrame(step);
+    }
+
+    function clearPreview(entry) {
       if (!entry?.element) return;
       entry.element.classList.remove('mushaf-neighbor-active');
       entry.element.style.transition = 'none';
       resetMushafPageTransform(entry.element);
     }
 
-    function onPointerDown(e) {
-      if (mushafEditionSwitchInProgress) return;
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if (getMushafFlipAxis() !== 'x') return;
-      // الاتجاهان مستقلان: لا نسمح لطلبات رأسية مؤجلة بالظهور لاحقًا
-      // كقلبة مفاجئة وسط سلسلة السحب الأفقي السريع.
-      verticalPendingTurns.length = 0;
-      if (isFlipAnimating && activeMushafTransition) activeMushafTransition.finish();
-      // A fast follow-up swipe can arrive while the next page preview is still
-      // being prepared (before a CSS transition exists). Record that gesture
-      // and run it as soon as the in-flight page turn commits instead of
-      // silently dropping it.
-      queueOnlyGesture = isFlipAnimating;
-      tracking = true;
-      mushafPointerActive = true;
-      try { wrap.setPointerCapture(e.pointerId); } catch (error) { /* unsupported WebView */ }
-      axisState = null;
-      hadDrag = false;
-      startX = e.clientX;
-      startY = e.clientY;
-      currentDelta = 0;
-      swipePrefetchPage = null;
-      activeNeighborPreview = null;
-      if (!queueOnlyGesture) {
-        mushafNeighborPreviews.forEach((entry) => {
-          if (entry.element.classList.contains('mushaf-neighbor-active')) clearActiveNeighborPreview(entry);
-        });
-      }
-      lastPos = activeAxis === 'x' ? startX : startY;
-      lastT = performance.now();
-      velocity = 0;
-    }
-
-    function onPointerMove(e) {
-      if (!tracking) return;
-      const samples = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : null;
-      const point = samples && samples.length ? samples[samples.length - 1] : e;
-      const dx = point.clientX - startX;
-      const dy = point.clientY - startY;
-      if (axisState === null) {
-        if (document.body.classList.contains('mushaf-landscape-mode')
-            && Math.abs(dy) >= 8 && Math.abs(dy) > Math.abs(dx)) {
-          // Vertical landscape motion belongs to the scroll container; lock
-          // this gesture out of the horizontal page-turn tracker.
-          axisState = 'native-scroll';
-          hadDrag = true;
+    function updateDrag(point) {
+      if (axisState === 'idle') {
+        const dx = point.clientX - startX;
+        const dy = point.clientY - startY;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
+        if (document.body.classList.contains('mushaf-landscape-mode')) {
+          activeAxis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'scroll-y';
+          if (activeAxis === 'scroll-y') {
+            stopLandscapeScrollInertia();
+            axisState = 'scrolling';
+            hadDrag = true;
+            landscapeScrollVelocity = 0;
+            landscapeScrollLastTop = gestureStartScrollTop;
+            landscapeScrollLastTime = performance.now();
+          }
+        }
+        if (axisState === 'scrolling') {
+          const scrollArea = $('#mushaf-page #ayat-container');
+          if (scrollArea) {
+            scrollArea.scrollTop = Math.max(0, gestureStartScrollTop - (point.clientY - startY));
+            const now = performance.now();
+            const sample = (scrollArea.scrollTop - landscapeScrollLastTop) / Math.max(1, now - landscapeScrollLastTime);
+            landscapeScrollVelocity = landscapeScrollVelocity * 0.65 + sample * 0.35;
+            landscapeScrollLastTop = scrollArea.scrollTop;
+            landscapeScrollLastTime = now;
+          }
           return;
         }
-        if (Math.abs(dx) < 8) return;
-        activeAxis = 'x';
-        axisState = 'active';
-        const page = $('#mushaf-page');
-        pageSize = activeAxis === 'x'
-          ? (wrap.clientWidth || page?.getBoundingClientRect().width || 320)
-          : (wrap.clientHeight || page?.getBoundingClientRect().height || 320);
-        lastPos = activeAxis === 'x' ? startX : startY;
+        if (activeAxis === 'x' && Math.abs(dy) > Math.abs(dx)) return;
+        if (activeAxis === 'y' && Math.abs(dx) > Math.abs(dy)) return;
+        axisState = 'dragging';
         hadDrag = true;
-      }
-      if (axisState === 'native-scroll') return;
-      if (axisState !== 'active') return;
-
-      currentDelta = activeAxis === 'x' ? dx : dy;
-      e.preventDefault();
-      const now = performance.now();
-      const dt = now - lastT || 1;
-      const pos = activeAxis === 'x' ? point.clientX : point.clientY;
-      velocity = (pos - lastPos) / dt;
-      lastPos = pos;
-      lastT = now;
-      if (queueOnlyGesture) return;
-      const decision = getMushafSwipeDecision(currentDelta, velocity, pageSize, state.currentPage, activeAxis);
-      const targetPage = decision?.targetPage || (state.currentPage + ((activeAxis === 'y' ? (currentDelta < 0) : (currentDelta > 0)) ? 1 : -1));
-      const dragDirection = activeAxis === 'y'
-        ? (currentDelta < 0 ? 'next' : 'prev')
-        : (currentDelta > 0 ? 'next' : 'prev');
-      // حرك الورقة الحالية لحظيًا مع الإصبع، وأدخل الصفحة المجاورة من الحافة
-      // المقابلة. لا ننتظر رفع الإصبع لبدء الحركة؛ ذلك كان يجعلها تبدو كأنها
-      // تهبط من أعلى بدل أن تُسحب كلوح واحد.
-      const page = $('#mushaf-page');
-      if (page) {
-        page.classList.add('mushaf-page-dragging');
-        page.style.transition = 'none';
-        page.style.setProperty('transform', mushafPageTransformX(currentDelta, false, activeAxis), 'important');
-      }
-      const adjacentPage = state.currentPage + (dragDirection === 'next' ? 1 : -1);
-      const readyPreview = adjacentPage >= 1 && adjacentPage <= 604
-        ? mushafNeighborPreviews.get(adjacentPage) : null;
-      const nextPreview = readyPreview?.pageData ? readyPreview : null;
-      if (activeNeighborPreview && activeNeighborPreview !== nextPreview) {
-        activeNeighborPreview.element.classList.remove('mushaf-neighbor-active');
-        activeNeighborPreview.element.style.transition = 'none';
-        resetMushafPageTransform(activeNeighborPreview.element);
-      }
-      activeNeighborPreview = nextPreview;
-      if (activeNeighborPreview) {
-        placeMushafNeighborPreview(activeNeighborPreview, dragDirection, currentDelta, pageSize, activeAxis);
-        activeNeighborPreview.element.style.setProperty('transform',
-          mushafPageTransformX((dragDirection === 'next'
-            ? (activeAxis === 'x' ? -pageSize : pageSize)
-            : (activeAxis === 'x' ? pageSize : -pageSize)) + currentDelta, true, activeAxis), 'important');
-      }
-      if (targetPage !== swipePrefetchPage) {
-        swipePrefetchPage = targetPage;
-        lastFlipDirection = targetPage >= state.currentPage ? 'next' : 'prev';
-        void prefetchPage(targetPage);
-      }
-    }
-
-    function onPointerUp(e) {
-      if (!tracking) return;
-      tracking = false;
-      mushafPointerActive = false;
-      if (axisState !== 'active') {
-        axisState = null;
-        queueOnlyGesture = false;
-        safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow');
-        return;
-      }
-      axisState = null;
-      const finalPos = e.clientX;
-      if (Number.isFinite(finalPos)) {
-        currentDelta = finalPos - startX;
-        if (Math.abs(finalPos - lastPos) > 0.5) velocity = (finalPos - lastPos) / (performance.now() - lastT || 1);
-      }
-      const swipeDecision = getMushafSwipeDecision(currentDelta, velocity, pageSize, state.currentPage, activeAxis);
-      if (queueOnlyGesture) {
-        queueOnlyGesture = false;
-        if (swipeDecision) queueTurns(swipeDecision.direction, swipeDecision.pages);
-        axisState = null;
-        safeCall(drainPendingTurns, 'drain queued mushaf turns');
-        safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow');
-        return;
-      }
-      // Apply the pointer-up coordinate too, so the sheet never lags behind
-      // the finger between its final move event and release.
-      const releasedPage = $('#mushaf-page');
-      if (releasedPage) releasedPage.style.setProperty('transform',
-        mushafPageTransformX(currentDelta, false, activeAxis), 'important');
-      if (activeNeighborPreview) {
-        const dragDirection = activeAxis === 'y'
-          ? (currentDelta < 0 ? 'next' : 'prev')
-          : (currentDelta > 0 ? 'next' : 'prev');
-        const neighborOffset = dragDirection === 'next'
-          ? (activeAxis === 'x' ? -pageSize : pageSize)
-          : (activeAxis === 'x' ? pageSize : -pageSize);
-        activeNeighborPreview.element.style.setProperty('transform',
-          mushafPageTransformX(neighborOffset + currentDelta, true, activeAxis), 'important');
-      }
-      if (swipeDecision) {
-        const selectedPreview = activeNeighborPreview?.pageNumber === swipeDecision.targetPage ? activeNeighborPreview : null;
-        if (activeNeighborPreview && activeNeighborPreview !== selectedPreview) {
-          clearActiveNeighborPreview(activeNeighborPreview);
-          activeNeighborPreview = null;
-        }
-        flipToPage(swipeDecision.targetPage, swipeDecision.direction,
-          { axis: activeAxis, pageSize, currentDelta, direction: swipeDecision.direction,
-            preview: selectedPreview });
-      } else {
         const page = $('#mushaf-page');
-        void animateMushafDragRelease(page, 0, 'x', 0, activeNeighborPreview,
-          currentDelta >= 0 ? 'next' : 'prev', pageSize)
-          .finally(() => safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow'));
-        activeNeighborPreview = null;
+        pageSize = pageSize || 320;
+        lastPosition = activeAxis === 'x' ? startX : startY;
+        lastTime = performance.now();
       }
-    }
-
-    function onPointerCancel() {
-      const shouldReleaseDrag = axisState === 'active' && !isFlipAnimating;
-      tracking = false;
-      mushafPointerActive = false;
-      axisState = null;
-      queueOnlyGesture = false;
-      if (shouldReleaseDrag) {
-        void animateMushafDragRelease($('#mushaf-page'), 0, 'x', 0, activeNeighborPreview,
-          currentDelta >= 0 ? 'next' : 'prev', pageSize)
-          .finally(() => safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow'));
-        activeNeighborPreview = null;
-      } else {
-        safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow');
-      }
-    }
-
-    // Vertical page turning is deliberately a separate gesture/animation
-    // pipeline. It never calls the horizontal transition helper or reads X.
-    let verticalTracking = false;
-    let verticalQueueOnly = false;
-    let verticalStartY = 0;
-    let verticalDelta = 0;
-    let verticalVelocity = 0;
-    let verticalLastY = 0;
-    let verticalLastT = 0;
-    let verticalPageSize = 0;
-    let verticalPreview = null;
-    let verticalAnimating = false;
-    const verticalPendingTurns = [];
-
-    function verticalTransform(offset, isPreview = false) {
-      const landscape = document.body.classList.contains('mushaf-landscape-mode');
-      const qcf = document.querySelector('#mushaf-page.qcf-page-image-layout');
-      const centeredX = isPreview || !landscape && !qcf ? '-50%' : '0px';
-      const centeredY = !landscape && !qcf ? `calc(-50% + ${offset}px)` : `${offset}px`;
-      return `translate3d(${centeredX}, ${centeredY}, 0)`;
-    }
-    function setVerticalTransform(element, offset, isPreview = false) {
-      if (element) element.style.setProperty('transform', verticalTransform(offset, isPreview), 'important');
-    }
-    function resetVerticalGesture(page, preview) {
-      if (page) {
-        page.style.transition = 'none';
-        page.classList.remove('mushaf-page-dragging', 'mushaf-slide-ready');
-        resetMushafPageTransform(page);
-      }
-      if (preview?.element) clearActiveNeighborPreview(preview);
-    }
-    function queueVerticalTurns(direction, count = 1) {
-      for (let i = 0; i < Math.min(6, count) && verticalPendingTurns.length < 12; i++) verticalPendingTurns.push(direction);
-    }
-    function getVerticalSwipeDecision(delta, velocity, size, currentPage) {
-      const flick = Math.abs(velocity) >= SWIPE_VELOCITY_THRESHOLD && Math.abs(delta) > 24;
-      if (Math.abs(delta) < size * 0.25 && !flick) return null;
-      const sign = flick ? Math.sign(velocity) : Math.sign(delta);
-      const direction = sign < 0 ? 'next' : 'prev';
-      const count = flick ? Math.min(3, Math.max(1, Math.round(Math.abs(velocity) / 0.7))) : 1;
-      const targetPage = Math.max(1, Math.min(604, currentPage + (direction === 'next' ? count : -count)));
-      return targetPage === currentPage ? null : { direction, targetPage, pages: Math.abs(targetPage - currentPage) };
-    }
-    function drainVerticalTurns() {
-      // تجاهل أي قلبة رأسية أصبحت قديمة بعد تحويل القارئ إلى الأفقي
-      // (ومن ذلك وضع الشاشة العرضي).
-      if (getMushafFlipAxis() !== 'y') { verticalPendingTurns.length = 0; return; }
-      if (isFlipAnimating || verticalAnimating || mushafEditionSwitchInProgress || !verticalPendingTurns.length) return;
-      const direction = verticalPendingTurns.shift();
-      const target = state.currentPage + (direction === 'next' ? 1 : -1);
-      if (target < 1 || target > 604) { drainVerticalTurns(); return; }
-      flipVerticalToPage(target, direction);
-    }
-    async function flipVerticalToPage(pageNumber, direction, drag = null) {
-      if (mushafEditionSwitchInProgress || verticalAnimating) return;
-      verticalAnimating = true;
-      isFlipAnimating = true;
-      const current = $('#mushaf-page');
-      try {
-        let preview = drag?.preview || mushafNeighborPreviews.get(pageNumber);
-        if (!preview && pageNumber >= 1 && pageNumber <= 604) {
-          mushafPreviewDesired.add(pageNumber);
-          preview = await buildMushafNeighborPreview(pageNumber);
-        } else if (preview && !preview.pageData && preview.ready) preview = await preview.ready;
-        if (!preview?.pageData || !current) {
-          resetVerticalGesture(current, drag?.preview);
-          await loadPage(pageNumber);
-          return;
+      if (axisState === 'scrolling') {
+        const scrollArea = $('#mushaf-page #ayat-container');
+        if (scrollArea) {
+          scrollArea.scrollTop = Math.max(0, gestureStartScrollTop - (point.clientY - startY));
+          const now = performance.now();
+          const sample = (scrollArea.scrollTop - landscapeScrollLastTop) / Math.max(1, now - landscapeScrollLastTime);
+          landscapeScrollVelocity = landscapeScrollVelocity * 0.65 + sample * 0.35;
+          landscapeScrollLastTop = scrollArea.scrollTop;
+          landscapeScrollLastTime = now;
         }
-        scheduleMushafNeighborPreviews(pageNumber, true);
-        const size = drag?.size || wrap.clientHeight || current.getBoundingClientRect().height || 320;
-        const incomingOffset = direction === 'next' ? size : -size;
-        const endCurrent = direction === 'next' ? -size : size;
-        const releaseOffset = drag?.delta || 0;
-        preview.element.classList.add('mushaf-neighbor-active');
-        preview.element.style.transition = 'none';
-        setVerticalTransform(current, releaseOffset, false);
-        setVerticalTransform(preview.element, incomingOffset + releaseOffset, true);
-        await new Promise((resolve) => {
-          let settled = false;
-          let timer = 0;
-          const moving = [current, preview.element];
-          const finish = () => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timer);
-            moving.forEach((el) => el.removeEventListener('transitionend', onEnd));
-            moving.forEach((el) => { el.style.transition = 'none'; });
-            setVerticalTransform(current, endCurrent, false);
-            setVerticalTransform(preview.element, 0, true);
-            commitMushafPageFlip(pageNumber, preview);
-            resolve();
-          };
-          const onEnd = (event) => { if (event.propertyName === 'transform') finish(); };
-          moving.forEach((el) => {
-            el.style.setProperty('transition', 'transform 240ms cubic-bezier(.22,.61,.36,1)', 'important');
-            el.addEventListener('transitionend', onEnd);
-          });
-          requestAnimationFrame(() => {
-            setVerticalTransform(current, endCurrent, false);
-            setVerticalTransform(preview.element, 0, true);
-            timer = setTimeout(finish, 300);
-          });
-        });
-      } catch (error) {
-        resetVerticalGesture(current, drag?.preview);
-        await loadPage(pageNumber);
-      } finally {
-        verticalAnimating = false;
-        isFlipAnimating = false;
-        document.dispatchEvent(new Event('mushaf-flip-settled'));
+        return;
       }
-    }
-    function onVerticalDown(e) {
-      if (getMushafFlipAxis() !== 'y' || mushafEditionSwitchInProgress ||
-          (e.pointerType === 'mouse' && e.button !== 0)) return;
-      // لا ترحّل قلبات أفقية سابقة لتعمل بعد السحب الرأسي.
-      pendingTurns.length = 0;
-      verticalTracking = true;
-      verticalQueueOnly = isFlipAnimating;
-      verticalStartY = e.clientY;
-      verticalDelta = 0;
-      verticalVelocity = 0;
-      verticalLastY = e.clientY;
-      verticalLastT = performance.now();
-      verticalPreview = null;
-      try { wrap.setPointerCapture(e.pointerId); } catch (error) { /* WebView fallback */ }
-    }
-    function onVerticalMove(e) {
-      if (!verticalTracking || getMushafFlipAxis() !== 'y') return;
-      const point = e.getCoalescedEvents?.().slice(-1)[0] || e;
-      verticalDelta = point.clientY - verticalStartY;
-      if (Math.abs(verticalDelta) < 8) return;
-      hadDrag = true;
-      e.preventDefault();
+      if (axisState !== 'dragging') return;
+      const position = activeAxis === 'x' ? point.clientX : point.clientY;
+      currentDelta = position - (activeAxis === 'x' ? startX : startY);
       const now = performance.now();
-      verticalVelocity = (point.clientY - verticalLastY) / (now - verticalLastT || 1);
-      verticalLastY = point.clientY;
-      verticalLastT = now;
-      if (verticalQueueOnly) return;
+      velocity = (position - lastPosition) / Math.max(1, now - lastTime);
+      lastPosition = position;
+      lastTime = now;
+
       const current = $('#mushaf-page');
-      verticalPageSize = wrap.clientHeight || current?.getBoundingClientRect().height || 320;
-      const direction = verticalDelta < 0 ? 'next' : 'prev';
-      const adjacent = state.currentPage + (direction === 'next' ? 1 : -1);
-      const entry = adjacent >= 1 && adjacent <= 604 ? mushafNeighborPreviews.get(adjacent) : null;
-      const next = entry?.pageData ? entry : null;
-      if (verticalPreview && verticalPreview !== next) clearActiveNeighborPreview(verticalPreview);
-      verticalPreview = next;
+      const direction = activeAxis === 'x'
+        ? (currentDelta > 0 ? 'next' : 'prev')
+        : (currentDelta < 0 ? 'next' : 'prev');
+      const adjacentPage = state.currentPage + (direction === 'next' ? 1 : -1);
+      const candidate = adjacentPage >= 1 && adjacentPage <= 604
+        ? mushafNeighborPreviews.get(adjacentPage) : null;
+      if (activeNeighborPreview !== candidate) {
+        clearPreview(activeNeighborPreview);
+        activeNeighborPreview = candidate || null;
+      }
+      if (!candidate) {
+        if (adjacentPage >= 1 && adjacentPage <= 604 && pendingAdjacentPage !== adjacentPage) {
+          pendingAdjacentPage = adjacentPage;
+          mushafPreviewDesired.add(adjacentPage);
+          const pending = buildMushafNeighborPreview(adjacentPage);
+          pending?.then((ready) => {
+            if (pendingAdjacentPage === adjacentPage) pendingAdjacentPage = null;
+            if (ready && tracking && axisState === 'dragging') updateDrag(latestPoint);
+          });
+        }
+        // Keep the current page in place until the incoming page and its
+        // font are ready. Moving it first exposed the empty paper underneath
+        // as a full blank page on a cold cache.
+        if (current) resetMushafPageTransform(current);
+        return;
+      } else if (!candidate.pageData) {
+        if (candidate.ready && !candidate.__dragWaitInstalled) {
+          candidate.__dragWaitInstalled = true;
+          candidate.ready.then((ready) => {
+            delete candidate.__dragWaitInstalled;
+            if (ready && tracking && axisState === 'dragging' && activeNeighborPreview === candidate) updateDrag(latestPoint);
+          });
+        }
+        if (current) resetMushafPageTransform(current);
+        return;
+      }
       if (current) {
         current.classList.add('mushaf-page-dragging');
         current.style.transition = 'none';
-        setVerticalTransform(current, verticalDelta, false);
+        current.style.setProperty('transform', mushafPageTransformX(currentDelta, false, activeAxis), 'important');
       }
-      if (verticalPreview) {
-        const incoming = direction === 'next' ? verticalPageSize : -verticalPageSize;
-        verticalPreview.element.classList.add('mushaf-neighbor-active');
-        verticalPreview.element.style.transition = 'none';
-        setVerticalTransform(verticalPreview.element, incoming + verticalDelta, true);
-      }
+      if (candidate?.pageData) placeMushafNeighborPreview(candidate, direction, currentDelta, pageSize, activeAxis);
     }
-    function onVerticalUp() {
-      if (!verticalTracking) return;
-      verticalTracking = false;
-      if (Math.abs(verticalDelta) < 8) { verticalQueueOnly = false; return; }
-      const decision = getVerticalSwipeDecision(verticalDelta, verticalVelocity, verticalPageSize || wrap.clientHeight || 320, state.currentPage);
-      if (verticalQueueOnly) {
-        verticalQueueOnly = false;
-        if (decision) queueVerticalTurns(decision.direction, decision.pages);
-        drainVerticalTurns();
+
+    function onPointerDown(event) {
+      if (mushafEditionSwitchInProgress || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      if (isFlipAnimating) {
+        activeMushafTransition?.finish();
+        if (isFlipAnimating) return;
+      }
+      tracking = true;
+      stopLandscapeScrollInertia();
+      axisState = 'idle';
+      activeAxis = getMushafFlipAxis();
+      gestureStartScrollTop = $('#mushaf-page #ayat-container')?.scrollTop || 0;
+      startX = event.clientX;
+      startY = event.clientY;
+      currentDelta = 0;
+      velocity = 0;
+      const currentPage = $('#mushaf-page');
+      pageSize = activeAxis === 'x'
+        ? (wrap.clientWidth || currentPage?.getBoundingClientRect().width || 320)
+        : (wrap.clientHeight || currentPage?.getBoundingClientRect().height || 320);
+      latestPoint = event;
+      activeNeighborPreview = null;
+      mushafPointerActive = true;
+      try { wrap.setPointerCapture(event.pointerId); } catch (error) { /* WebView fallback */ }
+    }
+
+    function onPointerMove(event) {
+      if (!tracking) return;
+      const samples = event.getCoalescedEvents?.();
+      latestPoint = samples?.length ? samples[samples.length - 1] : event;
+      if (axisState === 'idle') {
+        event.preventDefault();
+        if (moveFrame) return;
+        moveFrame = requestAnimationFrame(() => {
+          moveFrame = 0;
+          updateDrag(latestPoint);
+        });
         return;
       }
-      const direction = verticalDelta < 0 ? 'next' : 'prev';
-      if (decision) {
-        const chosen = verticalPreview?.pageNumber === decision.targetPage ? verticalPreview : null;
-        if (verticalPreview && verticalPreview !== chosen) clearActiveNeighborPreview(verticalPreview);
-        safeCall(() => window.__playerControls?.noteManualMushafPageFlip?.(), 'note manual mushaf page flip');
-        void flipVerticalToPage(decision.targetPage, decision.direction,
-          { delta: verticalDelta, size: verticalPageSize, preview: chosen });
-      } else {
-        const page = $('#mushaf-page');
-        const preview = verticalPreview;
-        verticalPreview = null;
-        if (page) {
-          page.style.transition = 'transform 220ms cubic-bezier(.22,.61,.36,1)';
-          setVerticalTransform(page, 0, false);
-        }
-        if (preview?.element) {
-          preview.element.style.transition = 'transform 220ms cubic-bezier(.22,.61,.36,1)';
-          setVerticalTransform(preview.element, direction === 'next' ? verticalPageSize : -verticalPageSize, true);
-          setTimeout(() => resetVerticalGesture(page, preview), 240);
-        } else if (page) setTimeout(() => resetVerticalGesture(page, null), 240);
-      }
-      verticalPreview = null;
+      if (moveFrame) return;
+      moveFrame = requestAnimationFrame(() => {
+        moveFrame = 0;
+        updateDrag(latestPoint);
+      });
+      event.preventDefault();
     }
-    function onVerticalCancel() {
-      if (!verticalTracking) return;
-      verticalTracking = false;
-      if (verticalQueueOnly) { verticalQueueOnly = false; return; }
-      const page = $('#mushaf-page');
-      const preview = verticalPreview;
-      verticalPreview = null;
-      if (page) {
-        page.style.transition = 'transform 220ms cubic-bezier(.22,.61,.36,1)';
-        setVerticalTransform(page, 0, false);
+
+    function finishGesture(event, cancelled = false) {
+      if (!tracking) return;
+      if (moveFrame) { cancelAnimationFrame(moveFrame); moveFrame = 0; }
+      if (event && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+        latestPoint = event;
+        if (axisState === 'dragging' || axisState === 'scrolling') updateDrag(event);
       }
-      if (preview?.element) {
-        preview.element.style.transition = 'transform 220ms cubic-bezier(.22,.61,.36,1)';
-        setVerticalTransform(preview.element, verticalDelta < 0 ? verticalPageSize : -verticalPageSize, true);
-        setTimeout(() => resetVerticalGesture(page, preview), 240);
-      } else if (page) setTimeout(() => resetVerticalGesture(page, null), 240);
+      tracking = false;
+      mushafPointerActive = false;
+      if (axisState === 'scrolling') {
+        if (!cancelled) startLandscapeScrollInertia($('#mushaf-page #ayat-container'));
+        else landscapeScrollVelocity = 0;
+        axisState = 'idle';
+        safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow');
+        return;
+      }
+      if (axisState !== 'dragging') {
+        axisState = 'idle';
+        safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow');
+        return;
+      }
+      axisState = 'idle';
+      const direction = activeAxis === 'x'
+        ? (currentDelta > 0 ? 'next' : 'prev')
+        : (currentDelta < 0 ? 'next' : 'prev');
+      const decision = cancelled ? null
+        : getMushafSwipeDecision(currentDelta, velocity, pageSize, state.currentPage, activeAxis);
+      if (decision) {
+        const selected = activeNeighborPreview?.pageNumber === decision.targetPage ? activeNeighborPreview : null;
+        if (activeNeighborPreview && activeNeighborPreview !== selected) clearPreview(activeNeighborPreview);
+        safeCall(() => window.__playerControls?.noteManualMushafPageFlip?.(), 'note manual mushaf page flip');
+        flipToPage(decision.targetPage, decision.direction, {
+          axis: activeAxis, pageSize, currentDelta, direction: decision.direction, preview: selected
+        });
+        activeNeighborPreview = null;
+      } else {
+        void animateMushafDragRelease($('#mushaf-page'), 0, activeAxis, 220,
+          activeNeighborPreview, direction, pageSize)
+          .finally(() => safeCall(() => window.__playerControls?.flushDeferredAyahPageFollow?.(), 'flush deferred audio page follow'));
+        activeNeighborPreview = null;
+      }
     }
 
     wrap.addEventListener('pointerdown', onPointerDown);
     wrap.addEventListener('pointermove', onPointerMove, { passive: false });
-    wrap.addEventListener('pointerup', onPointerUp);
-    wrap.addEventListener('pointercancel', onPointerCancel);
-    wrap.addEventListener('pointerdown', onVerticalDown);
-    wrap.addEventListener('pointermove', onVerticalMove, { passive: false });
-    wrap.addEventListener('pointerup', onVerticalUp);
-    wrap.addEventListener('pointercancel', onVerticalCancel);
-    document.addEventListener('mushaf-flip-settled', drainPendingTurns);
-    document.addEventListener('mushaf-flip-settled', drainVerticalTurns);
-
-    wrap.addEventListener('click', (e) => {
-      // Light taps over verses use the same reader chrome toggle as anywhere else.
+    wrap.addEventListener('pointerup', (event) => finishGesture(event));
+    wrap.addEventListener('pointercancel', (event) => finishGesture(event, true));
+    wrap.addEventListener('click', (event) => {
       if (hadDrag) {
-        e.stopPropagation();
-        e.preventDefault();
+        event.stopPropagation();
+        event.preventDefault();
         hadDrag = false;
         return;
       }
@@ -5449,6 +5618,31 @@
       }
       if (typeof toggleMushafChrome === 'function') toggleMushafChrome();
     }, true);
+
+    const refreshViewport = () => {
+      const page = $('#mushaf-page');
+      const autoWrap = $('#autoscroll-wrap');
+      if (autoScroll.active && autoWrap?.clientHeight) {
+        autoWrap.style.setProperty('--mushaf-page-height', `${autoWrap.clientHeight}px`);
+        return;
+      }
+      if (!page || !wrap.clientWidth || !wrap.clientHeight) return;
+      wrap.style.setProperty('--mushaf-page-width', `${wrap.clientWidth}px`);
+      wrap.style.setProperty('--mushaf-page-height', `${wrap.clientHeight}px`);
+      fitMushafPage();
+    };
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(refreshViewport);
+      observer.observe(wrap);
+      const header = $('#app-header');
+      const footer = $('#page-foot-bar');
+      const autoWrap = $('#autoscroll-wrap');
+      if (header) observer.observe(header);
+      if (footer) observer.observe(footer);
+      if (autoWrap) observer.observe(autoWrap);
+    }
+    window.addEventListener('orientationchange', refreshViewport, { passive: true });
+    window.visualViewport?.addEventListener('resize', refreshViewport, { passive: true });
   }
   function initSwipeHintOnce() {
     if (localStorage.getItem('almus-hraf:sawSwipeHint')) return;
@@ -5877,15 +6071,20 @@
   function getPopupSurahInfo() {
     const pd = state.currentPageData;
     const first = pd && pd.ayahs && pd.ayahs[0];
-    if (!first || !first.surah) return null;
-    const number = first.surah.number;
-    const count = Number(first.surah.numberOfAyahs || first.surah.ayahCount) || surahAyahCount(number);
+    const visibleFirst = getFirstVisibleMushafAyah();
+    const number = visibleFirst?.surah || first?.surah?.number;
+    if (!number) return null;
+    const metadataAyah = pd?.ayahs?.find((ayah) => Number(ayah.surah?.number) === Number(number));
+    const count = surahAyahCount(number) || Number(metadataAyah?.surah?.numberOfAyahs || metadataAyah?.surah?.ayahCount);
     if (!number || !count) return null;
+    const surahInfo = (state.surahList || []).find((surah) => Number(surah.number) === Number(number));
     return {
       number,
       count,
-      name: localizedSurahName(pd.headerSurahName, pd.headerSurahNumber) || '',
-      currentAyah: first.numberInSurah
+      name: surahInfo
+        ? localizedSurahName(surahInfo.nameAr || surahInfo.name_arabic, number)
+        : (localizedSurahName(pd?.headerSurahName, pd?.headerSurahNumber) || ''),
+      currentAyah: visibleFirst?.ayah || first?.numberInSurah
     };
   }
 
@@ -6086,15 +6285,15 @@
           if (typeof setMushafChromeOpen === 'function') setMushafChromeOpen(true);
           return;
         }
-        const pageData = state.currentPageData;
-        const firstAyah = pageData && pageData.ayahs && pageData.ayahs[0];
-        const surahNumber = firstAyah ? firstAyah.surah.number : null;
+        const firstVisibleAyah = getFirstVisibleMushafAyah();
+        const surahNumber = firstVisibleAyah?.surah;
+        const ayahNumber = firstVisibleAyah?.ayah;
         if (surahNumber && window.__playerControls && window.__playerControls.playAyahContinuous) {
           // بدء تشغيل يدوي بره أي قائمة تشغيل شخصية، بنفس منطق playSurah،
           // عشان أزرار التالي/السابق في المشغّل تتنقّل بين آيات السورة
           // مش بين عناصر قائمة قديمة كانت شغالة قبل كده
           state.playlistQueue = null;
-          window.__playerControls.playAyahContinuous(surahNumber, firstAyah.numberInSurah);
+          window.__playerControls.playAyahContinuous(surahNumber, ayahNumber);
         }
       });
     }
@@ -8228,12 +8427,26 @@
   // الحقيقي وراء فشل زرار "استماع لهذه الآية فقط" في كل مرة ومع كل قارئ،
   // بينما التشغيل المتواصل (المُعرّف جوه نفس initSurahAudioPlayer) كان شغال عادي
   async function resolveAyahPlaybackSource(surahNumber, ayahNumber, ed) {
-    // سجلات MP3Quran تحتوي توقيتًا خاصًا بملف قراءة بعينه؛ عند وجود سجل
-    // مطابق نستخدم الملف والتوقيت معًا، بدل ملف آية من مصدر/تسجيل مختلف.
+    // Prefer the exact ayah recording whenever one exists. Timing maps can
+    // only be used with the specific full-surah recording they were created for.
+    const hasRealAyah = typeof QuranAPI !== 'undefined' && QuranAPI.hasRealAyahAudio && QuranAPI.hasRealAyahAudio(ed);
+    if (hasRealAyah) {
+      const ayahURL = await QuranAPI.getAyahAudio(surahNumber, ayahNumber, ed);
+      const resolvedAyah = await resolveOfflineAudioSrc(ayahURL);
+      const isOfflineNow = typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (resolvedAyah !== ayahURL || !isOfflineNow) {
+        return { url: resolvedAyah, approx: false, timings: null };
+      }
+      // Offline with no downloaded ayah clip: try MP3Quran's matching full file.
+    }
+
     const timingData = window.Mp3QuranTiming
       ? await Mp3QuranTiming.getAyahTimings(ed, surahNumber).catch(() => null)
       : null;
-    if (timingData?.bounds?.length && timingData.audioUrl) {
+    // Some official tracks are incomplete (for example a late ayah may be
+    // absent). Never treat a partial map as a valid seek for every ayah.
+    const requestedTiming = timingData?.bounds?.find((bound) => Number(bound.ayah) === Number(ayahNumber));
+    if (requestedTiming && timingData.audioUrl) {
       const timedAudio = await resolveOfflineAudioSrc(timingData.audioUrl);
       const availableOffline = /^blob:/i.test(String(timedAudio || ''));
       if (navigator.onLine !== false || availableOffline) {
@@ -8242,25 +8455,28 @@
       }
     }
 
-    const hasRealAyah = typeof QuranAPI !== 'undefined' && QuranAPI.hasRealAyahAudio && QuranAPI.hasRealAyahAudio(ed);
-    if (hasRealAyah) {
-      const ayahURL = await QuranAPI.getAyahAudio(surahNumber, ayahNumber, ed);
-      const resolvedAyah = await resolveOfflineAudioSrc(ayahURL);
-      const isOfflineNow = typeof navigator !== 'undefined' && navigator.onLine === false;
-      // resolvedAyah !== ayahURL معناه إن الملف كان محفوظ فعلاً في الكاش (رجّعلنا
-      // رابط blob محلي)، فهو دقيق ١٠٠٪ بغض النظر عن حالة الاتصال. ولو النت شغال
-      // أصلاً، نجرّب الرابط المباشر عادي من غير أي داعي للتقريب
-      if (resolvedAyah !== ayahURL || !isOfflineNow) {
-        return { url: resolvedAyah, approx: false };
-      }
-      // وصلنا هنا يعني: مفيش إنترنت، وملف الآية الدقيق مش محمَّل مسبقًا. لو
-      // المستخدم حمّل ملف السورة الكاملة (بالطريقة القديمة قبل هذا التحديث)،
-      // نستخدمه كحل تقريبي أفضل من عدم التشغيل، وإلا هيفشل التشغيل بوضوح
-      // (بدل ما يظهر وكأنه اشتغل صح وهو بيقرأ من غير نت أصلاً)
-    }
     if (QuranAPI.ensureCustomSurahAudioURL) await QuranAPI.ensureCustomSurahAudioURL(ed, surahNumber);
     const surahURL = QuranAPI.getSurahAudioURL(surahNumber, ed);
     return { url: await resolveOfflineAudioSrc(surahURL), approx: true, timings: null };
+  }
+
+  // The MP3Quran timing API occasionally returns a complete, sequential map
+  // whose time scale does not match the duration of its own audio file (for
+  // example Hassan Saleh / Surah An-Nur). Align that map to the exact file's
+  // metadata before seeking, while leaving already-matching maps untouched.
+  function alignTimingsToAudioDuration(bounds, duration) {
+    if (!Array.isArray(bounds) || !bounds.length || !Number.isFinite(duration) || duration <= 0) return null;
+    const lastEnd = Number(bounds[bounds.length - 1]?.end);
+    if (!Number.isFinite(lastEnd) || lastEnd <= 0) return null;
+    const scale = duration / lastEnd;
+    if (!Number.isFinite(scale) || scale < 0.1 || scale > 20) return null;
+    if (scale >= 0.9 && scale <= 1.1) return bounds;
+    console.warn('MP3Quran timing scale adjusted to the matching audio duration', { scale, timingEnd: lastEnd, duration });
+    return bounds.map((bound) => ({
+      ...bound,
+      start: Number(bound.start) * scale,
+      end: Number(bound.end) * scale
+    }));
   }
 
   async function toggleAyahAudio(btnEl) {
@@ -8282,7 +8498,11 @@
 
       if (!state.audioEl) {
         if (label) label.textContent = 'جارٍ التحميل...';
-        const { surah, ayah } = state.activeAyah;
+        const surah = Number(state.activeAyah?.surah);
+        const ayah = Number(state.activeAyah?.ayah);
+        if (!Number.isInteger(surah) || !Number.isInteger(ayah) || surah < 1 || surah > 114 || ayah < 1) {
+          throw new Error('رقم الآية غير صالح');
+        }
         const ed = getSelectedReciter();
 
         // القراء اللي ملفهم سورة كاملة بس من غير تسجيل آية-بآية حقيقي: نستخدم
@@ -8292,15 +8512,41 @@
         const { url: resolvedUrl, approx: fullFileOnly, timings: timedBounds } = await resolveAyahPlaybackSource(surah, ayah, ed);
 
         if (fullFileOnly) {
-          const ayahLenList = timedBounds ? null : await QuranAPI.getSurahAyahLengths(surah).catch(() => null);
-          state.audioEl = new Audio(resolvedUrl);
-          if (ayah !== 1 && !timedBounds) showToast(`تسجيل ${reciterName(ed)} سورة كاملة، سيبدأ من موضع هذه الآية تقريبًا داخل الملف`);
+          let audioTimings = timedBounds;
+          const ayahLenList = null;
+          const audio = new Audio(resolvedUrl);
+          state.audioEl = audio;
 
           let segEnd = null;
-          state.audioEl.addEventListener('loadedmetadata', () => {
-            const dur = state.audioEl.duration;
-            if (!dur || !isFinite(dur)) return;
-            let bounds = timedBounds;
+          audio.addEventListener('timeupdate', () => {
+            if (segEnd !== null && audio.currentTime >= segEnd) {
+              audio.pause();
+              if (label) label.textContent = 'استماع';
+            }
+          });
+          // لا نبدأ الملف الكامل قبل تحديد موضع الآية. تشغيله مباشرة بعد
+          // إنشاء Audio كان يسمح بسماع بداية السورة إلى أن تصل metadata،
+          // ثم يقفز إلى الآية المطلوبة؛ وهذا يظهر كأن التوقيت متقدم/متأخر.
+          if (audio.readyState < 1) {
+            await new Promise((resolve, reject) => {
+              const cleanup = () => {
+                audio.removeEventListener('loadedmetadata', onReady);
+                audio.removeEventListener('error', onError);
+              };
+              const onReady = () => { cleanup(); resolve(); };
+              const onError = () => { cleanup(); reject(new Error('تعذّر تحميل بيانات ملف التلاوة')); };
+              audio.addEventListener('loadedmetadata', onReady, { once: true });
+              audio.addEventListener('error', onError, { once: true });
+              if (audio.readyState >= 1) onReady();
+            });
+          }
+          const dur = audio.duration;
+          if (!dur || !isFinite(dur)) throw new Error('مدة ملف التلاوة غير متاحة');
+          if (timedBounds) audioTimings = alignTimingsToAudioDuration(timedBounds, dur);
+          if (timedBounds && !audioTimings) throw new Error('توقيت الآية غير متوافق مع مدة ملف الصوت');
+          if (ayah > 1 && !audioTimings) throw new Error('لا يتوفر توقيت متوافق مع ملف الصوت لهذه الآية');
+          {
+            let bounds = audioTimings;
             if (!bounds && ayahLenList && ayahLenList.length) {
               const totalLen = ayahLenList.reduce((s, a) => s + a.length, 0) || 1;
               let acc = 0;
@@ -8310,18 +8556,34 @@
                 return { ayah: a.numberInSurah, start };
               });
             }
-            if (!bounds || !bounds.length) return;
-            const idx = bounds.findIndex((b) => b.ayah === ayah);
-            if (idx === -1) return;
-            state.audioEl.currentTime = bounds[idx].start;
-            segEnd = timedBounds ? bounds[idx].end : (idx + 1 < bounds.length ? bounds[idx + 1].start : dur);
-          });
-          state.audioEl.addEventListener('timeupdate', () => {
-            if (segEnd !== null && state.audioEl.currentTime >= segEnd) {
-              state.audioEl.pause();
-              if (label) label.textContent = 'استماع';
+            if (!bounds || !bounds.length) throw new Error('توقيت الآية غير متاح');
+            const idx = bounds.findIndex((b) => Number(b.ayah) === ayah);
+            if (idx === -1) throw new Error('توقيت الآية المطلوبة غير موجود');
+            const targetStart = Number(bounds[idx].start);
+            if (!Number.isFinite(targetStart) || targetStart < 0 || targetStart >= dur) throw new Error('توقيت بداية الآية غير صالح');
+            audio.currentTime = targetStart;
+            if (audio.seeking) {
+              await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => { cleanup(); reject(new Error('انتهت مهلة الانتقال إلى الآية')); }, 2500);
+                const cleanup = () => {
+                  clearTimeout(timeout);
+                  audio.removeEventListener('seeked', onSeeked);
+                  audio.removeEventListener('error', onError);
+                };
+                const onSeeked = () => {
+                  cleanup();
+                  if (Math.abs(audio.currentTime - targetStart) < 0.5) resolve();
+                  else reject(new Error('لم يصل ملف التلاوة إلى بداية الآية المطلوبة'));
+                };
+                const onError = () => { cleanup(); reject(new Error('تعذّر الانتقال إلى الآية المطلوبة')); };
+                audio.addEventListener('seeked', onSeeked, { once: true });
+                audio.addEventListener('error', onError, { once: true });
+              });
+            } else if (Math.abs(audio.currentTime - targetStart) >= 0.5) {
+              throw new Error('لم يصل ملف التلاوة إلى بداية الآية المطلوبة');
             }
-          });
+            segEnd = audioTimings ? bounds[idx].end : (idx + 1 < bounds.length ? bounds[idx + 1].start : dur);
+          }
         } else {
           state.audioEl = new Audio(resolvedUrl);
         }
@@ -8353,7 +8615,9 @@
       if (label) label.textContent = 'استماع';
       const detail = (e && (e.name || e.message)) ? `${e.name || ''} ${e.message || ''}`.trim() : 'unknown';
       console.error('toggleAyahAudio failed:', e);
-      showToast(`تعذّر تشغيل الصوت — التفاصيل: ${detail}`, 8000);
+      showToast(e && /توقيت موثوق/.test(String(e.message || ''))
+        ? e.message
+        : `تعذّر تشغيل الصوت — التفاصيل: ${detail}`, 8000);
       // نفس السبب فوق: أي فشل هنا (حتى لو في مرحلة جلب الرابط قبل إنشاء
       // الـ Audio أصلاً) لازم يصفّر state.audioEl عشان الضغطة الجاية تبدأ
       // من الأول (رابط جديد) مش تفضل عالقة على محاولة باظت
@@ -10465,7 +10729,10 @@
       // موجودة مسبقًا في DOM، وكان العثور على الآية فيها يمنع نقل الصفحة عند
       // وصول التلاوة إليها. في التمرير التلقائي نبحث داخل صفحات القائمة كلها.
       const targetSelector = `.ayah[data-surah="${surahNumber}"][data-ayah="${ayahNumber}"], .qcf-ayah[data-surah="${surahNumber}"][data-ayah="${ayahNumber}"], .ayahPolygon[data-surah="${surahNumber}"][data-ayah="${ayahNumber}"]`;
-      const visiblePageRoots = [
+      const landscapeAutoPage = autoScroll.active && autoScroll.landscapeMode
+        ? $(`#autoscroll-track.autoscroll-landscape-track .autoscroll-page[data-page="${state.currentPage}"]`)
+        : null;
+      const visiblePageRoots = landscapeAutoPage ? [landscapeAutoPage] : [
         ...$$('#mushaf-page:not(.mushaf-neighbor-preview)'),
         ...$$('#autoscroll-wrap .autoscroll-page'),
       ];
@@ -10475,10 +10742,13 @@
         lastHighlightedAyahEls = targets;
         const firstTarget = targets[0];
         const rect = firstTarget.getBoundingClientRect();
-        const wrap = $('#mushaf-wrap');
-        const wrapRect = wrap && wrap.getBoundingClientRect();
-        if (wrapRect && (rect.top < wrapRect.top || rect.bottom > wrapRect.bottom)) {
-          firstTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const scrollArea = firstTarget.closest('.mushaf-text') || firstTarget.closest('#ayat-container');
+        const scrollRect = scrollArea?.getBoundingClientRect();
+        if (scrollArea && scrollRect && (rect.top < scrollRect.top || rect.bottom > scrollRect.bottom)) {
+          const delta = rect.top < scrollRect.top
+            ? rect.top - scrollRect.top - scrollArea.clientHeight * 0.3
+            : rect.bottom - scrollRect.bottom + scrollArea.clientHeight * 0.3;
+          scrollArea.scrollTo({ top: Math.max(0, scrollArea.scrollTop + delta), behavior: 'smooth' });
         }
         return;
       }
@@ -10740,6 +11010,12 @@
     }
 
     async function playAyahContinuous(surahNumber, ayahNumber, forcedReciter, onlyThisAyah) {
+      // DOM/data sources are not consistent about returning numeric IDs;
+      // normalize before any strict comparisons against API timing rows.
+      surahNumber = Number(surahNumber);
+      ayahNumber = Number(ayahNumber);
+      if (!Number.isInteger(surahNumber) || !Number.isInteger(ayahNumber) ||
+          surahNumber < 1 || surahNumber > 114 || ayahNumber < 1) return;
       // انتقالات الآيات تحصل بعد تحميل الفهرس مرة واحدة؛ لا نضيف دورة await
       // جديدة عند كل ended، لأنها تؤخر بدء الملف التالي بلا حاجة.
       if (!state.surahList || !state.surahList.length) await ensureSurahListLoaded();
@@ -10822,10 +11098,7 @@
         let ayahLenList = null;
         let timedAyahBounds = resolvedTimings || null;
         if (fullFileOnly) {
-          if (!timedAyahBounds) ayahLenList = await QuranAPI.getSurahAyahLengths(surahNumber).catch(() => null);
-          if (ayahNumber !== 1 && !timedAyahBounds) {
-            showToast(`تسجيلات ${reciterName(ed)} سورة كاملة، سيبدأ من موضع هذه الآية تقريبًا داخل الملف`);
-          }
+          if (ayahNumber !== 1 && !timedAyahBounds) throw new Error('لا يتوفر توقيت موثوق لهذه الآية مع هذا القارئ؛ أعد الاتصال بالإنترنت أو اختر قارئًا بتوقيت رسمي');
         }
         // قد يكون المستخدم غيّر الوضع أثناء الانتظار (مثلاً ضغط إيقاف)، أو
         // اختار قارئًا تانيًا بسرعة قبل ما الطلب القديم يخلص (كان ده سبب
@@ -10846,10 +11119,20 @@
         // أثناء التشغيل (التظليل التلقائي) بدل ما يفضل واقف على نفس الآية طول السورة
         let ayahBounds = null;
         let seekedToStart = !fullFileOnly;
+        let audioSeekPromise = Promise.resolve();
         function computeBoundsAndSeek() {
           const dur = state.surahAudioEl && state.surahAudioEl.duration;
           if (!fullFileOnly || !dur || !isFinite(dur)) return;
-          if (timedAyahBounds && timedAyahBounds.length) ayahBounds = timedAyahBounds;
+          if (timedAyahBounds && timedAyahBounds.length) {
+            ayahBounds = alignTimingsToAudioDuration(timedAyahBounds, dur);
+            if (!ayahBounds) {
+              audioSeekPromise = Promise.resolve(false);
+              return;
+            }
+            // Keep every later consumer (single-ayah stop and highlighting)
+            // on the same duration-aligned boundaries used for the initial seek.
+            timedAyahBounds = ayahBounds;
+          }
           else if (ayahLenList && ayahLenList.length) {
             const totalLen = ayahLenList.reduce((s, a) => s + a.length, 0) || 1;
             let acc = 0;
@@ -10859,21 +11142,42 @@
               return { ayah: a.numberInSurah, start };
             });
           }
-          if (!ayahBounds || !ayahBounds.length) return;
+          if (!ayahBounds || !ayahBounds.length) {
+            if (ayahNumber > 1) audioSeekPromise = Promise.resolve(false);
+            return;
+          }
           if (!seekedToStart && (ayahNumber > 1 || timedAyahBounds)) {
-            const target = ayahBounds.find((b) => b.ayah === ayahNumber);
+            const target = ayahBounds.find((b) => Number(b.ayah) === ayahNumber);
             if (target) {
-              state.surahAudioEl.currentTime = target.start;
-              // Ignore timeupdate at the beginning of the full-surah file until
-              // the seek to the requested ayah has completed.
-              state.surahAudioEl.addEventListener('seeked', () => {
-                if (state.surahAudioEl === audioEl && state.ayahPlayerAyahNum === ayahNumber) seekedToStart = true;
-              }, { once: true });
+              const audio = state.surahAudioEl;
+              audioSeekPromise = new Promise((resolve) => {
+                let settled = false;
+                let timeoutId = 0;
+                const onSeeked = () => finish();
+                const finish = (timedOut = false) => {
+                  if (settled) return;
+                  settled = true;
+                  clearTimeout(timeoutId);
+                  audio.removeEventListener('seeked', onSeeked);
+                  const landedAtTarget = !audio.seeking && Math.abs(audio.currentTime - target.start) < 0.5;
+                  if (landedAtTarget && state.surahAudioEl === audio && state.ayahPlayerAyahNum === ayahNumber) seekedToStart = true;
+                  resolve(landedAtTarget && !timedOut);
+                };
+                // Register before assigning currentTime: some WebViews can
+                // complete a local-file seek immediately.
+                audio.addEventListener('seeked', onSeeked, { once: true });
+                timeoutId = setTimeout(() => finish(true), 1800);
+                try {
+                  audio.currentTime = target.start;
+                  if (!audio.seeking && Math.abs(audio.currentTime - target.start) < 0.25) finish();
+                } catch (_) { finish(); }
+              });
             } else {
-              seekedToStart = true;
+              audioSeekPromise = Promise.resolve(false);
             }
           } else {
             seekedToStart = true;
+            audioSeekPromise = Promise.resolve();
           }
         }
 
@@ -10897,7 +11201,7 @@
         state.surahAudioEl.addEventListener('timeupdate', () => {
           if (!state.surahAudioEl || state.surahAudioEl !== audioEl) return;
           if (fullFileOnly && seekedToStart && state.singleAyahOnly && timedAyahBounds) {
-            const selectedTiming = timedAyahBounds.find((bound) => bound.ayah === ayahNumber);
+            const selectedTiming = timedAyahBounds.find((bound) => Number(bound.ayah) === ayahNumber);
             if (selectedTiming && state.surahAudioEl.currentTime >= selectedTiming.end) {
               stopAudio();
               return;
@@ -11043,6 +11347,12 @@
             else state.surahAudioEl.addEventListener('loadedmetadata', () => resolve(), { once: true });
           });
           if (state.playerMode !== 'ayah' || state.surahAudioSurah !== surahNumber || state.ayahPlayerAyahNum !== ayahNumber) return;
+          // loadedmetadata triggers computeBoundsAndSeek above. Wait until the
+          // browser finishes that seek before play(), or the old position can
+          // briefly be audible and sound like the previous ayah.
+          const seekCompleted = await audioSeekPromise;
+          if (state.playerMode !== 'ayah' || state.surahAudioSurah !== surahNumber || state.ayahPlayerAyahNum !== ayahNumber) return;
+          if (!seekCompleted) throw new Error('تعذّر الوصول لتوقيت الآية المطلوبة');
         }
 
         enableBackgroundModeForAudio();
@@ -11066,7 +11376,9 @@
         // كان بيحسّه المستخدم كـ"ضغطة راحت في الفاضي" لما يختار قارئ تاني)
         if (audioEl && state.surahAudioEl !== audioEl) return;
         if (!audioEl && state.playerMode !== 'ayah') return;
-        showToast('تعذّر تشغيل التلاوة، تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
+        showToast(e && /توقيت موثوق/.test(String(e.message || ''))
+          ? e.message
+          : 'تعذّر تشغيل التلاوة، تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
         stopAudio();
       }
     }
@@ -13933,12 +14245,17 @@
     const applyPageColor = (color) => {
       // بنلوّن #mushaf-wrap (صفحة القرآن) و#app-header (الهيدر العلوي) معًا
       // بنفس الكلاس، عشان يبقى شكل الهيدر موحّد مع لون صفحة المصحف المختار
-      [mushafWrap, appHeader].forEach((el) => {
+      [mushafWrap, appHeader, $('#page-foot-bar')].forEach((el) => {
         if (!el) return;
         el.classList.forEach((c) => {
           if (c.startsWith('page-color-')) el.classList.remove(c);
         });
         el.classList.add(`page-color-${color}`);
+        if (el.id === 'page-foot-bar' && mushafWrap) {
+          const palette = getComputedStyle(mushafWrap);
+          ['--paper', '--paper-deep', '--mushaf-ink', '--ink-soft', '--page-accent', '--pill-shade']
+            .forEach((property) => el.style.setProperty(property, palette.getPropertyValue(property)));
+        }
       });
     };
     applyPageColor(savedPageColor);
@@ -15523,10 +15840,10 @@
       if (rowButton) { rowButton.disabled = true; rowButton.textContent = 'جارٍ التحميل…'; }
       try {
         let page = state.currentPage || 1;
-        const currentAyah = state.currentPageData && state.currentPageData.ayahs && state.currentPageData.ayahs[0];
-        if (currentAyah && currentAyah.surah) {
-          const surah = currentAyah.surah.number;
-          const ayah = currentAyah.numberInSurah;
+        const currentAyah = getFirstVisibleMushafAyah();
+        if (currentAyah?.surah && currentAyah?.ayah) {
+          const surah = currentAyah.surah;
+          const ayah = currentAyah.ayah;
           if (id === 'qalun') {
             // تحويل رقم الصفحة من حفص لقالون بيحتاج طلب للشبكة؛ لو الطبعة
             // اتحمّلت كاملة وملقيناش نت نفتح على نفس رقم الصفحة بدل ما نفشل
@@ -15542,7 +15859,6 @@
         }
         if (id === 'qalun') await QuranRiwayat.getQalunPage(page);
         else await QuranRiwayat.getSusiPage(page);
-        state.currentPage = page;
       } catch (e) {
         if (rowButton) { rowButton.disabled = false; rowButton.textContent = apT('editions.choose', 'اختيار'); }
         showToast(`تعذّر تحميل ${id === 'qalun' ? 'صفحة قالون' : 'بيانات السوسي'}. تحقّق من الاتصال بالإنترنت وحاول مجددًا.`);
@@ -15571,7 +15887,6 @@
       mushafNeighborPreviews.forEach((entry) => entry.element?.remove());
       mushafNeighborPreviews.clear();
       mushafPreviewDesired = new Set();
-      mushafPreviewAttempted.clear();
       const reader = $('#mushaf-wrap');
       if (reader) reader.scrollTop = 0;
       const activePage = $('#mushaf-page');
@@ -27544,8 +27859,10 @@
     const width = container.clientWidth || window.innerWidth || 360;
     const height = container.clientHeight || window.innerHeight || 640;
     const containerStyle = getComputedStyle(container);
-    const pagePadding = Math.min(22, Math.max(8, (window.innerWidth || width) * 0.024)) * 2;
-    const availableWidth = Math.max(160, width - (parseFloat(containerStyle.paddingLeft) || 0) - (parseFloat(containerStyle.paddingRight) || 0) - pagePadding);
+    // The container already owns the same side insets as the normal Hafs
+    // reader. Do not subtract another page-level padding here; that made the
+    // tasmee glyphs smaller and left visible gutters on both sides.
+    const availableWidth = Math.max(160, width - (parseFloat(containerStyle.paddingLeft) || 0) - (parseFloat(containerStyle.paddingRight) || 0));
     const measure = tasmeeQcfMeasureContext;
     if (!measure) return false;
     const maxWidthAt100 = Math.max(...lines.map((line) => {
@@ -27563,7 +27880,10 @@
     const isLandscape = document.body.classList.contains('mushaf-landscape-mode');
     const heightFit = isLandscape ? 64 : height / (lines.length * 1.68);
     const fontSize = Math.max(12, Math.min(64, (availableWidth * 0.98 / maxWidthAt100) * 100, heightFit));
-    const lineHeight = fontSize * 1.68;
+    // In portrait, distribute every line evenly across the available reader
+    // height, like the regular Hafs page fitter. The font-size fit above keeps
+    // glyphs within each row; landscape remains naturally scrollable.
+    const lineHeight = isLandscape ? fontSize * 1.68 : height / lines.length;
     const page = document.createElement('div');
     page.className = 'tasmee-qcf-page';
     page.dataset.mushafPage = String(pageNumber);

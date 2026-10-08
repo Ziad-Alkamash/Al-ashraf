@@ -7,17 +7,38 @@
   const RECITERS_URL = 'https://www.mp3quran.net/api/v3/reciters?language=ar';
   const RECITERS_EN_URL = 'https://www.mp3quran.net/api/v3/reciters?language=eng';
   const TIMING_URL = 'https://www.mp3quran.net/api/v3/ayat_timing';
-  const READS_CACHE_KEY = 'almus-hraf:mp3quran-timing-reads:v1';
-  // v3 يعزل الخرائط القديمة التي كانت لا تُستخدم إلا مع مجموعة ضيقة من القراء.
-  const TIMING_CACHE_PREFIX = 'almus-hraf:mp3quran-ayah-timing:v3:';
+  const READS_CACHE_KEY = 'almus-hraf:mp3quran-timing-reads:v7';
+  // v9 forces every reader/surah pair to be fetched again from MP3Quran.
+  // Previous timing maps may have been saved against a mismatched audio file.
+  const TIMING_CACHE_PREFIX = 'almus-hraf:mp3quran-ayah-timing:v9:';
   const READS_TTL = 7 * 24 * 60 * 60 * 1000;
-  const CATALOG_CACHE_KEY = 'almus-hraf:mp3quran-reciter-catalog:v1';
+  const CATALOG_CACHE_KEY = 'almus-hraf:mp3quran-reciter-catalog:v7';
   const CATALOG_TTL = 24 * 60 * 60 * 1000;
   const TIMING_TTL = 30 * 24 * 60 * 60 * 1000;
   const pending = new Map();
   let readsRequest = null;
   let catalogRequest = null;
   let catalogReciters = null;
+
+  // Erase previously generated timing/catalog data on this device. The
+  // current cache namespace is intentionally retained between launches;
+  // anything from earlier builds is fetched again from MP3Quran.
+  function purgePreviousTimingCaches() {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith('almus-hraf:mp3quran-ayah-timing:') && !key.startsWith(TIMING_CACHE_PREFIX)) {
+          localStorage.removeItem(key);
+        } else if (key.startsWith('almus-hraf:mp3quran-timing-reads:') && key !== READS_CACHE_KEY) {
+          localStorage.removeItem(key);
+        } else if (key.startsWith('almus-hraf:mp3quran-reciter-catalog:') && key !== CATALOG_CACHE_KEY) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (_) { /* localStorage may be unavailable in private browsing */ }
+  }
+  purgePreviousTimingCaches();
   // اسم/معرّف المصدر الرسمي صريح للقارئ الذي قد تختلف تسميته في الفهارس.
   const READ_ID_BY_EDITION = Object.freeze({
     'ar.haithamaldukhain': 273,
@@ -25,6 +46,10 @@
     'ar.ahmedajamy': 5,
     'ar.hudhaify': 74,
     'ar.mustafaismail': 288,
+    'ar.alijaber': 76,
+    'ar.abdulbasitmjwd': 51,
+    'ar.husarymjwd': 119,
+    'ar.bannamjwd': 122,
     'warsh.husary': 120,
     'warsh.koshi': 16,
     'warsh.omaralqazabri': 80,
@@ -202,14 +227,21 @@
     if (!global.QuranAPI) return null;
     const selectedReciter = (QuranAPI.RECITERS || []).find((item) => item.id === ed);
     if (selectedReciter && selectedReciter.timingReadId) {
-      return reads.find((read) => Number(read.id) === Number(selectedReciter.timingReadId)) || null;
+      const exact = reads.find((read) => Number(read.id) === Number(selectedReciter.timingReadId)) || null;
+      if (exact && readMatchesNarration(exact, selectedReciter)) return exact;
     }
     const explicitId = READ_ID_BY_EDITION[String(ed || '')];
     if (explicitId) {
       const explicit = reads.find((read) => Number(read.id) === explicitId) || null;
       const reciter = (QuranAPI.RECITERS || []).find((item) => item.id === ed);
-      return explicit && reciter && readMatchesNarration(explicit, reciter) ? explicit : null;
+      if (explicit && reciter && readMatchesNarration(explicit, reciter)) return explicit;
+      // If MP3Quran changes an ID or its narration metadata, continue with
+      // the identity-based matcher below instead of disabling timing outright.
     }
+    // Dynamic MP3Quran entries must be matched by the API's exact audio folder
+    // in registerSiteCatalog. A name-only fallback can pair a new recording
+    // with timings from an older recording by the same reader.
+    if (selectedReciter && selectedReciter.catalogSource === 'mp3quran') return null;
     const reciter = (QuranAPI.RECITERS || []).find((item) => item.id === ed);
     if (!reciter) return null;
     const name = normalizedName(reciter.name);
@@ -253,27 +285,40 @@
     return bounds;
   }
 
+  function audioUrlForRead(read, surahNumber) {
+    const base = String(read && read.folder_url || '').replace(/^http:/i, 'https://').replace(/\/+$/, '');
+    if (!/^https:\/\//i.test(base)) return null;
+    return `${base}/${String(surahNumber).padStart(3, '0')}.mp3`;
+  }
+
+  function cachedTimingsMatchRead(cached, read, surahNumber) {
+    if (!cached || !read || Number(cached.readId) !== Number(read.id)) return false;
+    const expected = audioUrlForRead(read, surahNumber);
+    return !!expected && normalizedUrl(cached.audioUrl) === normalizedUrl(expected);
+  }
+
   async function getAyahTimings(ed, surah) {
     const surahNumber = Number(surah);
     if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) return null;
     const key = `${TIMING_CACHE_PREFIX}${encodeURIComponent(ed)}:${surahNumber}`;
     const cached = readCache(key);
-    if (cached && Date.now() - cached.savedAt < TIMING_TTL) {
-      return { bounds: normalizeTimings(cached.items), audioUrl: cached.audioUrl || null, readId: cached.readId || null };
-    }
     if (pending.has(key)) return pending.get(key);
 
     const request = (async () => {
       try {
         const reads = await loadReads();
         const read = matchingRead(ed, reads);
-        if (!read) return cached ? { bounds: normalizeTimings(cached.items), audioUrl: cached.audioUrl || null, readId: cached.readId || null } : null;
+        const cacheMatchesRead = cachedTimingsMatchRead(cached, read, surahNumber);
+        if (cacheMatchesRead && Date.now() - cached.savedAt < TIMING_TTL) {
+          const bounds = normalizeTimings(cached.items);
+          if (bounds) return { bounds, audioUrl: cached.audioUrl, readId: Number(read.id) };
+        }
+        if (!read) return null;
         const items = await fetchJson(`${TIMING_URL}?surah=${surahNumber}&read=${encodeURIComponent(read.id)}`);
         const bounds = normalizeTimings(items);
         if (!bounds) throw new Error('صيغة توقيت الآيات غير صحيحة');
-        const audioBase = String(read.folder_url || '').replace(/^http:/i, 'https://').replace(/\/+$/, '');
-        if (!/^https:\/\//i.test(audioBase)) throw new Error('رابط ملف القراءة غير صالح');
-        const audioUrl = `${audioBase}/${String(surahNumber).padStart(3, '0')}.mp3`;
+        const audioUrl = audioUrlForRead(read, surahNumber);
+        if (!audioUrl) throw new Error('رابط ملف القراءة غير صالح');
         // لا نخزن مضلعات الصفحات وروابطها هنا؛ نحتاج حدود الوقت فقط، وتخزين
         // الحقول الصغيرة يمنع تضخم localStorage بعد الاستماع لسور كثيرة.
         const compactItems = items.map((item) => ({
@@ -284,7 +329,10 @@
         storeCache(key, compactItems, { audioUrl, readId: Number(read.id) });
         return { bounds, audioUrl, readId: Number(read.id) };
       } catch (error) {
-        if (cached) return { bounds: normalizeTimings(cached.items), audioUrl: cached.audioUrl || null, readId: cached.readId || null };
+        if (cachedTimingsMatchRead(cached, read, surahNumber)) {
+          const bounds = normalizeTimings(cached.items);
+          if (bounds) return { bounds, audioUrl: cached.audioUrl, readId: Number(read.id) };
+        }
         console.warn('تعذّر تحميل توقيت الآيات من MP3Quran', error);
         return null;
       }

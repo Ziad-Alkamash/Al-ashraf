@@ -187,7 +187,23 @@ body.theme-night #khatma-group-create-overlay .khatma-segmented-btn.active { col
   background: var(--ap-olive-soft);
   color: var(--ap-olive);
 }
-#khatma-group-details-overlay .khatma-details-more-wrap { position: relative; flex-shrink: 0; }
+#khatma-group-details-overlay .khatma-details-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  direction: ltr;
+}
+#khatma-group-details-overlay .khatma-details-more-wrap { position: relative; flex-shrink: 0; order: 2; }
+#khatma-group-details-overlay .kg-members-topbar-btn { display: flex; align-items: center; justify-content: center; flex: 0 0 auto; order: 1; }
+#khatma-group-details-overlay .kg-members-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  background: currentColor;
+  -webkit-mask: url("images/audience.png") center / contain no-repeat;
+  mask: url("images/audience.png") center / contain no-repeat;
+}
 #khatma-group-details-overlay .khatma-details-more-menu {
   position: absolute;
   top: calc(100% + 8px);

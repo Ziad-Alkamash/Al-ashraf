@@ -2201,7 +2201,7 @@
     document.addEventListener('click', (ev) => {
       const menu = $('#kg-details-more-menu');
       if (!menu || menu.classList.contains('hidden')) return;
-      if (menu.contains(ev.target) || ev.target.closest('#btn-kg-details-more')) return;
+      if (menu.contains(ev.target) || ev.target.closest('#btn-kg-details-more') || ev.target.closest('#btn-kg-members')) return;
       menu.classList.add('hidden');
       ev.stopPropagation();
       ev.preventDefault();

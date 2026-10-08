@@ -960,11 +960,11 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
 
         <div id="ayat-container" class="mushaf-text"></div>
 
-        <div id="page-foot-bar">
-          <span id="surah-progress"></span>
-          <span id="page-hizb-info"></span>
-        </div>
       </article>
+    </div>
+    <div id="page-foot-bar">
+      <span id="surah-progress"></span>
+      <span id="page-hizb-info"></span>
     </div>
 
     <!-- وضع "التقليب التلقائي": كومة صفحات قابلة للتمرير فعليًا، بديلة لـ
@@ -4879,11 +4879,12 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
         </button>
       </div>
       <h2 class="khatma-details-title" id="kg-details-title" data-i18n="khatma_group.hub_title">الختمة الجماعية</h2>
-      <div class="khatma-details-more-wrap">
-        <button type="button" class="khatma-details-more-btn" id="btn-kg-details-more" data-i18n-aria="khatma_group.settings_aria" aria-label="إعدادات الختمة">
-          <svg><use href="#icon-gear-flower"></use></svg>
-        </button>
-        <div class="khatma-details-more-menu hidden" id="kg-details-more-menu">
+      <div class="khatma-details-topbar-actions">
+        <div class="khatma-details-more-wrap">
+          <button type="button" class="khatma-details-more-btn" id="btn-kg-details-more" data-i18n-aria="khatma_group.settings_aria" aria-label="إعدادات الختمة">
+            <svg><use href="#icon-gear-flower"></use></svg>
+          </button>
+          <div class="khatma-details-more-menu hidden" id="kg-details-more-menu">
         <button type="button" class="khatma-details-menu-item hidden" id="btn-kg-edit">
           <span data-i18n="khatma_group.edit_menu">تعديل</span>
           <svg><use href="#icon-edit"></use></svg>
@@ -4891,10 +4892,6 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
         <button type="button" class="khatma-details-menu-item hidden" id="btn-kg-assign">
           <span data-i18n="khatma_group.assign_menu">توزيع الأجزاء</span>
           <svg><use href="#icon-shuffle"></use></svg>
-        </button>
-        <button type="button" class="khatma-details-menu-item" id="btn-kg-members">
-          <span data-i18n="khatma_group.members_menu">الأعضاء</span>
-          <svg><use href="#icon-users"></use></svg>
         </button>
         <button type="button" class="khatma-details-menu-item" id="btn-kg-leave">
           <span data-i18n="khatma_group.leave_menu">مغادرة الختمة</span>
@@ -4904,7 +4901,11 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
           <span data-i18n="khatma_details.delete">حذف</span>
           <svg><use href="#icon-trash"></use></svg>
         </button>
+          </div>
         </div>
+        <button type="button" class="khatma-details-more-btn kg-members-topbar-btn" id="btn-kg-members" data-i18n-aria="khatma_group.members_menu" aria-label="الأعضاء">
+          <span class="kg-members-icon" aria-hidden="true"></span>
+        </button>
       </div>
     </div>
 

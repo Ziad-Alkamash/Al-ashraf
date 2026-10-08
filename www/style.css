@@ -757,63 +757,113 @@ body.theme-night .ripple-fx {
 #mushaf-page.riwaya-svg-layout,
 #mushaf-page.susi-edition-layout { width: 100%; }
 #mushaf-page.susi-edition-layout {
-  padding: clamp(8px, 1.5vw, 14px);
+  /* Keep the Susi page's reading box aligned with Hafs/Warsh/Qalun; inner
+     side spacing is already provided by #ayat-container. */
+  padding: 0;
 }
 #mushaf-page.qcf-page-image-layout,
 .autoscroll-page.qcf-page-image-layout { width: 100%; }
 #mushaf-page.qcf-page-image-layout #ayat-container { width: 100%; }
-.qcf-page-image-svg {
-  display: block;
-  flex: 1 1 auto;
+/* QCF, Warsh and Qalun share one fixed-size reader slide. The SVG owns its
+   source proportions (meet); page navigation only translates whole slides. */
+#view-quran.active {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+#mushaf-wrap {
+  position: relative;
+  flex: 1 1 0;
   min-width: 0;
   min-height: 0;
-  overflow: visible;
-  transform: none;
-}
-/* صفحات المصحف بصيغة SVG تملأ المساحة المتاحة مع الحفاظ على النسبة،
-   وتظل مضلعات الآيات أعلى الصفحة قابلة للتحديد والضغط. */
-#mushaf-wrap:has(> #mushaf-page.qcf-page-image-layout) {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
+  width: 100%;
+  height: auto;
+  padding: 0;
   overflow: hidden;
-  touch-action: pan-y;
+  display: block;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
-#mushaf-page.qcf-page-image-layout {
+#mushaf-page,
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview {
   position: absolute;
-  left: 50%;
-  top: 0;
-  margin: 0;
+  inset: 0;
+  box-sizing: border-box;
   width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   max-width: none;
-  height: 100%;
-  min-height: 0;
-  max-height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
-  transform: translateX(-50%);
+  clip-path: inset(0);
+  border: 0;
+  border-radius: 0;
+  transform: translate3d(0,0,0);
+  background: var(--paper);
+  isolation: isolate;
+  will-change: transform;
 }
-#mushaf-page.qcf-page-image-layout #surah-header,
-#mushaf-page.qcf-page-image-layout #page-foot-bar { display: none !important; }
-#mushaf-page.qcf-page-image-layout #ayat-container {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  justify-content: center;
+#mushaf-wrap > #mushaf-page { z-index: 1; }
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview {
+  z-index: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview:not(.mushaf-neighbor-active),
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview:not(.mushaf-neighbor-active) * {
+  visibility: hidden !important;
+}
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview.mushaf-neighbor-active {
+  visibility: visible;
+}
+#mushaf-page #surah-header,
+#mushaf-page #page-foot-bar { display: none !important; }
+#mushaf-page #ayat-container {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
+  padding-inline: clamp(8px, 1vw, 16px);
+}
+#mushaf-page :is(.warsh-svg-page, .riwaya-svg-page) {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0;
+  transform: none !important;
+}
+#page-foot-bar {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 30px;
+  margin: 0;
+  padding: 4px 18px max(6px, env(safe-area-inset-bottom));
+  background: var(--paper);
 }
 .autoscroll-page.qcf-page-image-layout .mushaf-text {
   width: 100%;
-  flex: 0 0 auto;
+  height: var(--mushaf-page-height, 100%);
   min-height: 0;
+  overflow: hidden;
 }
-.qcf-page-image-svg .ayahPolygon { fill: var(--ayah-hl); fill-opacity: 0; pointer-events: all; cursor: pointer; transition: fill-opacity .35s ease; }
-.qcf-page-image-svg .ayahPolygon.ayah-highlight,
-.qcf-page-image-svg .ayahPolygon.ayah-playing,
-.qcf-page-image-svg .ayahPolygon.ayah-selected { fill-opacity: .62 !important; }
-.qcf-page-image-svg .ayahPolygon.ayah-pressing { fill-opacity: .42 !important; }
+.autoscroll-page.qcf-page-image-layout :is(.warsh-svg-page, .riwaya-svg-page) {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
 #mushaf-page.riwaya-svg-layout #ayat-container,
 #mushaf-page.susi-edition-layout #ayat-container { width: 100%; }
 .riwaya-svg-page { overflow: visible; transform: none; }
@@ -1177,8 +1227,8 @@ body.theme-night {
 .qcf-ayah.ayah-pressing,
 .qcf-ayah.ayah-selected {
   background: var(--ayah-hl) !important;
-  box-shadow: 0 calc(var(--line-gap) / 2) 0 0 var(--ayah-hl),
-              0 calc(var(--line-gap) / -2) 0 0 var(--ayah-hl) !important;
+  box-shadow: 0 calc(var(--line-gap) / 2 + 1px) 0 0 var(--ayah-hl),
+              0 calc(var(--line-gap) / -2 - 1px) 0 0 var(--ayah-hl) !important;
 }
 /* تظليل تدريجي أثناء الضغط المطوّل على الآية (قبل ما تفتح قائمة الخيارات) */
 .qcf-ayah.ayah-pressing {
@@ -12358,41 +12408,6 @@ body.theme-night.oled-true-black #mtt-rotate-curtain svg { color: var(--gold-sof
 /* في الوضع العرضي قد يفيض النص المكبّر عن الارتفاع، لذا نحتاج تمريرًا
    رأسيًا أصليًا. pan-y يسمح بتمرير المحتوى ويمنع السحب الأفقي الأصلي،
    بينما يظل التقليب الأفقي مملوكًا لمعالج السحب في app.js. */
-body.mushaf-landscape-mode #mushaf-wrap {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  align-items: flex-start;
-  touch-action: pan-y;
-}
-body.mushaf-landscape-mode #mushaf-page {
-  position: relative;
-  top: auto;
-  left: auto;
-  transform: translate3d(0, 0, 0);
-  height: auto;
-  min-height: 100%;
-  max-height: none;
-  /* حافظ على سكرول الصفحة رأسيًا، لكن اقص أي سطر أفقي يتجاوز حدود لوح
-     الصفحة. overflow:visible كان يسمح لحروف الصفحة المجاورة بالظهور فوق
-     هذه الصفحة أثناء تحريك اللوحين جنبًا إلى جنب. clip أفقيًا لا ينشئ
-     scroll container، لذلك يظل تمرير الصفحة رأسيًا عبر #mushaf-wrap. */
-  overflow-x: clip;
-  overflow-y: visible;
-  cursor: auto;
-  /* هامش جانبي إضافي (يمين/شمال) خاص باللاندسكيب بس — الشاشة عريضة هنا
-     والسطر بيتمدد على طولها بالكامل، فمحتاج هامش ملموس عشان النص ميلامسش
-     حواف الشاشة. *لازم* الرقم ده يفضل مطابق تمامًا لـ PAGE_PAD_X (وضع
-     isLandscapeWide) في fitMushafPage بـ app.js — شوف تعليقه هناك. الوضع
-     الطولي العادي مالوش أي هامش إضافي هنا (رجع تمامًا لتصميمه الأصلي) */
-  padding-left: 1px;
-  padding-right: 1px;
-}
-body.mushaf-landscape-mode #mushaf-wrap > #mushaf-page.mushaf-neighbor-preview {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate3d(-50%, 0, 0);
-}
 body.mushaf-landscape-mode #mushaf-page:is(.warsh-edition-layout, .riwaya-svg-layout) {
   padding-inline: clamp(4px, 1vw, 8px);
 }
@@ -16004,13 +16019,11 @@ body.header-hidden #view-tasbih .misbaha-page {
    fill بـ !important لأن ألوان الـSVG الأصلية معرّفة كـ attributes مباشرة.
    ------------------------------------------------------------------- */
 body.theme-night .warsh-svg-page #content :is(path, text, tspan, use, polygon):not(.ayahPolygon),
-body.theme-night .riwaya-svg-page #content :is(path, text, tspan, use, polygon):not(.ayahPolygon),
-body.theme-night .qcf-page-image-svg #content :is(path, text, tspan, use, polygon):not(.ayahPolygon) {
+body.theme-night .riwaya-svg-page #content :is(path, text, tspan, use, polygon):not(.ayahPolygon) {
   fill: var(--mushaf-ink) !important;
 }
 body.theme-night .warsh-svg-page #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon),
-body.theme-night .riwaya-svg-page #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon),
-body.theme-night .qcf-page-image-svg #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon) {
+body.theme-night .riwaya-svg-page #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon) {
   fill: var(--gold-soft) !important;
 }
 /* لو الصفحة لونها فاتح (أخضر/أزرق/فاتح/دافئ) والتطبيق ليلي، نرجّع الحبر
@@ -16030,16 +16043,8 @@ body.theme-night #autoscroll-wrap:is(.page-color-green, .page-color-blue, .page-
 #autoscroll-wrap.page-color-dark :is(.warsh-svg-page, .riwaya-svg-page) #content :is(path, text, tspan, use, polygon):not(.ayahPolygon) {
   fill: var(--mushaf-ink) !important;
 }
-#mushaf-wrap.page-color-dark .qcf-page-image-svg #content :is(path, text, tspan, use, polygon):not(.ayahPolygon),
-#autoscroll-wrap.page-color-dark .qcf-page-image-svg #content :is(path, text, tspan, use, polygon):not(.ayahPolygon) {
-  fill: var(--mushaf-ink) !important;
-}
 #mushaf-wrap.page-color-dark :is(.warsh-svg-page, .riwaya-svg-page) #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon),
 #autoscroll-wrap.page-color-dark :is(.warsh-svg-page, .riwaya-svg-page) #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon) {
-  fill: var(--gold-soft) !important;
-}
-#mushaf-wrap.page-color-dark .qcf-page-image-svg #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon),
-#autoscroll-wrap.page-color-dark .qcf-page-image-svg #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon) {
   fill: var(--gold-soft) !important;
 }
 
@@ -25175,178 +25180,6 @@ body.theme-night #view-tools .home-row-60-40 .home-quiz-calligraphy {
 }
 
 
-/* Every QCF-style page uses the reader viewport as a fixed fit box. The SVG
-   viewBox remains authoritative and preserveAspectRatio="xMidYMid meet" fits
-   the page without cropping or distortion. This keeps any unavoidable
-   letterboxing balanced instead of leaving it as a large bottom-only gap. */
-#mushaf-wrap:has(> #mushaf-page.qcf-page-image-layout) {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding: 0;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-}
-#mushaf-page.qcf-page-image-layout:not(.mushaf-neighbor-preview) {
-  position: relative;
-  inset: auto;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  clip-path: none;
-  transform: none;
-}
-#mushaf-wrap > #mushaf-page.qcf-page-image-layout.mushaf-neighbor-preview {
-  position: absolute;
-  inset: 0 auto auto 50%;
-  /* صفحة الصورة تبدأ من أعلى القارئ؛ لا تورّث translateY(-50%) العامة
-     لمعاينة الصفحة، وإلا تهبط نصف ارتفاعها عند أول تقليب أفقي. */
-  transform: translate3d(-50%, 0, 0);
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  clip-path: none;
-}
-#mushaf-page.qcf-page-image-layout #ayat-container {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-#mushaf-page.qcf-page-image-layout :is(.qcf-page-image-svg, .warsh-svg-page, .riwaya-svg-page) {
-  display: block;
-  width: auto !important;
-  height: 96% !important;
-  max-width: 100%;
-  max-height: 96% !important;
-  margin: 0;
-
-}
-/* Keep page and hizb references visible for full-page SVG editions. The
-   footer takes its own flex row so it never covers the final Quran line. */
-#mushaf-page.qcf-page-image-layout #page-foot-bar {
-  display: flex !important;
-  position: relative;
-  z-index: 2;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-  min-height: 30px;
-  margin-top: 0;
-  padding: 4px 12px max(6px, env(safe-area-inset-bottom));
-  font-size: 12px;
-}
-#mushaf-page.qcf-page-image-layout #ayat-container {
-  height: auto !important;
-  flex: 1 1 auto;
-}
-.autoscroll-page.qcf-page-image-layout :is(.qcf-page-image-svg, .warsh-svg-page, .riwaya-svg-page) {
-  display: block;
-  width: 100% !important;
-  height: auto !important;
-  max-width: 100%;
-  max-height: none !important;
-  margin: 0;
-}
-
-/* Wide reading layout: fill the viewport width without distorting or
-   cropping the SVG. Tall page proportions continue in the vertical scroller. */
-#mushaf-wrap:has(> #mushaf-page.qcf-page-image-layout) {
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-}
-#mushaf-page.qcf-page-image-layout:not(.mushaf-neighbor-preview),
-#mushaf-wrap > #mushaf-page.qcf-page-image-layout.mushaf-neighbor-preview {
-  display: flex;
-  flex-direction: column;
-  height: auto;
-  min-height: 100%;
-  max-height: none;
-  overflow: visible;
-}
-#mushaf-page.qcf-page-image-layout #ayat-container {
-  display: block;
-  flex: 0 0 auto;
-  height: auto !important;
-  min-height: 0;
-  overflow: visible;
-}
-#mushaf-page.qcf-page-image-layout :is(.qcf-page-image-svg, .warsh-svg-page, .riwaya-svg-page) {
-  width: 100% !important;
-  height: var(--qcf-svg-height, auto) !important;
-  max-width: 100% !important;
-  max-height: none !important;
-}
-#mushaf-page.qcf-page-image-layout #page-foot-bar {
-  position: relative;
-  inset: auto;
-  z-index: 2;
-  flex: 0 0 auto;
-  width: auto;
-  min-height: 30px;
-  margin-top: auto;
-  padding: 5px 14px max(6px, env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--paper) 90%, transparent);
-  pointer-events: auto;
-}
-/* A small responsive gutter keeps Quran glyphs away from the screen edges. */
-#mushaf-page.qcf-page-image-layout #ayat-container {
-  padding-inline: clamp(8px, 1vw, 16px);
-}
-
-/* In portrait, phone drags turn pages on the selected axis. Landscape
-   overrides this with native vertical scrolling and custom horizontal turns. */
-@media (max-width: 768px) and (pointer: coarse) {
-  #mushaf-wrap {
-    touch-action: none;
-  }
-}
-
-/* Landscape reading needs a slightly wider inner gutter than portrait. */
-body.mushaf-landscape-mode #mushaf-page.qcf-page-image-layout #ayat-container {
-  padding-inline: clamp(22px, 3vw, 42px);
-}
-
-/* حافظ على مسافة جانبية مريحة في الصفحات النصية أيضًا عند القراءة بالعرض؛
-   fitMushafPage يخصم هذا الـ padding قبل حساب حجم الخط، فلا تُقص الأسطر. */
-body.mushaf-landscape-mode #mushaf-page:not(.qcf-page-image-layout) {
-  padding-inline: clamp(16px, 3vw, 40px);
-}
-
-/* Normalize imported Warsh/Qalun drawings to the same viewport box. */
-#mushaf-page.qcf-page-image-layout :is(.warsh-svg-page, .riwaya-svg-page) {
-  width: 100% !important;
-  height: var(--qcf-svg-height, auto) !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  transform: none !important;
-}
-
-/* Opening API pages keep their original image bounds and fit. */
-#mushaf-page.qcf-page-image-layout #ayat-container:has(> svg.qcf-page-image-svg[data-mushaf-page="1"], > svg.qcf-page-image-svg[data-mushaf-page="2"]) {
-  padding-inline: clamp(12px, 1.5vw, 20px);
-}
-
-/* Page turns are owned by the reader so the browser cannot claim a drag on
-   the user's selected axis before the active page follows the finger. */
-#mushaf-wrap { touch-action: none; }
-body.mushaf-landscape-mode #mushaf-wrap { touch-action: pan-y; }
-
 /* Tasmee Hafs pages use the QCF4 line/word stream directly. Keep this after
    the normal SVG reader rules: invisible words retain their exact layout. */
 #mushaf-page.tasmee-qcf-page-layout #ayat-container {
@@ -25369,7 +25202,7 @@ body.mushaf-landscape-mode #mushaf-wrap { touch-action: pan-y; }
   width: 100%;
   height: 100%;
   min-height: 100%;
-  padding-inline: clamp(8px, 2.4vw, 22px);
+  padding-inline: 0;
   overflow: hidden;
   color: var(--mushaf-ink, #171310);
   background: var(--paper, #fff);
@@ -25424,8 +25257,270 @@ body:not(.theme-night) #autoscroll-wrap:not(.page-color-dark) .qcf-word.qcf-end-
   color: #96683F;
   -webkit-text-fill-color: #96683F;
 }
-body:not(.theme-night) #mushaf-wrap:not(.page-color-dark) :is(.warsh-svg-page, .riwaya-svg-page, .qcf-page-image-svg) #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon),
-body:not(.theme-night) #autoscroll-wrap:not(.page-color-dark) :is(.warsh-svg-page, .riwaya-svg-page, .qcf-page-image-svg) #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon) {
+body:not(.theme-night) #mushaf-wrap:not(.page-color-dark) :is(.warsh-svg-page, .riwaya-svg-page) #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon),
+body:not(.theme-night) #autoscroll-wrap:not(.page-color-dark) :is(.warsh-svg-page, .riwaya-svg-page) #ayah_markers :is(path, circle, ellipse, text, tspan, use, polygon):not(.ayahPolygon) {
   fill: #96683F !important;
 }
 
+
+
+/* Fixed Mushaf viewport: the artwork page occupies the measured space between
+   the app header and the page information bar. Every page is an opaque slide. */
+#view-quran.active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+#mushaf-wrap,
+#autoscroll-wrap {
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: var(--paper);
+}
+#mushaf-wrap { display: block; touch-action: none; }
+#autoscroll-wrap { touch-action: none; }
+#mushaf-page,
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(0);
+  border: 0;
+  border-radius: 0;
+  background: var(--paper);
+  isolation: isolate;
+  transform: translate3d(0,0,0);
+  will-change: transform;
+}
+#mushaf-wrap > #mushaf-page { z-index: 1; }
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview {
+  z-index: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview:not(.mushaf-neighbor-active),
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview:not(.mushaf-neighbor-active) * {
+  visibility: hidden !important;
+}
+#mushaf-wrap > #mushaf-page.mushaf-neighbor-preview.mushaf-neighbor-active { visibility: visible; }
+#mushaf-page #surah-header,
+#mushaf-page #page-foot-bar { display: none !important; }
+#mushaf-page #ayat-container {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding-inline: clamp(8px, 1vw, 16px);
+}
+#mushaf-page :is(.warsh-svg-page, .riwaya-svg-page) {
+  display: block;
+  flex: none;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0;
+  transform: none !important;
+}
+#page-foot-bar {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 18px max(6px, env(safe-area-inset-bottom));
+  background: var(--paper);
+}
+#page-foot-bar:is(.page-color-classic, .page-color-green, .page-color-blue, .page-color-light, .page-color-warm, .page-color-dark) {
+  background: var(--paper);
+  color: var(--ink-soft);
+}
+.autoscroll-page.qcf-page-image-layout {
+  width: 100%;
+  height: var(--mushaf-page-height, 100dvh);
+  min-height: var(--mushaf-page-height, 100dvh);
+  max-height: var(--mushaf-page-height, 100dvh);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+.autoscroll-page.qcf-page-image-layout .mushaf-text {
+  flex: 1 1 auto;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.autoscroll-page.qcf-page-image-layout :is(.warsh-svg-page, .riwaya-svg-page) {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0;
+}
+body.mushaf-landscape-mode #mushaf-wrap { touch-action: none; }
+
+/* Hafs is built from the original QCF4 page-line stream. The scrolling box
+   belongs to each slide, while the slide itself remains fixed to the reader. */
+#mushaf-page.qcf-text-page-layout #ayat-container,
+.autoscroll-page.qcf-text-page-layout .mushaf-text {
+  display: block;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  padding: 0 clamp(8px, 1vw, 16px);
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+#mushaf-page.qcf-text-page-layout #ayat-container::-webkit-scrollbar,
+.autoscroll-page.qcf-text-page-layout .mushaf-text::-webkit-scrollbar { display: none; }
+.qcf-text-page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  padding-block: var(--qcf-page-inset-top, 6px) var(--qcf-page-inset-bottom, 12px);
+  color: var(--mushaf-ink, #171310);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.qcf-text-page .qcf-line {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--qcf-natural-line-height);
+  margin: 0 0 var(--qcf-line-gap);
+  /* The text-page renderer uses --qcf-line-gap, while the shared ayah
+     highlight uses --line-gap. Keep them in sync so a multi-line ayah's
+     highlight fills the actual inter-line space with no white seams. */
+  --line-gap: var(--qcf-line-gap, calc(9px * var(--autofit-scale, 1)));
+  overflow: visible;
+  direction: rtl;
+  white-space: nowrap;
+  font-size: var(--qcf-page-font-size);
+  line-height: 1;
+}
+.qcf-text-page .qcf-line:last-child { margin-bottom: 0; }
+.qcf-text-page .qcf-word {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  font-size: 1em;
+  line-height: 1;
+  vertical-align: middle;
+}
+.qcf-text-page .qcf-ayah { display: inline-flex; flex: 0 0 auto; align-self: center; }
+.qcf-text-page .qcf-word.qcf-end-marker { color: #96683F; -webkit-text-fill-color: #96683F; }
+.qcf-text-page .qcf-text-surah-header { color: var(--emerald); }
+.qcf-text-page .qcf-text-bismala { color: var(--mushaf-ink, #171310); }
+body.theme-night .qcf-text-page .qcf-text-surah-header { color: var(--gold-soft); }
+body.theme-night .qcf-text-page .qcf-text-bismala,
+body.theme-night .qcf-text-page .qcf-word { color: #EAEAE6; }
+body.theme-night .qcf-text-page .qcf-word.qcf-end-marker {
+  background: linear-gradient(135deg, var(--beige) 0%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+body.mushaf-landscape-mode #mushaf-page.qcf-text-page-layout #ayat-container,
+body.mushaf-landscape-mode .autoscroll-page.qcf-text-page-layout .mushaf-text {
+  overflow-y: auto;
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+}
+body.mushaf-landscape-mode #mushaf-page.qcf-text-page-layout #ayat-container,
+body.mushaf-landscape-mode .autoscroll-page.qcf-text-page-layout .mushaf-text {
+  padding-inline: clamp(20px, 3vw, 40px);
+}
+.autoscroll-page.qcf-text-page-layout {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: var(--mushaf-page-height, 100dvh);
+  min-height: var(--mushaf-page-height, 100dvh);
+  max-height: var(--mushaf-page-height, 100dvh);
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+.autoscroll-page.qcf-text-page-layout .mushaf-text {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0;
+  padding-block: 0;
+  overflow-y: hidden;
+}
+body.mushaf-landscape-mode #autoscroll-track.autoscroll-landscape-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  transform: none !important;
+}
+body.mushaf-landscape-mode #autoscroll-track.autoscroll-landscape-track .autoscroll-page {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+}
+body.mushaf-landscape-mode .autoscroll-page.qcf-text-page-layout .mushaf-text {
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+}
+body.mushaf-landscape-mode .autoscroll-page.qcf-text-page-layout .autoscroll-foot-bar { display: none; }
+body.mushaf-landscape-mode.autoscroll-active #page-foot-bar {
+  display: flex !important;
+  position: relative;
+  z-index: 3;
+}
+
+body.autoscroll-active #page-foot-bar { display: none; }
