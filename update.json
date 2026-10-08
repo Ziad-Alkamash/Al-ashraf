@@ -1,62 +1,62 @@
 {
   "enabled": true,
-  "versionName": "5.5.42",
-  "versionCode": 69,
+  "versionName": "5.5.43",
+  "versionCode": 70,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-08",
-  "tagName": "v5.5.42",
+  "tagName": "v5.5.43",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "eb8f2382245f765ce10a9d1377339473b21637db1308ba26b4f3954dffe5a91c",
+  "sha256": "2be9a7b91b4f2d23fdc8235aedbc5406a0eb7736f8e2253841ed89e15a7ab5b7",
   "releaseNotes": [
-    "مؤشر مسطرة الصفحات أصبح أعرض ومدببًا مثل التصميم المرجعي.",
-    "اللمس وحده لا يغيّر الصفحة، وأُلغي الاهتزاز أثناء السحب.",
-    "عرض رقم الصفحة التي سيعيد إليها زر الرجوع أسفل السهم."
+    "مؤشر مسطرة الصفحات أعرض ومدبب، واللمس وحده لا يغيّر الصفحة.",
+    "رقم صفحة الرجوع تحت السهم أصغر وأوضح بلون أهدأ.",
+    "تدريجات مسطرة الصفحات أصبحت رمادية."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "مؤشر مسطرة الصفحات أصبح أعرض ومدببًا مثل التصميم المرجعي.",
-      "اللمس وحده لا يغيّر الصفحة، وأُلغي الاهتزاز أثناء السحب.",
-      "عرض رقم الصفحة التي سيعيد إليها زر الرجوع أسفل السهم."
+      "مؤشر مسطرة الصفحات أعرض ومدبب، واللمس وحده لا يغيّر الصفحة.",
+      "رقم صفحة الرجوع تحت السهم أصغر وأوضح بلون أهدأ.",
+      "تدريجات مسطرة الصفحات أصبحت رمادية."
     ],
     "fa": [
-      "نشانگر خط‌کش صفحات عریض‌تر و نوک‌تیزتر شد.",
-      "لمس به‌تنهایی صفحه را تغییر نمی‌دهد و لرزش هنگام کشیدن حذف شد.",
-      "شماره صفحه مقصد دکمه بازگشت زیر پیکان نمایش داده می‌شود."
+      "نشانگر خط‌کش صفحات عریض و نوک‌تیز است و لمس به‌تنهایی صفحه را تغییر نمی‌دهد.",
+      "شماره مقصد زیر پیکان بازگشت کوچک‌تر و با رنگی آرام‌تر نمایش داده می‌شود.",
+      "درجه‌های خط‌کش صفحات خاکستری شدند."
     ],
     "en": [
-      "Widened and pointed the page ruler marker to match the reference.",
-      "A touch alone no longer changes the page, and drag vibration was removed.",
-      "The return button now shows its destination page number below the arrow."
+      "The page ruler marker is wider and pointed, and a touch alone does not change pages.",
+      "The return destination number below the arrow is smaller and softly toned while clear.",
+      "Page ruler ticks are now gray."
     ],
     "fr": [
-      "Le curseur de la règle est plus large et pointu, comme sur la référence.",
-      "Un toucher seul ne change plus de page et les vibrations du glissement sont supprimées.",
-      "Le numéro de la page de retour apparaît sous la flèche."
+      "Le curseur de la règle est plus large et pointu; un toucher seul ne change pas de page.",
+      "Le numéro de retour sous la flèche est plus petit et adouci tout en restant lisible.",
+      "Les graduations de la règle sont grises."
     ],
     "tr": [
-      "Sayfa cetveli göstergesi referanstaki gibi genişletilip sivriltildi.",
-      "Tek dokunuş sayfayı değiştirmez ve sürükleme titreşimi kaldırıldı.",
-      "Geri düğmesi, hedef sayfa numarasını okun altında gösterir."
+      "Sayfa cetveli göstergesi geniş ve sivridir; tek dokunuş sayfayı değiştirmez.",
+      "Okun altındaki dönüş sayfası numarası daha küçük ve yumuşak tonda ama nettir.",
+      "Sayfa cetveli çizgileri gri oldu."
     ],
     "ur": [
-      "صفحے کے پیمانے کا اشارہ چوڑا اور نوک دار کیا گیا۔",
-      "صرف چھونے سے صفحہ نہیں بدلے گا اور ڈریگ کے دوران ارتعاش بند ہے۔",
-      "واپسی کے تیر کے نیچے منزل کے صفحے کا نمبر دکھایا جائے گا۔"
+      "صفحے کا اشارہ چوڑا اور نوک دار ہے؛ صرف چھونے سے صفحہ نہیں بدلے گا۔",
+      "تیر کے نیچے واپسی کے صفحے کا نمبر چھوٹا اور ہلکے مگر واضح رنگ میں ہے۔",
+      "صفحے کے پیمانے کی لکیریں سرمئی کر دی گئی ہیں۔"
     ],
     "id": [
-      "Penanda penggaris halaman diperlebar dan dibuat runcing seperti referensi.",
-      "Sentuhan saja tidak mengubah halaman dan getaran geser dihapus.",
-      "Tombol kembali menampilkan nomor halaman tujuan di bawah panah."
+      "Penanda penggaris halaman lebih lebar dan runcing; sentuhan saja tidak mengubah halaman.",
+      "Nomor tujuan kembali di bawah panah lebih kecil dan lembut namun tetap jelas.",
+      "Garis penggaris halaman kini berwarna abu-abu."
     ],
     "ru": [
-      "Указатель линейки страниц стал шире и заострённым, как в образце.",
-      "Одно касание не меняет страницу, вибрация при перетаскивании отключена.",
-      "Под стрелкой возврата отображается номер целевой страницы."
+      "Указатель линейки стал шире и заострённым; одно касание не меняет страницу.",
+      "Номер страницы возврата под стрелкой меньше и мягче, но остаётся читаемым.",
+      "Деления линейки страниц теперь серые."
     ],
     "es": [
-      "El indicador de la regla ahora es más ancho y puntiagudo, como en la referencia.",
-      "Un toque no cambia la página y se eliminó la vibración al arrastrar.",
-      "El botón de volver muestra debajo de la flecha el número de página de destino."
+      "El indicador de la regla es más ancho y puntiagudo; tocar sin mover no cambia la página.",
+      "El número de destino bajo la flecha es más pequeño y tenue, pero legible.",
+      "Las marcas de la regla ahora son grises."
     ]
   }
 }
