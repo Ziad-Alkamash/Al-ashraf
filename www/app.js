@@ -2796,11 +2796,8 @@
     const startBtn = $('#mushaf-fab-autoscroll');
     if (pill) {
       pill.classList.add('hidden');
-      pill.classList.remove('is-collapsed');
       pill.style.left = '';
       pill.style.top = '';
-      const panelToggle = $('#autoscroll-panel-toggle');
-      if (panelToggle) panelToggle.setAttribute('aria-expanded', 'true');
       const slot = $('#autoscroll-control-slot');
       if (slot && pill.parentElement !== slot) slot.appendChild(pill);
     }
@@ -4114,8 +4111,8 @@
     num.textContent = String(autoScroll.speed);
     track.setAttribute('aria-valuenow', String(autoScroll.speed));
     track.setAttribute('aria-valuetext', `سرعة ${autoScroll.speed}`);
-    // المؤشر ثابت في المنتصف، والتدريجات تتحرك تحته مثل مسطرة الصفحات.
-    if (!autoScroll.dragging) ruler.style.setProperty('--speed-ruler-offset', `${(3 - autoScroll.speed) * 23}px`);
+    // المؤشر يتحرك فوق مسطرة أفقية ثابتة مثل مسطرة تقليب الصفحات.
+    thumb.style.setProperty('--speed-thumb-offset', `${(3 - autoScroll.speed) * 23}px`);
     $$('.autoscroll-speed-tick.major', ruler).forEach((tick) => {
       tick.classList.toggle('current', Number(tick.dataset.speed) === autoScroll.speed);
     });
@@ -4407,16 +4404,10 @@
     }
     if (pill) {
       pill.classList.add('hidden');
-      pill.classList.remove('is-collapsed');
       pill.style.left = '';
       pill.style.top = '';
       const slot = $('#autoscroll-control-slot');
       if (slot && pill.parentElement !== slot) slot.appendChild(pill);
-      const panelToggle = $('#autoscroll-panel-toggle');
-      if (panelToggle) {
-        panelToggle.setAttribute('aria-expanded', 'true');
-        panelToggle.setAttribute('aria-label', 'إخفاء أدوات التمرير التلقائي');
-      }
     }
 
     autoScroll.rafId = requestAnimationFrame(autoscrollTick);
@@ -4455,14 +4446,15 @@
   function initAutoscrollSpeedDrag() {
     const track = $('#autoscroll-speed-track');
     const ruler = $('#autoscroll-speed-ruler');
-    if (!track || !ruler) return;
-    let dragStartY = 0;
+    const thumb = $('#autoscroll-speed-thumb');
+    if (!track || !ruler || !thumb) return;
+    let dragStartX = 0;
     let dragStartSpeed = 1;
 
     const onMove = (e) => {
       if (!autoScroll.dragging) return;
-      const speedPosition = Math.max(1, Math.min(5, dragStartSpeed + (dragStartY - e.clientY) / 23));
-      ruler.style.setProperty('--speed-ruler-offset', `${(3 - speedPosition) * 23}px`);
+      const speedPosition = Math.max(1, Math.min(5, dragStartSpeed + (dragStartX - e.clientX) / 23));
+      thumb.style.setProperty('--speed-thumb-offset', `${(3 - speedPosition) * 23}px`);
       autoscrollSetSpeed(Math.round(speedPosition));
     };
     const onEnd = () => {
@@ -4477,7 +4469,7 @@
     track.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       autoScroll.dragging = true;
-      dragStartY = e.clientY;
+      dragStartX = e.clientX;
       dragStartSpeed = autoScroll.speed;
       track.classList.add('dragging');
       try { track.setPointerCapture(e.pointerId); } catch (_) { /* احتياطي للمتصفحات القديمة */ }
@@ -4513,11 +4505,6 @@
     pill.style.left = `${left}px`;
     pill.style.top = `${top}px`;
     button.setAttribute('aria-expanded', 'true');
-    const panelToggle = $('#autoscroll-panel-toggle');
-    if (panelToggle) {
-      panelToggle.setAttribute('aria-expanded', 'true');
-      panelToggle.setAttribute('aria-label', 'إخفاء أدوات التمرير التلقائي');
-    }
   }
 
   function hideAutoScrollControls() {
@@ -4526,7 +4513,6 @@
     const slot = $('#autoscroll-control-slot');
     if (!pill) return;
     pill.classList.add('hidden');
-    pill.classList.remove('is-collapsed');
     pill.style.left = '';
     pill.style.top = '';
     if (slot && pill.parentElement !== slot) slot.appendChild(pill);
@@ -4695,16 +4681,6 @@
         else showAutoScrollControls();
       }
       else safeCall(startAutoScroll, 'startAutoScroll');
-    });
-
-    const panelToggle = $('#autoscroll-panel-toggle');
-    panelToggle?.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const pill = $('#autoscroll-speed-pill');
-      if (!pill) return;
-      const collapsed = pill.classList.toggle('is-collapsed');
-      panelToggle.setAttribute('aria-expanded', String(!collapsed));
-      panelToggle.setAttribute('aria-label', collapsed ? 'تكبير لوحة السرعة' : 'تصغير لوحة السرعة');
     });
 
     // ضغطة واحدة على زرار الإيقاف = تقفل ميزة التقليب التلقائي بالكامل
@@ -5955,7 +5931,7 @@
   /* مسطرة تقليب صفحات المصحف                                      */
   /* ---------------------------------------------------------------- */
   const TOTAL_MUSHAF_PAGES = 604;
-  const PAGE_RULER_TICK_WIDTH = 12;
+  const PAGE_RULER_TICK_WIDTH = 9;
   let scrubberRulerBuilt = false;
   let scrubberScaleCenterPage = null;
   const scrubberRulerTicks = new Map();
@@ -6050,14 +6026,13 @@
     if (ayahPill) ayahPill.textContent = pageMeta?.ayah
       ? `آية ${Number(pageMeta.ayah)}`
       : (Number(pageNum) === Number(state.currentPage) ? `آية ${state.currentPageData?.ayahs?.[0]?.numberInSurah || '—'}` : 'آية …');
+    const tooltip = $('#mip-scrub-tooltip');
+    if (tooltip) tooltip.textContent = `${surah.name} · ${localeDigits(Number(pageNum))}`;
 
     const backBtn = $('#mushaf-fab-back');
-    const backNum = $('#mushaf-fab-back-num');
     if (backBtn) {
       const showBack = scrubberAnchorPage && scrubberAnchorPage !== pageNum;
       backBtn.classList.toggle('hidden', !showBack);
-      // رقم الصفحة في زر الرجوع منفصل عن المسطرة الخالية من الأرقام.
-      if (showBack && backNum) backNum.textContent = String(scrubberAnchorPage);
     }
   }
 
@@ -6104,22 +6079,69 @@
   function initAyahScrubber() {
     const pageRuler = $('#mip-page-ruler');
     if (!pageRuler) return;
-
+    const rulerShell = pageRuler.closest('.mip-ruler-shell');
+    const marker = $('.mip-page-ruler-marker', rulerShell || pageRuler);
+    const tooltip = $('#mip-scrub-tooltip');
+    let frame = 0;
+    let pendingX = null;
+    let tooltipTimer = 0;
+    const setFromPointer = (x) => {
+      const maxScroll = Math.max(0, pageRuler.scrollWidth - pageRuler.clientWidth);
+      const center = pageRuler.clientWidth / 2;
+      const dx = x - center;
+      const start = scrubberMarkerDrag?.lastX ?? x;
+      const initial = scrubberMarkerDrag?.scroll ?? pageRuler.scrollLeft;
+      // A centered thumb maps one page per tick; pointer movement stays 1:1.
+      const nextLeft = Math.max(0, Math.min(maxScroll, initial - (x - start)));
+      pageRuler.scrollLeft = nextLeft;
+      const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1, Math.round(nextLeft / PAGE_RULER_TICK_WIDTH)));
+      const page = TOTAL_MUSHAF_PAGES - index;
+      if (page !== scrubberActivePage) scrubberSetActiveVisual(page);
+      if (marker) marker.style.transform = `translate3d(${Math.max(-center + 8, Math.min(center - 8, dx))}px, -50%, 0)`;
+      if (tooltip) tooltip.style.left = `${Math.max(12, Math.min(pageRuler.clientWidth - 12, center + dx))}px`;
+      clearTimeout(scrubberSettleTimer);
+      // Heavy page work is delayed until the finger pauses or releases.
+      scrubberSettleTimer = setTimeout(scrubberOnSettle, 120);
+      if (navigator.vibrate && page !== scrubberMarkerDrag?.lastPage) {
+        try { navigator.vibrate(5); } catch (_) {}
+      }
+      if (scrubberMarkerDrag) scrubberMarkerDrag.lastPage = page;
+    };
+    const schedulePointerUpdate = (x) => {
+      pendingX = x;
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (pendingX !== null) setFromPointer(pendingX);
+        pendingX = null;
+      });
+    };
     pageRuler.addEventListener('pointerdown', (event) => {
       event.preventDefault();
+      if (event.button !== undefined && event.button !== 0) return;
       scrubberRulerInteracting = true;
-      scrubberMarkerDrag = { pointerId: event.pointerId, lastX: event.clientX };
-      try { pageRuler.setPointerCapture(event.pointerId); } catch (e) { /* pointer capture اختياري */ }
+      scrubberMarkerDrag = { pointerId: event.pointerId, lastX: pageRuler.clientWidth / 2, scroll: pageRuler.scrollLeft, lastPage: scrubberActivePage };
+      pageRuler.classList.add('is-scrubbing');
+      if (tooltip) tooltip.classList.add('visible');
+      clearTimeout(tooltipTimer);
+      try { pageRuler.setPointerCapture(event.pointerId); } catch (_) {}
+      schedulePointerUpdate(event.clientX);
     });
-    const endRulerInteraction = () => {
+    const endRulerInteraction = (event) => {
       if (!scrubberRulerInteracting) return;
+      if (event?.pointerId !== undefined && scrubberMarkerDrag?.pointerId !== event.pointerId) return;
+      if (frame) { cancelAnimationFrame(frame); frame = 0; if (pendingX !== null) setFromPointer(pendingX); pendingX = null; }
       scrubberRulerInteracting = false;
       scrubberMarkerDrag = null;
+      pageRuler.classList.remove('is-scrubbing');
+      if (marker) marker.style.transform = '';
       clearTimeout(scrubberSettleTimer);
-      scrubberSettleTimer = setTimeout(scrubberOnSettle, 80);
+      scrubberSettleTimer = setTimeout(scrubberOnSettle, 0);
+      tooltipTimer = setTimeout(() => tooltip?.classList.remove('visible'), 650);
     };
-    document.addEventListener('pointerup', endRulerInteraction, { passive: true });
-    document.addEventListener('pointercancel', endRulerInteraction, { passive: true });
+    pageRuler.addEventListener('pointerup', endRulerInteraction, { passive: true });
+    pageRuler.addEventListener('pointercancel', endRulerInteraction, { passive: true });
+    pageRuler.addEventListener('lostpointercapture', endRulerInteraction, { passive: true });
     const updateRulerPosition = () => {
       const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1,
         Math.round(pageRuler.scrollLeft / PAGE_RULER_TICK_WIDTH)));
@@ -6131,13 +6153,11 @@
     };
     pageRuler.addEventListener('pointermove', (event) => {
       if (!scrubberMarkerDrag || scrubberMarkerDrag.pointerId !== event.pointerId) return;
-      const deltaX = event.clientX - scrubberMarkerDrag.lastX;
-      scrubberMarkerDrag.lastX = event.clientX;
-      const maxScroll = Math.max(0, pageRuler.scrollWidth - pageRuler.clientWidth);
-      pageRuler.scrollLeft = Math.max(0, Math.min(maxScroll, pageRuler.scrollLeft - deltaX));
-      updateRulerPosition();
+      event.preventDefault();
+      schedulePointerUpdate(event.clientX);
     }, { passive: false });
     pageRuler.addEventListener('scroll', () => {
+      if (scrubberRulerInteracting) return;
       if (scrubberRulerProgrammatic) return;
       updateRulerPosition();
     }, { passive: true });
@@ -6153,7 +6173,7 @@
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 180);
     });
 
-    // زرار "رجوع" (جنب السماعة): يظهر بس بعد قفزة مباشرة لصفحة بعيدة عن
+    // زرار "رجوع" يظهر بس بعد قفزة مباشرة لصفحة بعيدة عن
     // آخر صفحة كنت فيها، وبيرجّعك ليها بضغطة واحدة
     const backBtn = $('#mushaf-fab-back');
     if (backBtn) {
