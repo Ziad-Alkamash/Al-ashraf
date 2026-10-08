@@ -1,62 +1,62 @@
 {
   "enabled": true,
-  "versionName": "5.5.39",
-  "versionCode": 66,
+  "versionName": "5.5.40",
+  "versionCode": 67,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-08",
-  "tagName": "v5.5.39",
+  "tagName": "v5.5.40",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "f4da820ccc17a7744a81d9be61b010a4fb6d3cb94dc0b18ada4af8338bdb3dea",
+  "sha256": "e28c8d893b7d0802e9e4f08e48cbd5ea66375d836c2a5d1f938da6c805edf7aa",
   "releaseNotes": [
-    "إصلاح لون شريط معلومات الصفحة في الوضع الداكن.",
-    "تسريع حركة تقليب الصفحات وتحسين سلاستها.",
-    "أصبح لمس أي موضع في مسطرة الصفحات يبدأ التنقل، بما فيه المؤشر."
+    "تحسين استجابة سحب صفحات المصحف أفقيًا ورأسيًا.",
+    "يبدأ تحريك الصفحة من سحب أقصر، مع تقليب أسرع عند الإفلات.",
+    "إصلاح لون شريط معلومات الصفحة في الوضع الداكن."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "إصلاح لون شريط معلومات الصفحة في الوضع الداكن.",
-      "تسريع حركة تقليب الصفحات وتحسين سلاستها.",
-      "أصبح لمس أي موضع في مسطرة الصفحات يبدأ التنقل، بما فيه المؤشر."
+      "تحسين استجابة سحب صفحات المصحف أفقيًا ورأسيًا.",
+      "يبدأ تحريك الصفحة من سحب أقصر، مع تقليب أسرع عند الإفلات.",
+      "إصلاح لون شريط معلومات الصفحة في الوضع الداكن."
     ],
     "fa": [
-      "رنگ نوار اطلاعات صفحه در حالت تاریک اصلاح شد.",
-      "حرکت ورق‌زدن صفحات سریع‌تر و روان‌تر شد.",
-      "لمس هر نقطه از خط‌کش صفحات، حتی نشانگر، پیمایش را آغاز می‌کند."
+      "پاسخ کشیدن صفحات قرآن به‌صورت افقی و عمودی بهبود یافت.",
+      "حرکت صفحه با کشیدن کوتاه‌تر آغاز می‌شود و پس از رها کردن سریع‌تر می‌چرخد.",
+      "رنگ نوار اطلاعات صفحه در حالت تاریک اصلاح شد."
     ],
     "en": [
-      "Fixed the page information bar color in dark mode.",
-      "Made page turns faster and smoother.",
-      "Touching anywhere on the page ruler, including the thumb, now starts navigation."
+      "Improved horizontal and vertical Quran page swipe responsiveness.",
+      "Page movement starts with a shorter drag and turns faster on release.",
+      "Fixed the page information bar color in dark mode."
     ],
     "fr": [
-      "Correction de la couleur de la barre d’informations en mode sombre.",
-      "Défilement des pages plus rapide et plus fluide.",
-      "Le déplacement démarre en touchant n’importe quel point de la règle, même le curseur."
+      "Amélioration de la réactivité du glissement horizontal et vertical des pages.",
+      "Le mouvement démarre avec un geste plus court et la page tourne plus vite au relâchement.",
+      "Correction de la couleur de la barre d’informations en mode sombre."
     ],
     "tr": [
-      "Karanlık modda sayfa bilgi çubuğunun rengi düzeltildi.",
-      "Sayfa geçişleri hızlandırıldı ve yumuşatıldı.",
-      "Cetvelin herhangi bir yerine, göstergeye de dokunarak gezinme başlatılabilir."
+      "Kur’an sayfalarının yatay ve dikey kaydırma tepkisi iyileştirildi.",
+      "Sayfa daha kısa bir hareketle sürüklenmeye başlar ve bırakıldığında daha hızlı döner.",
+      "Karanlık modda sayfa bilgi çubuğunun rengi düzeltildi."
     ],
     "ur": [
-      "ڈارک موڈ میں صفحے کی معلومات کی پٹی کا رنگ درست کیا گیا۔",
-      "صفحہ پلٹنے کی حرکت تیز اور ہموار کی گئی۔",
-      "صفحے کے پیمانے پر کسی بھی جگہ، حتیٰ کہ اشارے پر چھونے سے بھی نیویگیشن شروع ہوگی۔"
+      "قرآن کے صفحات کے افقی اور عمودی سوائپ کی رفتار بہتر کی گئی۔",
+      "مختصر ڈریگ سے صفحہ حرکت شروع کرتا ہے اور چھوڑنے پر تیزی سے پلٹتا ہے۔",
+      "ڈارک موڈ میں صفحے کی معلومات کی پٹی کا رنگ درست کیا گیا۔"
     ],
     "id": [
-      "Memperbaiki warna bilah informasi halaman pada mode gelap.",
-      "Pergantian halaman dibuat lebih cepat dan halus.",
-      "Navigasi kini dimulai dengan menyentuh bagian mana pun pada penggaris, termasuk penanda."
+      "Respons geser horizontal dan vertikal halaman Quran ditingkatkan.",
+      "Halaman mulai bergerak dengan geseran lebih pendek dan berbalik lebih cepat saat dilepas.",
+      "Memperbaiki warna bilah informasi halaman pada mode gelap."
     ],
     "ru": [
-      "Исправлен цвет панели сведений о странице в тёмном режиме.",
-      "Перелистывание страниц стало быстрее и плавнее.",
-      "Навигация начинается при касании любой точки линейки, включая указатель."
+      "Улучшена реакция на горизонтальное и вертикальное перелистывание страниц.",
+      "Страница начинает двигаться от более короткого жеста и быстрее перелистывается при отпускании.",
+      "Исправлен цвет панели сведений о странице в тёмном режиме."
     ],
     "es": [
-      "Se corrigió el color de la barra de información en modo oscuro.",
-      "El cambio de página ahora es más rápido y fluido.",
-      "La navegación comienza al tocar cualquier punto de la regla, incluido el indicador."
+      "Se mejoró la respuesta al deslizar las páginas horizontal y verticalmente.",
+      "La página empieza a moverse con un gesto más corto y gira más rápido al soltarla.",
+      "Se corrigió el color de la barra de información en modo oscuro."
     ]
   }
 }
