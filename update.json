@@ -1,62 +1,62 @@
 {
   "enabled": true,
-  "versionName": "5.5.43",
-  "versionCode": 70,
+  "versionName": "5.5.44",
+  "versionCode": 71,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-08",
-  "tagName": "v5.5.43",
+  "tagName": "v5.5.44",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "2be9a7b91b4f2d23fdc8235aedbc5406a0eb7736f8e2253841ed89e15a7ab5b7",
+  "sha256": "a1bee9bd39fecbffd32373e037f00d0d53467bf7d7136d98e7812480a6f6ca58",
   "releaseNotes": [
-    "مؤشر مسطرة الصفحات أعرض ومدبب، واللمس وحده لا يغيّر الصفحة.",
-    "رقم صفحة الرجوع تحت السهم أصغر وأوضح بلون أهدأ.",
-    "تدريجات مسطرة الصفحات أصبحت رمادية."
+    "إعادة المؤشر لشكله السابق وتثبيته في منتصف المسطرة أثناء تحريك التدريجات تحته.",
+    "تصغير سهم الرجوع وإزالة ظله وتوحيد لونه مع لون المؤشر.",
+    "تصغير رقم صفحة الرجوع وعرضه بالأرقام الإنجليزية."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "مؤشر مسطرة الصفحات أعرض ومدبب، واللمس وحده لا يغيّر الصفحة.",
-      "رقم صفحة الرجوع تحت السهم أصغر وأوضح بلون أهدأ.",
-      "تدريجات مسطرة الصفحات أصبحت رمادية."
+      "إعادة المؤشر لشكله السابق وتثبيته في منتصف المسطرة أثناء تحريك التدريجات تحته.",
+      "تصغير سهم الرجوع وإزالة ظله وتوحيد لونه مع لون المؤشر.",
+      "تصغير رقم صفحة الرجوع وعرضه بالأرقام الإنجليزية."
     ],
     "fa": [
-      "نشانگر خط‌کش صفحات عریض و نوک‌تیز است و لمس به‌تنهایی صفحه را تغییر نمی‌دهد.",
-      "شماره مقصد زیر پیکان بازگشت کوچک‌تر و با رنگی آرام‌تر نمایش داده می‌شود.",
-      "درجه‌های خط‌کش صفحات خاکستری شدند."
+      "نشانگر به شکل قبلی برگشت و هنگام حرکت خط‌کش در مرکز ثابت می‌ماند.",
+      "پیکان بازگشت کوچک‌تر و بدون سایه شد و با نشانگر هم‌رنگ است.",
+      "شماره صفحه بازگشت کوچک‌تر و با ارقام انگلیسی نمایش داده می‌شود."
     ],
     "en": [
-      "The page ruler marker is wider and pointed, and a touch alone does not change pages.",
-      "The return destination number below the arrow is smaller and softly toned while clear.",
-      "Page ruler ticks are now gray."
+      "Restored the marker's previous shape and keep it centered while the ruler ticks move underneath.",
+      "Reduced the return arrow size, removed its shadow, and matched its color to the marker.",
+      "Reduced the return page number and display it with English digits."
     ],
     "fr": [
-      "Le curseur de la règle est plus large et pointu; un toucher seul ne change pas de page.",
-      "Le numéro de retour sous la flèche est plus petit et adouci tout en restant lisible.",
-      "Les graduations de la règle sont grises."
+      "Le curseur retrouve sa forme précédente et reste centré pendant le déplacement de la règle.",
+      "La flèche de retour est plus petite, sans ombre et de la même couleur que le curseur.",
+      "Le numéro de page de retour est plus petit et affiché en chiffres anglais."
     ],
     "tr": [
-      "Sayfa cetveli göstergesi geniş ve sivridir; tek dokunuş sayfayı değiştirmez.",
-      "Okun altındaki dönüş sayfası numarası daha küçük ve yumuşak tonda ama nettir.",
-      "Sayfa cetveli çizgileri gri oldu."
+      "Gösterge önceki biçimine döndü ve cetvel hareket ederken ortada sabit kalıyor.",
+      "Geri oku küçültüldü, gölgesi kaldırıldı ve rengi göstergeyle eşitlendi.",
+      "Dönüş sayfası numarası küçültüldü ve İngiliz rakamlarıyla gösteriliyor."
     ],
     "ur": [
-      "صفحے کا اشارہ چوڑا اور نوک دار ہے؛ صرف چھونے سے صفحہ نہیں بدلے گا۔",
-      "تیر کے نیچے واپسی کے صفحے کا نمبر چھوٹا اور ہلکے مگر واضح رنگ میں ہے۔",
-      "صفحے کے پیمانے کی لکیریں سرمئی کر دی گئی ہیں۔"
+      "اشارہ اپنی پچھلی شکل میں واپس آ گیا ہے اور پیمانہ حرکت کرتے وقت درمیان میں قائم رہتا ہے۔",
+      "واپسی کا تیر چھوٹا، بغیر سائے کے، اور اشارے کے ہم رنگ ہے۔",
+      "واپسی کے صفحے کا نمبر چھوٹا اور انگریزی ہندسوں میں دکھایا جاتا ہے۔"
     ],
     "id": [
-      "Penanda penggaris halaman lebih lebar dan runcing; sentuhan saja tidak mengubah halaman.",
-      "Nomor tujuan kembali di bawah panah lebih kecil dan lembut namun tetap jelas.",
-      "Garis penggaris halaman kini berwarna abu-abu."
+      "Penanda kembali ke bentuk sebelumnya dan tetap di tengah saat garis penggaris bergerak.",
+      "Panah kembali diperkecil, bayangannya dihapus, dan warnanya disamakan dengan penanda.",
+      "Nomor halaman kembali diperkecil dan ditampilkan dengan angka Inggris."
     ],
     "ru": [
-      "Указатель линейки стал шире и заострённым; одно касание не меняет страницу.",
-      "Номер страницы возврата под стрелкой меньше и мягче, но остаётся читаемым.",
-      "Деления линейки страниц теперь серые."
+      "Указателю возвращена прежняя форма; он остаётся по центру, пока линейка движется под ним.",
+      "Стрелка возврата уменьшена, её тень убрана, а цвет совпадает с указателем.",
+      "Номер страницы возврата уменьшен и показывается английскими цифрами."
     ],
     "es": [
-      "El indicador de la regla es más ancho y puntiagudo; tocar sin mover no cambia la página.",
-      "El número de destino bajo la flecha es más pequeño y tenue, pero legible.",
-      "Las marcas de la regla ahora son grises."
+      "El indicador recupera su forma anterior y permanece centrado mientras se mueve la regla.",
+      "La flecha de retorno es más pequeña, sin sombra y del mismo color que el indicador.",
+      "El número de página de retorno es más pequeño y usa dígitos ingleses."
     ]
   }
 }
