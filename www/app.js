@@ -6092,7 +6092,7 @@
       const start = scrubberMarkerDrag?.lastX ?? x;
       const initial = scrubberMarkerDrag?.scroll ?? pageRuler.scrollLeft;
       // A centered thumb maps one page per tick; pointer movement stays 1:1.
-      const nextLeft = Math.max(0, Math.min(maxScroll, initial - (x - start)));
+      const nextLeft = Math.max(0, Math.min(maxScroll, initial + (x - start)));
       pageRuler.scrollLeft = nextLeft;
       const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1, Math.round(nextLeft / PAGE_RULER_TICK_WIDTH)));
       const page = TOTAL_MUSHAF_PAGES - index;
@@ -6116,20 +6116,39 @@
         pendingX = null;
       });
     };
-    pageRuler.addEventListener('pointerdown', (event) => {
+    const onRulerPointerMove = (event) => {
+      if (!scrubberMarkerDrag || scrubberMarkerDrag.pointerId !== event.pointerId) return;
+      event.preventDefault();
+      schedulePointerUpdate(event.clientX);
+    };
+    const startRulerInteraction = (event) => {
       event.preventDefault();
       if (event.button !== undefined && event.button !== 0) return;
       scrubberRulerInteracting = true;
-      scrubberMarkerDrag = { pointerId: event.pointerId, lastX: pageRuler.clientWidth / 2, scroll: pageRuler.scrollLeft, lastPage: scrubberActivePage };
+      const captureTarget = event.currentTarget;
+      scrubberMarkerDrag = { pointerId: event.pointerId, captureTarget, lastX: pageRuler.clientWidth / 2, scroll: pageRuler.scrollLeft, lastPage: scrubberActivePage };
       pageRuler.classList.add('is-scrubbing');
       if (tooltip) tooltip.classList.add('visible');
       clearTimeout(tooltipTimer);
-      try { pageRuler.setPointerCapture(event.pointerId); } catch (_) {}
+      try { captureTarget.setPointerCapture(event.pointerId); } catch (_) {}
+      window.addEventListener('pointermove', onRulerPointerMove, { passive: false });
+      window.addEventListener('pointerup', endRulerInteraction, { passive: true });
+      window.addEventListener('pointercancel', endRulerInteraction, { passive: true });
+      captureTarget.addEventListener('lostpointercapture', endRulerInteraction, { passive: true });
       schedulePointerUpdate(event.clientX);
-    });
+    };
+    pageRuler.addEventListener('pointerdown', startRulerInteraction);
+    // المؤشر البني عنصر شقيق للمسطرة، لذلك لم تكن ضغطة المؤشر تصل إلى
+    // مستمع pointerdown الخاص بالمسطرة. اربط بداية السحب به مباشرةً أيضًا.
+    marker?.addEventListener('pointerdown', startRulerInteraction);
     const endRulerInteraction = (event) => {
       if (!scrubberRulerInteracting) return;
       if (event?.pointerId !== undefined && scrubberMarkerDrag?.pointerId !== event.pointerId) return;
+      const captureTarget = scrubberMarkerDrag?.captureTarget;
+      window.removeEventListener('pointermove', onRulerPointerMove);
+      window.removeEventListener('pointerup', endRulerInteraction);
+      window.removeEventListener('pointercancel', endRulerInteraction);
+      captureTarget?.removeEventListener('lostpointercapture', endRulerInteraction);
       if (frame) { cancelAnimationFrame(frame); frame = 0; if (pendingX !== null) setFromPointer(pendingX); pendingX = null; }
       scrubberRulerInteracting = false;
       scrubberMarkerDrag = null;
@@ -6139,9 +6158,6 @@
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 0);
       tooltipTimer = setTimeout(() => tooltip?.classList.remove('visible'), 650);
     };
-    pageRuler.addEventListener('pointerup', endRulerInteraction, { passive: true });
-    pageRuler.addEventListener('pointercancel', endRulerInteraction, { passive: true });
-    pageRuler.addEventListener('lostpointercapture', endRulerInteraction, { passive: true });
     const updateRulerPosition = () => {
       const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1,
         Math.round(pageRuler.scrollLeft / PAGE_RULER_TICK_WIDTH)));
@@ -6151,11 +6167,6 @@
       // نحمّل الصفحة بعد استقرار السحب لحظيًا، مع استمرار عرض رقم الصفحة على الكبسولة أثناء الحركة.
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 180);
     };
-    pageRuler.addEventListener('pointermove', (event) => {
-      if (!scrubberMarkerDrag || scrubberMarkerDrag.pointerId !== event.pointerId) return;
-      event.preventDefault();
-      schedulePointerUpdate(event.clientX);
-    }, { passive: false });
     pageRuler.addEventListener('scroll', () => {
       if (scrubberRulerInteracting) return;
       if (scrubberRulerProgrammatic) return;
