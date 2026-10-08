@@ -12621,10 +12621,10 @@ body.theme-night #mushaf-info-group .mip-page-pill {
   width: 2px;
   height: 14px;
   border-radius: 2px;
-  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  background: #858585;
   transform: translate(-50%, -50%);
 }
-.mip-page-ruler-tick.current::after { background: var(--gold-deep); width: 2px; height: 18px; }
+.mip-page-ruler-tick.current::after { background: #707070; width: 2px; height: 18px; }
 .mip-page-ruler-marker {
   position: absolute;
   z-index: 1;
@@ -12689,7 +12689,7 @@ body.theme-night #mushaf-info-group .mip-page-pill {
   fill: none !important; stroke: currentColor !important; stroke-width: 2 !important;
   stroke-linecap: round !important; stroke-linejoin: round !important;
 }
-.mip-return-page { min-height: 12px; font: 700 10px/1 'Inter Digits', var(--font-kufic), sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.mip-return-page { min-height: 12px; color: color-mix(in srgb, currentColor 76%, transparent); font: 700 9px/1 'Inter Digits', var(--font-kufic), sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 .mip-return-button:active { transform: scale(.92); }
 .mip-return-button.hidden { display: none; }
 body.theme-night .mip-return-button { color: var(--gold-soft); background: rgba(255,255,255,.1); }
@@ -12697,8 +12697,8 @@ body.theme-night.oled-true-black .mip-return-button { background: #303030; }
 .mip-return-button { position: relative; }
 .mip-page-ruler.is-scrubbing .mip-page-ruler-marker { transition: none !important; }
 .mip-page-ruler-marker:active { cursor: grabbing; }
-body.theme-night .mip-page-ruler-tick::after { background: color-mix(in srgb, var(--ink) 42%, transparent); }
-body.theme-night .mip-page-ruler-tick.current::after { background: var(--gold-soft); }
+body.theme-night .mip-page-ruler-tick::after { background: #858585; }
+body.theme-night .mip-page-ruler-tick.current::after { background: #a0a0a0; }
 body.theme-night .mip-page-ruler-marker { background: var(--gold-soft); box-shadow: 0 0 0 2px rgba(0, 0, 0, .86), 0 1px 3px rgba(0, 0, 0, .45); }
 body.theme-night .mip-page-ruler-marker::before { border-bottom-color: var(--gold-soft); filter: drop-shadow(0 0 1px rgba(0,0,0,.8)); }
 .mip-page-ruler-marker { transition: none !important; }
