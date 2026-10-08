@@ -1,62 +1,62 @@
 {
   "enabled": true,
-  "versionName": "5.5.35",
-  "versionCode": 62,
+  "versionName": "5.5.36",
+  "versionCode": 63,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-08",
-  "tagName": "v5.5.35",
+  "tagName": "v5.5.36",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "e5e02ce5c7d69327a85ab02f55ad5a49c31c07c49a993c1744bb4ba573a9f100",
+  "sha256": "feeb8a3213294050f0443fe8dfe290b4d95c30644aabdaf2d8ae7d3c28a7824c",
   "releaseNotes": [
     "ضبط هوامش صفحات المصحف والتسميع وتحسين التظليل والتقليب.",
     "تحسين مزامنة التلاوة وحذف ملفات SVG القديمة لتوفير مساحة.",
-    "حذف أرقام الصفحات وإضافة مسطرة قابلة للسحب ومعاينة للسورة والصفحة أثناء التقليب."
+    "مسطرة سرعة التمرير التلقائي تستجيب للسحب مباشرة مع مؤشر أصغر، وتحديثات فورية لكبسولات الصفحات."
   ],
   "localizedReleaseNotes": {
     "ar": [
       "ضبط هوامش صفحات المصحف والتسميع وتحسين التظليل والتقليب.",
       "تحسين مزامنة التلاوة وحذف ملفات SVG القديمة لتوفير مساحة.",
-      "حذف أرقام الصفحات وإضافة مسطرة قابلة للسحب ومعاينة للسورة والصفحة أثناء التقليب."
+      "مسطرة سرعة التمرير التلقائي تستجيب للسحب مباشرة مع مؤشر أصغر، وتحديثات فورية لكبسولات الصفحات."
     ],
     "fa": [
       "حاشیه‌های صفحات قرآن و تلاوت تمرینی و نمایش هایلایت و ورق‌زدن بهبود یافت.",
       "همگام‌سازی تلاوت بهتر شد و فایل‌های قدیمی SVG برای آزادسازی فضا حذف شدند.",
-      "شماره‌های صفحه حذف شد و خط‌کش کشیدنی با پیش‌نمایش سوره و صفحه هنگام جابه‌جایی اضافه شد."
+      "خط‌کش سرعت پیمایش خودکار با کشیدن فوری پاسخ می‌دهد و نشانگر کوچک‌تر شد."
     ],
     "en": [
       "Improved Quran page and tasmee spacing, highlighting, and page turning.",
       "Improved recitation timing and removed legacy SVG pages to free storage.",
-      "Replaced page numbers with a draggable ruler and a live surah/page preview."
+      "Auto-scroll speed now follows ruler drags directly with a smaller marker and live page details."
     ],
     "fr": [
       "Amélioration des marges, du surlignage et du défilement des pages du Coran et de tasmee.",
       "Synchronisation audio améliorée et suppression des anciens SVG pour libérer de l’espace.",
-      "Remplacement des numéros par une règle à faire glisser avec aperçu de la sourate et de la page."
+      "La vitesse du défilement automatique suit le glissement de la règle avec un repère réduit."
     ],
     "tr": [
       "Kur’an ve tesmiye sayfalarının boşlukları, vurgulaması ve çevrilmesi iyileştirildi.",
       "Kıraat senkronizasyonu iyileştirildi; yer açmak için eski SVG sayfaları kaldırıldı.",
-      "Sayfa numaraları, sure ve sayfa önizlemesi gösteren sürüklenebilir bir cetvelle değiştirildi."
+      "Otomatik kaydırma hızı, cetvel sürüklemesini izler ve daha küçük bir gösterge kullanır."
     ],
     "ur": [
       "قرآن اور تسمیع صفحات کے حاشیے، نمایاں کرنے اور صفحہ پلٹنے میں بہتری۔",
       "تلاوت کی ہم آہنگی بہتر اور جگہ خالی کرنے کے لیے پرانے SVG صفحات حذف کیے گئے۔",
-      "صفحہ نمبروں کی جگہ سورت اور صفحے کا پیش نظارہ دکھانے والا قابلِ سحب پیمانہ شامل کیا۔"
+      "خودکار اسکرول کی رفتار اب پیمانے کو کھینچنے پر فوراً بدلتی ہے اور اشارہ چھوٹا کیا گیا ہے۔"
     ],
     "id": [
       "Margin, sorotan, dan perpindahan halaman Al-Qur’an serta tasmi ditingkatkan.",
       "Sinkronisasi bacaan diperbaiki dan SVG lama dihapus untuk menghemat ruang.",
-      "Nomor halaman diganti dengan penggaris yang dapat digeser dan pratinjau surah serta halaman."
+      "Kecepatan gulir otomatis kini mengikuti geseran penggaris dengan penanda yang lebih kecil."
     ],
     "ru": [
       "Улучшены поля, подсветка и перелистывание страниц Корана и тасми.",
       "Синхронизация чтения улучшена, старые SVG-страницы удалены для экономии места.",
-      "Номера заменены линейкой с перетаскиванием и предварительным просмотром суры и страницы."
+      "Скорость автопрокрутки сразу меняется при перетаскивании линейки; указатель стал меньше."
     ],
     "es": [
       "Se mejoraron los márgenes, el resaltado y el paso de páginas del Corán y tasmee.",
       "Se mejoró la sincronización y se eliminaron SVG antiguos para liberar espacio.",
-      "Los números se sustituyeron por una regla arrastrable con vista previa de sura y página."
+      "La velocidad de desplazamiento automático sigue el gesto en la regla y usa un indicador menor."
     ]
   }
 }
