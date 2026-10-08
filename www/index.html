@@ -975,11 +975,6 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
     </div>
   </section>
 
-  <div id="mip-scrub-preview" class="mip-scrub-preview" role="status" aria-live="polite" aria-hidden="true">
-    <span id="mip-scrub-preview-surah"></span>
-    <span id="mip-scrub-preview-page"></span>
-  </div>
-
   <!-- تبويب الأذكار -->
   <section id="view-azkar" class="view">
     <div class="list-page">
@@ -5098,14 +5093,20 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
           <button type="button" class="autoscroll-collapse-btn" id="autoscroll-panel-toggle" aria-label="تصغير لوحة السرعة" aria-expanded="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m7 10 5 5 5-5"></path></svg>
           </button>
-          <span class="autoscroll-speed-num" id="autoscroll-speed-num">1</span>
-          <div class="autoscroll-speed-track" id="autoscroll-speed-track">
-            <div class="autoscroll-speed-fill" id="autoscroll-speed-fill"></div>
-            <span class="autoscroll-speed-dot" style="top:75%"></span>
-            <span class="autoscroll-speed-dot" style="top:50%"></span>
-            <span class="autoscroll-speed-dot" style="top:25%"></span>
-            <span class="autoscroll-speed-dot" style="top:0%"></span>
-            <div class="autoscroll-speed-thumb" id="autoscroll-speed-thumb"></div>
+          <span class="autoscroll-speed-num" id="autoscroll-speed-num" aria-live="polite">1</span>
+          <div class="autoscroll-speed-track" id="autoscroll-speed-track" role="slider" tabindex="0" aria-label="سرعة التمرير التلقائي" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1">
+            <div class="autoscroll-speed-ruler" id="autoscroll-speed-ruler" aria-hidden="true">
+              <span class="autoscroll-speed-tick major" data-speed="1"></span>
+              <span class="autoscroll-speed-tick minor"></span>
+              <span class="autoscroll-speed-tick major" data-speed="2"></span>
+              <span class="autoscroll-speed-tick minor"></span>
+              <span class="autoscroll-speed-tick major" data-speed="3"></span>
+              <span class="autoscroll-speed-tick minor"></span>
+              <span class="autoscroll-speed-tick major" data-speed="4"></span>
+              <span class="autoscroll-speed-tick minor"></span>
+              <span class="autoscroll-speed-tick major" data-speed="5"></span>
+            </div>
+            <div class="autoscroll-speed-thumb" id="autoscroll-speed-thumb" aria-hidden="true"></div>
           </div>
           <span class="autoscroll-speed-divider" aria-hidden="true"></span>
           <button type="button" class="autoscroll-playpause-btn" id="autoscroll-playpause-btn" aria-label="إيقاف التمرير التلقائي">
@@ -5249,10 +5250,11 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
 
   </div>
 
-  <!-- مجموعة معلومات الصفحة: كبسولتا السورة والآية، ومسطرة تقليب الصفحات -->
+  <!-- معلومات الصفحة: كبسولات السورة والصفحة والآية، ومسطرة التقليب -->
   <div id="mushaf-info-group" class="mip-group">
     <div class="mip-caps-row">
       <button type="button" id="mip-surah" class="mip-cap mip-surah-name" aria-label="فتح فهرس السور"></button>
+      <span id="mip-page-pill" class="mip-cap mip-page-pill" aria-label="رقم الصفحة">صفحة —</span>
       <button type="button" id="mip-ayah-pill" class="mip-cap mip-ayah-pill" aria-haspopup="listbox" aria-expanded="false" aria-controls="mip-ayah-menu">—</button>
     </div>
     <!-- قايمة منسدلة بأرقام آيات السورة الحالية — بتفتح من كبسولة "آية N" وبتطلع
@@ -5482,6 +5484,7 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
 <script src="quran-warsh.js"></script>
 <script src="quran-riwayat.js"></script>
 <script src="quran-api.js"></script>
+<script src="quran-page-index.js"></script>
 <script src="quran-audio-timing.js"></script>
 <script src="hadith-sunnah-api.js"></script>
 <script src="vendor/leaflet/leaflet.js"></script>

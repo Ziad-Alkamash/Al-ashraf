@@ -12518,6 +12518,7 @@ body.theme-night.oled-true-black .mushaf-quick-bar { background: #242424; }
   justify-content: center;
   gap: 8px;
 }
+.mip-caps-row .mip-cap { padding-block: 3px; }
 .mip-cap {
   flex: 0 1 auto;
   min-width: 0;
@@ -12548,6 +12549,27 @@ body.theme-night.oled-true-black .mip-cap { background: #242424; }
   font-weight: 700;
 }
 body.theme-night .mip-ayah-pill { color: var(--gold-soft); }
+
+.mip-page-pill {
+  flex-shrink: 0;
+  padding-inline: 10px;
+  color: var(--gold-deep);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+body.theme-night .mip-page-pill { color: var(--gold-soft); }
+
+/* حواف الكبسولات تتبع ألوان علامة الآية والزيتوني المستخدم في التطبيق. */
+#mushaf-info-group .mip-surah-name,
+#mushaf-info-group .mip-ayah-pill {
+  border: 1px solid var(--gold-deep);
+}
+#mushaf-info-group .mip-page-pill {
+  border: 1px solid #6F7752;
+}
+body.theme-night #mushaf-info-group .mip-page-pill {
+  border-color: #98A278;
+}
 
 .mip-page-ruler {
   position: relative;
@@ -12616,42 +12638,6 @@ body.theme-night .mip-ayah-pill { color: var(--gold-soft); }
   inset: -10px -14px;
 }
 .mip-page-ruler-marker:active { cursor: grabbing; }
-body.mip-page-scrubbing .mip-caps-row { opacity: 0; pointer-events: none; }
-.mip-caps-row { transition: opacity .14s ease; }
-.mip-scrub-preview {
-  position: fixed;
-  z-index: 1200;
-  top: 66%;
-  left: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 190px;
-  max-width: min(78vw, 360px);
-  padding: 9px 18px;
-  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--paper-deep) 94%, transparent);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--shadow) 32%, transparent);
-  color: var(--ink);
-  font-family: var(--font-kufic);
-  font-size: 15px;
-  font-weight: 700;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, 8px) scale(.97);
-  transition: opacity .16s ease, transform .16s ease;
-}
-.mip-scrub-preview[aria-hidden="true"] { visibility: hidden; }
-.mip-scrub-preview.visible {
-  visibility: visible;
-  opacity: 1;
-  transform: translate(-50%, 0) scale(1);
-}
-.mip-scrub-preview-page { color: var(--ink-soft); font-size: 13px; font-weight: 600; }
-body.theme-night .mip-scrub-preview { background: color-mix(in srgb, var(--paper-deep) 96%, transparent); }
 body.theme-night .mip-page-ruler-tick::after { background: color-mix(in srgb, var(--ink-soft) 72%, transparent); }
 body.theme-night .mip-page-ruler-tick.current::after { background: var(--gold-soft); }
 body.theme-night .mip-page-ruler-marker { background: var(--gold-deep); }
@@ -24598,6 +24584,98 @@ body.theme-night .autoscroll-playpause-btn { color: var(--gold-soft); }
 body.theme-night #mushaf-fab-autoscroll.is-active { background: rgba(214,193,123,.16); color: var(--gold-soft); }
 @media (prefers-reduced-motion: reduce) {
   .autoscroll-speed-pill, .autoscroll-collapse-btn svg { transition: none; }
+}
+
+/* مسطرة سرعة رأسية مطابقة لفكرة مسطرة الصفحات: مؤشر ثابت وتدريجات تسحب تحته. */
+.autoscroll-speed-pill {
+  width: 64px;
+  gap: 7px;
+  padding: 8px 6px;
+  overflow: visible;
+  border-radius: 22px;
+}
+.autoscroll-speed-num {
+  min-width: 28px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--olive) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 80%, white);
+  color: var(--olive-deep);
+  font: 800 12px/1 var(--font-ui);
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--shadow) 12%, transparent);
+}
+.autoscroll-speed-track {
+  position: relative;
+  width: 42px;
+  height: 138px;
+  flex: 0 0 138px;
+  background: transparent;
+  overflow: visible;
+}
+.autoscroll-speed-ruler {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 103.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+  transform: translateY(calc(-50% + var(--speed-ruler-offset, 46px)));
+  transition: transform .12s ease-out;
+  will-change: transform;
+}
+.autoscroll-speed-track { overflow: hidden; touch-action: none; }
+.autoscroll-speed-track.dragging .autoscroll-speed-ruler { transition: none; }
+.autoscroll-speed-tick {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 11.5px;
+  flex: 0 0 11.5px;
+  scroll-snap-align: center;
+  pointer-events: none;
+}
+.autoscroll-speed-tick::after {
+  content: '';
+  width: 5px;
+  height: 1px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--ink-soft) 66%, transparent);
+}
+.autoscroll-speed-tick.major::after { width: 11px; height: 1.5px; }
+.autoscroll-speed-tick.current::after { width: 18px; height: 2px; background: var(--gold-deep); }
+.autoscroll-speed-thumb {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  width: 11px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--gold);
+  border-radius: 7px 7px 3px 3px;
+  background: #687B50;
+  box-shadow: 0 3px 9px color-mix(in srgb, var(--shadow) 26%, transparent);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.autoscroll-speed-track.dragging .autoscroll-speed-thumb { box-shadow: 0 4px 12px color-mix(in srgb, var(--olive-deep) 32%, transparent); }
+body.theme-night .autoscroll-speed-num {
+  background: #292c22;
+  color: var(--gold-soft);
+  border-color: rgba(214,193,123,.3);
+}
+body.theme-night .autoscroll-speed-tick::after { background: color-mix(in srgb, var(--gold-soft) 58%, transparent); }
+body.theme-night .autoscroll-speed-tick.current::after { background: var(--gold-soft); }
+body.theme-night .autoscroll-speed-thumb {
+  background: #292c22;
+  border-color: var(--gold-soft);
 }
 
 /* الجولة التعريفية الجديدة: إرشاد قصير بخمس محطات، وبطاقة واحدة هادئة

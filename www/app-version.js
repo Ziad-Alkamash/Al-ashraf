@@ -1,2 +1,2 @@
 // Generated from version.properties for this signed release.
-window.AlAshrafBundledVersion = Object.freeze({ versionName: '5.5.35', versionCode: 62 });
+window.AlAshrafBundledVersion = Object.freeze({ versionName: '5.5.36', versionCode: 63 });

@@ -4107,14 +4107,18 @@
 
   function autoscrollSyncSpeedUI() {
     const num = $('#autoscroll-speed-num');
-    const fill = $('#autoscroll-speed-fill');
+    const track = $('#autoscroll-speed-track');
+    const ruler = $('#autoscroll-speed-ruler');
     const thumb = $('#autoscroll-speed-thumb');
-    if (!num || !fill || !thumb) return;
+    if (!num || !track || !ruler || !thumb) return;
     num.textContent = String(autoScroll.speed);
-    // الشريط رأسي: السرعة ١ تحت خالص والسرعة ٥ فوق خالص
-    const pct = ((autoScroll.speed - 1) / 4) * 100;
-    fill.style.height = pct + '%';
-    thumb.style.bottom = pct + '%';
+    track.setAttribute('aria-valuenow', String(autoScroll.speed));
+    track.setAttribute('aria-valuetext', `سرعة ${autoScroll.speed}`);
+    // المؤشر ثابت في المنتصف، والتدريجات تتحرك تحته مثل مسطرة الصفحات.
+    if (!autoScroll.dragging) ruler.style.setProperty('--speed-ruler-offset', `${(3 - autoScroll.speed) * 23}px`);
+    $$('.autoscroll-speed-tick.major', ruler).forEach((tick) => {
+      tick.classList.toggle('current', Number(tick.dataset.speed) === autoScroll.speed);
+    });
   }
 
   function autoscrollSetSpeed(v) {
@@ -4448,21 +4452,18 @@
     );
   }
 
-  // الشريط رأسي: أسفل الشريط = السرعة ١، وأعلاه = السرعة ٥
-  function autoscrollSpeedFromClientY(track, clientY) {
-    const rect = track.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (rect.bottom - clientY) / rect.height));
-    return 1 + Math.round(ratio * 4);
-  }
-
   function initAutoscrollSpeedDrag() {
     const track = $('#autoscroll-speed-track');
-    if (!track) return;
+    const ruler = $('#autoscroll-speed-ruler');
+    if (!track || !ruler) return;
+    let dragStartY = 0;
+    let dragStartSpeed = 1;
 
     const onMove = (e) => {
       if (!autoScroll.dragging) return;
-      const y = e.touches ? e.touches[0].clientY : e.clientY;
-      autoscrollSetSpeed(autoscrollSpeedFromClientY(track, y));
+      const speedPosition = Math.max(1, Math.min(5, dragStartSpeed + (dragStartY - e.clientY) / 23));
+      ruler.style.setProperty('--speed-ruler-offset', `${(3 - speedPosition) * 23}px`);
+      autoscrollSetSpeed(Math.round(speedPosition));
     };
     const onEnd = () => {
       if (!autoScroll.dragging) return;
@@ -4471,16 +4472,25 @@
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onEnd);
       window.removeEventListener('pointercancel', onEnd);
-      hideAutoScrollControls();
+      autoscrollSyncSpeedUI();
     };
     track.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
       autoScroll.dragging = true;
+      dragStartY = e.clientY;
+      dragStartSpeed = autoScroll.speed;
       track.classList.add('dragging');
-      autoscrollSetSpeed(autoscrollSpeedFromClientY(track, e.clientY));
+      try { track.setPointerCapture(e.pointerId); } catch (_) { /* احتياطي للمتصفحات القديمة */ }
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onEnd);
       window.addEventListener('pointercancel', onEnd);
+    });
+    track.addEventListener('keydown', (e) => {
+      const delta = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1
+        : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -1 : 0;
+      if (!delta) return;
       e.preventDefault();
+      autoscrollSetSpeed(autoScroll.speed + delta);
     });
   }
 
@@ -5895,13 +5905,11 @@
 
     // كبسولة الآية تعرض أول آية في الصفحة المفتوحة، وتظل منفصلة عن مسطرة الصفحات.
     const ayahPill = $('#mip-ayah-pill');
-    if (ayahPill) ayahPill.textContent = firstAyah ? `آية ${firstAyah.numberInSurah}` : '—';
+    if (ayahPill) ayahPill.textContent = firstAyah ? `آية ${Number(firstAyah.numberInSurah)}` : '—';
 
     if (firstAyah) scrubberRememberPage(state.currentPage, firstAyah);
     if (!scrubberRulerInteracting) updateAyahScrubber(state.currentPage);
-    if (document.body.classList.contains('mip-page-scrubbing')) {
-      scrubberShowPreview(scrubberRulerInteracting ? scrubberActivePage : state.currentPage);
-    }
+    else scrubberSetActiveVisual(scrubberActivePage || state.currentPage);
     safeCall(updateMttKhatmaPill, 'updateMttKhatmaPill');
     if (typeof closeAyahMenu === 'function') closeAyahMenu();
   }
@@ -5955,7 +5963,6 @@
   let scrubberAnchorPage = null; // آخر صفحة كنّا فيها قبل هذا الانتقال، لزرار "رجوع" — بتتحدّث في loadPage نفسها مع كل انتقال
   let scrubberSettleTimer = null;
   let scrubberMarkerDrag = null;
-  let scrubberPreviewInteractionActive = false;
   let scrubberRulerProgrammatic = false;
   let scrubberRulerInteracting = false;
   const scrubberPageSurahs = new Map();
@@ -5966,20 +5973,34 @@
     if (!Number.isInteger(page) || page < 1 || page > TOTAL_MUSHAF_PAGES || !surahNumber) return;
     const surah = (state.surahList || []).find((item) => Number(item.number) === surahNumber);
     const name = surah?.nameAr ? localizedSurahName(surah.nameAr, surahNumber) : '';
-    if (name) scrubberPageSurahs.set(page, { number: surahNumber, name });
+    if (name) scrubberPageSurahs.set(page, {
+      number: surahNumber,
+      name,
+      ayah: Number(ayah?.numberInSurah) || 0
+    });
   }
 
   function scrubberSurahForPage(pageNum) {
     const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, Number(pageNum) || 1));
     const remembered = scrubberPageSurahs.get(page);
+    const indexed = window.QURAN_PAGE_INDEX?.[page];
+    const number = Number(indexed?.[0]) || remembered?.number;
+    if (number) {
+      const surah = (state.surahList || []).find((item) => Number(item.number) === number);
+      return {
+        number,
+        name: surah?.nameAr ? localizedSurahName(surah.nameAr, number) : (remembered?.name || `${tUI('surah.word', 'سورة')} ${localeDigits(number)}`),
+        ayah: Number(indexed?.[1]) || remembered?.ayah || 0
+      };
+    }
     if (remembered) return remembered;
-    let number = 1;
+    let fallbackNumber = 1;
     for (let i = 0; i < SURAH_START_PAGES.length; i += 1) {
       if (SURAH_START_PAGES[i] > page) break;
-      number = i + 1;
+      fallbackNumber = i + 1;
     }
-    const surah = (state.surahList || []).find((item) => Number(item.number) === number);
-    return { number, name: surah?.nameAr ? localizedSurahName(surah.nameAr, number) : `${tUI('surah.word', 'سورة')} ${localeDigits(number)}` };
+    const surah = (state.surahList || []).find((item) => Number(item.number) === fallbackNumber);
+    return { number: fallbackNumber, name: surah?.nameAr ? localizedSurahName(surah.nameAr, fallbackNumber) : `${tUI('surah.word', 'سورة')} ${localeDigits(fallbackNumber)}` };
   }
 
   function scrubberUpdateScale(pageNum) {
@@ -6008,29 +6029,6 @@
     }
   }
 
-  function scrubberShowPreview(pageNum) {
-    const preview = $('#mip-scrub-preview');
-    const surahEl = $('#mip-scrub-preview-surah');
-    const pageEl = $('#mip-scrub-preview-page');
-    if (!preview || !surahEl || !pageEl) return;
-    const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, Number(pageNum) || 1));
-    const surah = scrubberSurahForPage(page);
-    surahEl.textContent = surah.name;
-    pageEl.textContent = `صفحة ${localeDigits(page)}`;
-    preview.setAttribute('aria-hidden', 'false');
-    preview.classList.add('visible');
-    document.body.classList.add('mip-page-scrubbing');
-  }
-
-  function scrubberHidePreview() {
-    const preview = $('#mip-scrub-preview');
-    if (preview) {
-      preview.classList.remove('visible');
-      preview.setAttribute('aria-hidden', 'true');
-    }
-    document.body.classList.remove('mip-page-scrubbing');
-  }
-
   function scrubberSetActiveVisual(pageNum) {
     const pageRuler = $('#mip-page-ruler');
     if (!pageRuler) return;
@@ -6041,6 +6039,17 @@
       pageRuler.setAttribute('aria-valuetext', `صفحة ${page}`);
       scrubberUpdateScale(page);
     }
+
+    const surah = scrubberSurahForPage(pageNum);
+    const surahPill = $('#mip-surah');
+    const pagePill = $('#mip-page-pill');
+    const ayahPill = $('#mip-ayah-pill');
+    const pageMeta = scrubberSurahForPage(pageNum);
+    if (surahPill) surahPill.textContent = surah.name;
+    if (pagePill) pagePill.textContent = `صفحة ${Number(pageNum)}`;
+    if (ayahPill) ayahPill.textContent = pageMeta?.ayah
+      ? `آية ${Number(pageMeta.ayah)}`
+      : (Number(pageNum) === Number(state.currentPage) ? `آية ${state.currentPageData?.ayahs?.[0]?.numberInSurah || '—'}` : 'آية …');
 
     const backBtn = $('#mushaf-fab-back');
     const backNum = $('#mushaf-fab-back-num');
@@ -6099,19 +6108,15 @@
     pageRuler.addEventListener('pointerdown', (event) => {
       event.preventDefault();
       scrubberRulerInteracting = true;
-      scrubberPreviewInteractionActive = true;
       scrubberMarkerDrag = { pointerId: event.pointerId, lastX: event.clientX };
       try { pageRuler.setPointerCapture(event.pointerId); } catch (e) { /* pointer capture اختياري */ }
-      scrubberShowPreview(scrubberActivePage || state.currentPage || 1);
     });
     const endRulerInteraction = () => {
       if (!scrubberRulerInteracting) return;
       scrubberRulerInteracting = false;
-      scrubberPreviewInteractionActive = false;
       scrubberMarkerDrag = null;
       clearTimeout(scrubberSettleTimer);
       scrubberSettleTimer = setTimeout(scrubberOnSettle, 80);
-      scrubberHidePreview();
     };
     document.addEventListener('pointerup', endRulerInteraction, { passive: true });
     document.addEventListener('pointercancel', endRulerInteraction, { passive: true });
@@ -6119,7 +6124,6 @@
       const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1,
         Math.round(pageRuler.scrollLeft / PAGE_RULER_TICK_WIDTH)));
       const page = TOTAL_MUSHAF_PAGES - index;
-      if (scrubberPreviewInteractionActive) scrubberShowPreview(page);
       if (page !== scrubberActivePage) scrubberSetActiveVisual(page);
       clearTimeout(scrubberSettleTimer);
       // نحمّل الصفحة بعد استقرار السحب لحظيًا، مع استمرار عرض رقم الصفحة على الكبسولة أثناء الحركة.
@@ -6145,9 +6149,8 @@
       const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, (scrubberActivePage || state.currentPage || 1) + delta));
       scrubberSetActiveVisual(page);
       scrubberScrollRulerToPage(page, true);
-      scrubberShowPreview(page);
       clearTimeout(scrubberSettleTimer);
-      scrubberSettleTimer = setTimeout(() => { scrubberOnSettle(); scrubberHidePreview(); }, 180);
+      scrubberSettleTimer = setTimeout(scrubberOnSettle, 180);
     });
 
     // زرار "رجوع" (جنب السماعة): يظهر بس بعد قفزة مباشرة لصفحة بعيدة عن
