@@ -1408,19 +1408,12 @@ body.theme-night #mushaf-fab-cluster .mushaf-fab-back {
 }
 body.theme-night #mushaf-fab-cluster .mushaf-fab-back { color: #15160f !important; }
 
-/* =========================================================================
-   توحيد الطابع البصري (تكملة): أرقام تقليب الصفحات (منزلق رقم الآية) داخل
-   مستطيل معلومات الصفحة العائم في المصحف — تاخد اللون الزيتوني بدل الذهبي
-   ========================================================================= */
+/* توحيد ألوان عناصر بطاقة تقليب صفحات المصحف */
 #mushaf-info-group {
   --ap-olive: #6F7752;
 }
 body.theme-night #mushaf-info-group {
   --ap-olive: #98A278;
-}
-#mushaf-info-group .mas-num.active,
-body.theme-night #mushaf-info-group .mas-num.active {
-  color: var(--ap-olive) !important;
 }
 #mushaf-info-group .mip-ayah-pill,
 body.theme-night #mushaf-info-group .mip-ayah-pill {

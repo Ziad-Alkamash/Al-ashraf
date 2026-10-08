@@ -2,46 +2,46 @@
   "ar": [
     "ضبط هوامش صفحات المصحف والتسميع وتحسين التظليل والتقليب.",
     "تحسين مزامنة التلاوة وحذف ملفات SVG القديمة لتوفير مساحة.",
-    "إضافة مسطرة صغيرة للتنقل بين الصفحات وتحسين عمل التمرير التلقائي."
+    "حذف أرقام الصفحات وإضافة مسطرة قابلة للسحب ومعاينة للسورة والصفحة أثناء التقليب."
   ],
   "fa": [
     "حاشیه‌های صفحات قرآن و تلاوت تمرینی و نمایش هایلایت و ورق‌زدن بهبود یافت.",
     "همگام‌سازی تلاوت بهتر شد و فایل‌های قدیمی SVG برای آزادسازی فضا حذف شدند.",
-    "خط‌کش کوچک برای جابه‌جایی میان صفحه‌ها و بهبود پیمایش خودکار اضافه شد."
+    "شماره‌های صفحه حذف شد و خط‌کش کشیدنی با پیش‌نمایش سوره و صفحه هنگام جابه‌جایی اضافه شد."
   ],
   "en": [
     "Improved Quran page and tasmee spacing, highlighting, and page turning.",
     "Improved recitation timing and removed legacy SVG pages to free storage.",
-    "Added a compact page ruler and improved automatic scrolling."
+    "Replaced page numbers with a draggable ruler and a live surah/page preview."
   ],
   "fr": [
     "Amélioration des marges, du surlignage et du défilement des pages du Coran et de tasmee.",
     "Synchronisation audio améliorée et suppression des anciens SVG pour libérer de l’espace.",
-    "Ajout d’une règle compacte pour les pages et amélioration du défilement automatique."
+    "Remplacement des numéros par une règle à faire glisser avec aperçu de la sourate et de la page."
   ],
   "tr": [
     "Kur’an ve tesmiye sayfalarının boşlukları, vurgulaması ve çevrilmesi iyileştirildi.",
     "Kıraat senkronizasyonu iyileştirildi; yer açmak için eski SVG sayfaları kaldırıldı.",
-    "Kompakt bir sayfa cetveli eklendi ve otomatik kaydırma iyileştirildi."
+    "Sayfa numaraları, sure ve sayfa önizlemesi gösteren sürüklenebilir bir cetvelle değiştirildi."
   ],
   "ur": [
     "قرآن اور تسمیع صفحات کے حاشیے، نمایاں کرنے اور صفحہ پلٹنے میں بہتری۔",
     "تلاوت کی ہم آہنگی بہتر اور جگہ خالی کرنے کے لیے پرانے SVG صفحات حذف کیے گئے۔",
-    "صفحات کے لیے ایک مختصر پیمانہ شامل کیا اور خودکار اسکرول کو بہتر بنایا۔"
+    "صفحہ نمبروں کی جگہ سورت اور صفحے کا پیش نظارہ دکھانے والا قابلِ سحب پیمانہ شامل کیا۔"
   ],
   "id": [
     "Margin, sorotan, dan perpindahan halaman Al-Qur’an serta tasmi ditingkatkan.",
     "Sinkronisasi bacaan diperbaiki dan SVG lama dihapus untuk menghemat ruang.",
-    "Penggaris halaman ringkas ditambahkan dan gulir otomatis ditingkatkan."
+    "Nomor halaman diganti dengan penggaris yang dapat digeser dan pratinjau surah serta halaman."
   ],
   "ru": [
     "Улучшены поля, подсветка и перелистывание страниц Корана и тасми.",
     "Синхронизация чтения улучшена, старые SVG-страницы удалены для экономии места.",
-    "Добавлена компактная линейка страниц и улучшена автоматическая прокрутка."
+    "Номера заменены линейкой с перетаскиванием и предварительным просмотром суры и страницы."
   ],
   "es": [
     "Se mejoraron los márgenes, el resaltado y el paso de páginas del Corán y tasmee.",
     "Se mejoró la sincronización y se eliminaron SVG antiguos para liberar espacio.",
-    "Se añadió una regla compacta para las páginas y se mejoró el desplazamiento automático."
+    "Los números se sustituyeron por una regla arrastrable con vista previa de sura y página."
   ]
 }

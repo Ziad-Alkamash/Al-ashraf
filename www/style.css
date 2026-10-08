@@ -12442,11 +12442,10 @@ body.mushaf-landscape-mode #app-main {
    بنفس أسلوب حالة is-active العامة لأزرار الشريط العلوي */
 #mtt-btn-landscape.is-active { color: var(--emerald); background: var(--gold-soft); }
 
-/* -------- بطاقة معلومات الصفحة (التقليب): اسم السورة/الحزب + منزلق الآيات
+/* -------- بطاقة معلومات الصفحة (التقليب): اسم السورة/الآية + مسطرة الصفحات
    + شريط تقدّم. بتفضل ظاهرة فوق المشغّل المصغّر دايمًا (شوف
    .mushaf-bottom-stack) حتى وقت التلاوة، بدل ما يركب المشغّل فوقيها ويغطّيها -------- */
-/* المجموعة كلها (الكبسولتين + المستطيل) هي اللي بتنزلق وتظهر/تختفي مع أدوات
-   القراءة العائمة، والمستطيل جواها بقى مجرد بطاقة بيضا قد أرقام التقليب */
+/* المجموعة كلها (الكبسولتين + المسطرة) هي اللي بتنزلق وتظهر/تختفي مع أدوات القراءة */
 .mip-group {
   position: relative;
   width: 100%;
@@ -12550,51 +12549,11 @@ body.theme-night.oled-true-black .mip-cap { background: #242424; }
 }
 body.theme-night .mip-ayah-pill { color: var(--gold-soft); }
 
-/* منزلق رقم الآية: صف قابل للسحب بأرقام الآيات، كل رقم ينطبق في المنتصف
-   (scroll-snap-align: center) بدل ما نحسب فيزياء السحب يدويًا، مع تلاشي
-   الحواف بقناع تدرّج شفاف (نفس تأثير "عجلة الاختيار" في الفيديو المرجعي) */
-.mip-scrubber-wrap { position: relative; margin-bottom: 1px; }
-.mip-ayah-scrubber {
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  height: 25px;
-  mask-image: linear-gradient(to right, transparent, black 18%, black 82%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 18%, black 82%, transparent);
-}
-.mip-ayah-scrubber::-webkit-scrollbar { display: none; }
-.mas-num {
-  flex: 0 0 auto;
-  scroll-snap-align: center;
-  min-width: 30px;
-  padding: 3px 7px;
-  text-align: center;
-  line-height: 1;
-  background: none;
-  border: none;
-  font-family: var(--font-kufic);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink-soft, var(--ink));
-  opacity: .32;
-  transition: font-size .15s ease, color .15s ease, opacity .15s ease;
-}
-.mas-num.active {
-  font-size: 20px;
-  color: var(--gold-deep);
-  opacity: 1;
-}
-body.theme-night .mas-num.active { color: var(--gold-soft); }
-
 .mip-page-ruler {
   position: relative;
   display: block;
   width: 100%;
-  height: 10px;
+  height: 42px;
   overflow-x: auto;
   overflow-y: hidden;
   direction: ltr;
@@ -12603,9 +12562,9 @@ body.theme-night .mas-num.active { color: var(--gold-soft); }
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
-  touch-action: pan-x;
-  mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+  touch-action: none;
+  mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
 }
 .mip-page-ruler::-webkit-scrollbar { display: none; }
 .mip-page-ruler-track {
@@ -12613,15 +12572,15 @@ body.theme-night .mas-num.active { color: var(--gold-soft); }
   align-items: center;
   box-sizing: content-box;
   width: max-content;
-  height: 10px;
-  padding-inline: calc(50% - 4px);
+  height: 42px;
+  padding-inline: calc(50% - 6px);
 }
 .mip-page-ruler-tick {
   position: relative;
   display: block;
-  flex: 0 0 8px;
-  width: 8px;
-  height: 4px;
+  flex: 0 0 12px;
+  width: 12px;
+  height: var(--ruler-tick-height, 5px);
   scroll-snap-align: center;
 }
 .mip-page-ruler-tick::after {
@@ -12630,29 +12589,72 @@ body.theme-night .mas-num.active { color: var(--gold-soft); }
   top: 50%;
   left: 50%;
   width: 1px;
-  height: 4px;
+  height: var(--ruler-tick-height, 5px);
   border-radius: 1px;
   background: color-mix(in srgb, var(--ink-soft) 62%, transparent);
   transform: translate(-50%, -50%);
 }
-.mip-page-ruler-tick.medium::after { height: 6px; }
-.mip-page-ruler-tick.major::after { height: 8px; background: var(--ink-soft); }
+.mip-page-ruler-tick.current::after { background: var(--gold-deep); width: 2px; }
 .mip-page-ruler-marker {
   position: absolute;
   z-index: 1;
   top: 50%;
   left: 50%;
-  width: 6px;
-  height: 12px;
-  border-radius: 4px 4px 2px 2px;
+  width: 14px;
+  height: 30px;
+  border: 2px solid var(--gold);
+  border-radius: 9px 9px 4px 4px;
   background: #687B50;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .24);
   transform: translate(-50%, -50%);
-  pointer-events: none;
+  cursor: grab;
+  touch-action: none;
 }
+.mip-page-ruler-marker::before {
+  content: '';
+  position: absolute;
+  inset: -10px -14px;
+}
+.mip-page-ruler-marker:active { cursor: grabbing; }
+body.mip-page-scrubbing .mip-caps-row { opacity: 0; pointer-events: none; }
+.mip-caps-row { transition: opacity .14s ease; }
+.mip-scrub-preview {
+  position: fixed;
+  z-index: 1200;
+  top: 66%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 190px;
+  max-width: min(78vw, 360px);
+  padding: 9px 18px;
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--paper-deep) 94%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--shadow) 32%, transparent);
+  color: var(--ink);
+  font-family: var(--font-kufic);
+  font-size: 15px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px) scale(.97);
+  transition: opacity .16s ease, transform .16s ease;
+}
+.mip-scrub-preview[aria-hidden="true"] { visibility: hidden; }
+.mip-scrub-preview.visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+.mip-scrub-preview-page { color: var(--ink-soft); font-size: 13px; font-weight: 600; }
+body.theme-night .mip-scrub-preview { background: color-mix(in srgb, var(--paper-deep) 96%, transparent); }
 body.theme-night .mip-page-ruler-tick::after { background: color-mix(in srgb, var(--ink-soft) 72%, transparent); }
-body.theme-night .mip-page-ruler-tick.major::after { background: var(--ink-soft); }
-body.theme-night .mip-page-ruler-marker { background: var(--gold); }
+body.theme-night .mip-page-ruler-tick.current::after { background: var(--gold-soft); }
+body.theme-night .mip-page-ruler-marker { background: var(--gold-deep); }
 
 /* ================================================================== */
 /* صفحة "مباشر": إذاعات القرآن الكريم اللايف                          */

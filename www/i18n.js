@@ -1021,7 +1021,7 @@
       'tour.coach_bottom_title': 'شريط التنقل السفلي',
       'tour.coach_bottom_body': 'انتقل من هذا الشريط بين المصحف والصوتيات وأدوات التطبيق والختمة والإعدادات.',
       'tour.coach_pages_title': 'تقليب الصفحات',
-      'tour.coach_pages_body': 'اسحب أرقام الصفحات في الشريط السفلي للتنقل مباشرة، أو استخدم كبسولتي السورة والآية للوصول بسرعة.',      "listen_segment.title": "تحديد المقطع",
+      'tour.coach_pages_body': 'اسحب مسطرة الصفحات في الشريط السفلي للتنقل مباشرة، أو استخدم كبسولتي السورة والآية للوصول بسرعة.',      "listen_segment.title": "تحديد المقطع",
       "listen_segment.options": "خيارات التلاوة",
       "listen_segment.go_downloads": "الذهاب لصفحة التحميل",
       "listen_segment.repeat_passage": "تكرار المقطع",
@@ -1926,7 +1926,7 @@
       'tour.coach_bottom_title': 'نوار پیمایش پایین',
       'tour.coach_bottom_body': 'از این نوار میان قرآن، صوت\u200cها، ابزارها، ختم و تنظیمات جابه\u200cجا شوید.',
       'tour.coach_pages_title': 'جابه\u200cجایی صفحه\u200cها',
-      'tour.coach_pages_body': 'شماره صفحه را در نوار پایین بکشید تا مستقیم جابه\u200cجا شوید، یا از دکمه\u200cهای سوره و آیه استفاده کنید.',
+      'tour.coach_pages_body': 'خط‌کش صفحه را در نوار پایین بکشید تا مستقیم جابه\u200cجا شوید، یا از دکمه\u200cهای سوره و آیه استفاده کنید.',
     },
     en: {
       'nav.tools_title': "Home",
@@ -2851,7 +2851,7 @@
       'tour.coach_bottom_title': 'Bottom navigation bar',
       'tour.coach_bottom_body': 'Move between the Quran, audio, app tools, khatma, and settings from this bar.',
       'tour.coach_pages_title': 'Turn pages',
-      'tour.coach_pages_body': 'Swipe the page numbers below to jump directly, or use the surah and verse controls for quick access.',      "listen_segment.title": "Choose passage",
+      'tour.coach_pages_body': 'Drag the page ruler below to jump directly, or use the surah and verse controls for quick access.',      "listen_segment.title": "Choose passage",
       "listen_segment.options": "Recitation options",
       "listen_segment.go_downloads": "Open downloads",
       "listen_segment.repeat_passage": "Repeat passage",
@@ -3763,7 +3763,7 @@
       'tour.coach_bottom_title': 'Navigation inférieure',
       'tour.coach_bottom_body': 'Passez du Coran à l’audio, aux outils, à la khatma ou aux réglages depuis cette barre.',
       'tour.coach_pages_title': 'Tourner les pages',
-      'tour.coach_pages_body': 'Faites glisser les numéros de page en bas ou utilisez les capsules de sourate et de verset pour accéder rapidement.',
+      'tour.coach_pages_body': 'Faites glisser la règle des pages en bas ou utilisez les capsules de sourate et de verset pour accéder rapidement.',
     },
     tr: {
       'nav.tools_title': "Ana Sayfa",
@@ -4601,7 +4601,7 @@
       'tour.coach_bottom_title': 'Alt gezinme çubuğu',
       'tour.coach_bottom_body': 'Buradan Kur’an, sesler, uygulama araçları, hatim ve ayarlar arasında geçiş yapın.',
       'tour.coach_pages_title': 'Sayfaları çevirme',
-      'tour.coach_pages_body': 'Doğrudan gitmek için alttaki sayfa numaralarını kaydırın veya sure ve ayet kontrollerini kullanın.',
+      'tour.coach_pages_body': 'Doğrudan gitmek için alttaki sayfa cetvelini kaydırın veya sure ve ayet kontrollerini kullanın.',
     },
     ur: {
       'nav.tools_title': "ہوم",
@@ -5439,7 +5439,7 @@
       'tour.coach_bottom_title': 'نیچے کا نیویگیشن بار',
       'tour.coach_bottom_body': 'اس بار سے قرآن، آڈیو، ایپ کے ٹولز، ختم اور ترتیبات کے درمیان جائیں۔',
       'tour.coach_pages_title': 'صفحات بدلیں',
-      'tour.coach_pages_body': 'براہِ راست صفحے پر جانے کے لیے نیچے صفحہ نمبر سوائپ کریں یا سورت اور آیت کے بٹن استعمال کریں۔',
+      'tour.coach_pages_body': 'براہِ راست صفحے پر جانے کے لیے نیچے صفحہ پیمانہ کھینچیں یا سورت اور آیت کے بٹن استعمال کریں۔',
     },
     id: {
       'nav.tools_title': "Beranda",
@@ -6277,7 +6277,7 @@
       'tour.coach_bottom_title': 'Bilah navigasi bawah',
       'tour.coach_bottom_body': 'Gunakan bilah ini untuk berpindah antara Al-Qur’an, audio, alat aplikasi, khatam, dan pengaturan.',
       'tour.coach_pages_title': 'Membalik halaman',
-      'tour.coach_pages_body': 'Usap nomor halaman di bawah untuk langsung berpindah, atau gunakan tombol surah dan ayat untuk akses cepat.',
+      'tour.coach_pages_body': 'Geser penggaris halaman di bawah untuk berpindah langsung, atau gunakan tombol surah dan ayat.',
     },
     ru: {
       'nav.tools_title': "Главная",
@@ -7115,7 +7115,7 @@
       'tour.coach_bottom_title': 'Нижняя панель навигации',
       'tour.coach_bottom_body': 'Переходите между Кораном, аудио, инструментами приложения, хатмом и настройками.',
       'tour.coach_pages_title': 'Перелистывание страниц',
-      'tour.coach_pages_body': 'Проведите по номерам страниц внизу для прямого перехода или используйте кнопки с сурой и аятом.',
+      'tour.coach_pages_body': 'Проведите по линейке страниц внизу для прямого перехода или используйте кнопки с сурой и аятом.',
     },
     es: {
       'nav.tools_title': "Inicio",
@@ -7953,7 +7953,7 @@
       'tour.coach_bottom_title': 'Barra de navegación inferior',
       'tour.coach_bottom_body': 'Cambia entre el Corán, el audio, las herramientas, el jatam y los ajustes desde esta barra.',
       'tour.coach_pages_title': 'Pasar páginas',
-      'tour.coach_pages_body': 'Desliza los números de página inferiores o usa los controles de sura y aleya para acceder rápidamente.',
+      'tour.coach_pages_body': 'Desliza la regla de páginas inferior o usa los controles de sura y aleya para acceder rápidamente.',
     }
   };
 

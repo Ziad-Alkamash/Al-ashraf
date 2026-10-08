@@ -5882,7 +5882,7 @@
     if (landscapeFlipActive) disableLandscapeFlip(); else enableLandscapeFlip();
   }
 
-  // يحدّث كبسولتي اسم السورة/رقم الآية ومنزلق أرقام الصفحات من
+  // يحدّث كبسولتي اسم السورة/رقم الآية ومسطرة الصفحات من
   // نفس بيانات الصفحة المُحمَّلة حاليًا — يُستدعى بعد كل تحميل صفحة جديدة
   // (شوف loadPage)
   function updateMushafInfoPopup() {
@@ -5893,13 +5893,15 @@
     const surahEl = $('#mip-surah');
     if (surahEl) surahEl.textContent = firstAyah ? localizedSurahName(pageData.headerSurahName, pageData.headerSurahNumber) || '' : '';
 
-    // شارة "آية N" في نص شريط المعلومات بتعرض رقم أول آية في الصفحة الحالية
-    // (المنزلق تحتها بيمثّل أرقام الصفحات مش أرقام الآيات — شوف updateAyahScrubber).
-    // الرقم هنا إنجليزي (لاتيني) مقصود بطلب المستخدم، زي أرقام المنزلق تحته بالظبط
+    // كبسولة الآية تعرض أول آية في الصفحة المفتوحة، وتظل منفصلة عن مسطرة الصفحات.
     const ayahPill = $('#mip-ayah-pill');
     if (ayahPill) ayahPill.textContent = firstAyah ? `آية ${firstAyah.numberInSurah}` : '—';
 
-    updateAyahScrubber(state.currentPage);
+    if (firstAyah) scrubberRememberPage(state.currentPage, firstAyah);
+    if (!scrubberRulerInteracting) updateAyahScrubber(state.currentPage);
+    if (document.body.classList.contains('mip-page-scrubbing')) {
+      scrubberShowPreview(scrubberRulerInteracting ? scrubberActivePage : state.currentPage);
+    }
     safeCall(updateMttKhatmaPill, 'updateMttKhatmaPill');
     if (typeof closeAyahMenu === 'function') closeAyahMenu();
   }
@@ -5942,35 +5944,102 @@
   });
 
   /* ---------------------------------------------------------------- */
-  /* شريط صفحات المصحف: أرقام الصفحات ومسطرة لمس صغيرة أسفلها.            */
+  /* مسطرة تقليب صفحات المصحف                                      */
   /* ---------------------------------------------------------------- */
   const TOTAL_MUSHAF_PAGES = 604;
-  const PAGE_RULER_TICK_WIDTH = 8;
-  let scrubberBuilt = false;
+  const PAGE_RULER_TICK_WIDTH = 12;
   let scrubberRulerBuilt = false;
+  let scrubberScaleCenterPage = null;
+  const scrubberRulerTicks = new Map();
   let scrubberActivePage = null;
   let scrubberAnchorPage = null; // آخر صفحة كنّا فيها قبل هذا الانتقال، لزرار "رجوع" — بتتحدّث في loadPage نفسها مع كل انتقال
-  let scrubberProgrammatic = false; // true أثناء تحريك الصف برمجيًا (مش من المستخدم)
   let scrubberSettleTimer = null;
+  let scrubberMarkerDrag = null;
+  let scrubberPreviewInteractionActive = false;
   let scrubberRulerProgrammatic = false;
   let scrubberRulerInteracting = false;
+  const scrubberPageSurahs = new Map();
+
+  function scrubberRememberPage(pageNum, ayah) {
+    const page = Number(pageNum);
+    const surahNumber = Number(ayah?.surah?.number || ayah?.surahNumber);
+    if (!Number.isInteger(page) || page < 1 || page > TOTAL_MUSHAF_PAGES || !surahNumber) return;
+    const surah = (state.surahList || []).find((item) => Number(item.number) === surahNumber);
+    const name = surah?.nameAr ? localizedSurahName(surah.nameAr, surahNumber) : '';
+    if (name) scrubberPageSurahs.set(page, { number: surahNumber, name });
+  }
+
+  function scrubberSurahForPage(pageNum) {
+    const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, Number(pageNum) || 1));
+    const remembered = scrubberPageSurahs.get(page);
+    if (remembered) return remembered;
+    let number = 1;
+    for (let i = 0; i < SURAH_START_PAGES.length; i += 1) {
+      if (SURAH_START_PAGES[i] > page) break;
+      number = i + 1;
+    }
+    const surah = (state.surahList || []).find((item) => Number(item.number) === number);
+    return { number, name: surah?.nameAr ? localizedSurahName(surah.nameAr, number) : `${tUI('surah.word', 'سورة')} ${localeDigits(number)}` };
+  }
+
+  function scrubberUpdateScale(pageNum) {
+    const centerPage = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, Number(pageNum) || 1));
+    if (scrubberScaleCenterPage === centerPage) return;
+    if (!scrubberRulerTicks.size) return;
+    const range = 18;
+    if (scrubberScaleCenterPage) {
+      for (let distance = -range; distance <= range; distance += 1) {
+        const oldTick = scrubberRulerTicks.get(scrubberScaleCenterPage + distance);
+        if (oldTick) {
+          oldTick.style.removeProperty('--ruler-tick-height');
+          oldTick.classList.remove('current');
+        }
+      }
+    }
+    scrubberScaleCenterPage = centerPage;
+    for (let distance = -range; distance <= range; distance += 1) {
+      const page = centerPage + distance;
+      if (page < 1 || page > TOTAL_MUSHAF_PAGES) continue;
+      const tick = scrubberRulerTicks.get(page);
+      if (!tick) continue;
+      const height = Math.round(5 + (1 - Math.abs(distance) / (range + 1)) * 31);
+      tick.style.setProperty('--ruler-tick-height', `${height}px`);
+      tick.classList.toggle('current', distance === 0);
+    }
+  }
+
+  function scrubberShowPreview(pageNum) {
+    const preview = $('#mip-scrub-preview');
+    const surahEl = $('#mip-scrub-preview-surah');
+    const pageEl = $('#mip-scrub-preview-page');
+    if (!preview || !surahEl || !pageEl) return;
+    const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, Number(pageNum) || 1));
+    const surah = scrubberSurahForPage(page);
+    surahEl.textContent = surah.name;
+    pageEl.textContent = `صفحة ${localeDigits(page)}`;
+    preview.setAttribute('aria-hidden', 'false');
+    preview.classList.add('visible');
+    document.body.classList.add('mip-page-scrubbing');
+  }
+
+  function scrubberHidePreview() {
+    const preview = $('#mip-scrub-preview');
+    if (preview) {
+      preview.classList.remove('visible');
+      preview.setAttribute('aria-hidden', 'true');
+    }
+    document.body.classList.remove('mip-page-scrubbing');
+  }
 
   function scrubberSetActiveVisual(pageNum) {
-    const container = $('#mip-ayah-scrubber');
     const pageRuler = $('#mip-page-ruler');
-    if (!container && !pageRuler) return;
-    const previousPage = scrubberActivePage;
+    if (!pageRuler) return;
     scrubberActivePage = pageNum;
-    if (container) {
-      const previousBtn = previousPage && container.querySelector(`.mas-num[data-page="${previousPage}"]`);
-      if (previousBtn) previousBtn.classList.remove('active');
-      const btn = container.querySelector(`.mas-num[data-page="${pageNum}"]`);
-      if (btn) btn.classList.add('active');
-    }
     if (pageRuler) {
       const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, Number(pageNum) || 1));
       pageRuler.setAttribute('aria-valuenow', String(page));
       pageRuler.setAttribute('aria-valuetext', `صفحة ${page}`);
+      scrubberUpdateScale(page);
     }
 
     const backBtn = $('#mushaf-fab-back');
@@ -5978,21 +6047,9 @@
     if (backBtn) {
       const showBack = scrubberAnchorPage && scrubberAnchorPage !== pageNum;
       backBtn.classList.toggle('hidden', !showBack);
-      // رقم إنجليزي (لاتيني) هنا برضو، اتساقًا مع باقي أرقام صفحات مستطيل
-      // التقليب (شوف updateAyahScrubber)
+      // رقم الصفحة في زر الرجوع منفصل عن المسطرة الخالية من الأرقام.
       if (showBack && backNum) backNum.textContent = String(scrubberAnchorPage);
     }
-  }
-
-  function scrubberScrollPageIntoView(pageNum, smooth) {
-    const container = $('#mip-ayah-scrubber');
-    if (!container) return;
-    const btn = container.querySelector(`.mas-num[data-page="${pageNum}"]`);
-    if (!btn) return;
-    const targetLeft = btn.offsetLeft + btn.offsetWidth / 2 - container.clientWidth / 2;
-    scrubberProgrammatic = true;
-    container.scrollTo({ left: targetLeft, behavior: smooth ? 'smooth' : 'auto' });
-    setTimeout(() => { scrubberProgrammatic = false; }, smooth ? 360 : 60);
   }
 
   function scrubberScrollRulerToPage(pageNum, smooth) {
@@ -6006,122 +6063,92 @@
     ruler.__programmaticTimer = setTimeout(() => { scrubberRulerProgrammatic = false; }, smooth ? 380 : 70);
   }
 
-  // بعد ما المستخدم يسيب إصبعه على رقم صفحة مختلف عن الصفحة المفتوحة حاليًا،
-  // نستنى شوية (debounce) لحد ما السحب يستقر تمامًا، وبعدين ننتقل فعليًا
-  // للصفحة الجديدة — أما "آية N" في الشارة فبتتحدّث بعد ما الصفحة تتحمّل
-  // فعليًا (شوف updateMushafInfoPopup) مش أثناء السحب نفسه، توفيرًا للأداء
+  // نحمّل الصفحة بعد استقرار السحب لحظيًا بدل تكرار الطلبات أثناء الحركة.
   function scrubberOnSettle() {
     if (!scrubberActivePage || scrubberActivePage === state.currentPage) return;
     loadPage(scrubberActivePage);
   }
 
   function updateAyahScrubber(currentPage) {
-    const container = $('#mip-ayah-scrubber');
-    if (!container) return;
-
-    if (!scrubberBuilt) {
-      // الأرقام هنا إنجليزية (لاتينية) مقصودة بطلب المستخدم، عكس باقي
-      // الأرقام في التطبيق اللي بتتحول لعربي بـ toArabicDigits
-      let html = '';
-      for (let n = 1; n <= TOTAL_MUSHAF_PAGES; n++) {
-        html += `<button type="button" class="mas-num" data-page="${n}">${n}</button>`;
-      }
-      container.innerHTML = html;
-      container.style.paddingInline = 'calc(50% - 17px)';
-      scrubberBuilt = true;
-    }
     if (!scrubberRulerBuilt) {
       const rulerTrack = $('#mip-page-ruler-track');
       if (rulerTrack) {
         let ticks = '';
         for (let n = TOTAL_MUSHAF_PAGES; n >= 1; n--) {
-          ticks += `<span class="mip-page-ruler-tick${n % 10 === 0 ? ' major' : n % 5 === 0 ? ' medium' : ''}" data-page="${n}"></span>`;
+          ticks += `<span class="mip-page-ruler-tick" data-page="${n}"></span>`;
         }
         rulerTrack.innerHTML = ticks;
+        $$('.mip-page-ruler-tick', rulerTrack).forEach((tick) => scrubberRulerTicks.set(Number(tick.dataset.page), tick));
         scrubberRulerBuilt = true;
       }
     }
 
     // "آخر صفحة" (المستخدَمة في زرار الرجوع) بقت بتتحدّث مباشرة جوه
     // loadPage نفسها مع كل انتقال (قفزة أو تقليب عادي) — شوف هناك
-    scrubberSetActiveVisual(currentPage);
-    scrubberScrollPageIntoView(currentPage, false);
-    scrubberScrollRulerToPage(currentPage, false);
+    if (!scrubberRulerInteracting) {
+      scrubberSetActiveVisual(currentPage);
+      scrubberUpdateScale(currentPage);
+      scrubberScrollRulerToPage(currentPage, false);
+    }
   }
 
   function initAyahScrubber() {
-    const container = $('#mip-ayah-scrubber');
     const pageRuler = $('#mip-page-ruler');
-    if (!container && !pageRuler) return;
+    if (!pageRuler) return;
 
-    if (container) container.addEventListener('click', (e) => {
-      const btn = e.target.closest('.mas-num');
-      if (!btn) return;
-      const n = Number(btn.dataset.page);
-      if (!n) return;
-      scrubberSetActiveVisual(n);
-      scrubberScrollPageIntoView(n, true);
-      scrubberScrollRulerToPage(n, true);
-      clearTimeout(scrubberSettleTimer);
-      scrubberSettleTimer = setTimeout(scrubberOnSettle, 380);
+    pageRuler.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      scrubberRulerInteracting = true;
+      scrubberPreviewInteractionActive = true;
+      scrubberMarkerDrag = { pointerId: event.pointerId, lastX: event.clientX };
+      try { pageRuler.setPointerCapture(event.pointerId); } catch (e) { /* pointer capture اختياري */ }
+      scrubberShowPreview(scrubberActivePage || state.currentPage || 1);
     });
-
-    if (container) container.addEventListener('scroll', () => {
-      if (scrubberProgrammatic) return;
-      // بنلاقي أقرب رقم لمنتصف الصف الظاهر دلوقتي ونخلّيه هو "النشط"
-      const mid = container.scrollLeft + container.clientWidth / 2;
-      let closest = null;
-      let closestDist = Infinity;
-      $$('.mas-num', container).forEach((btn) => {
-        const center = btn.offsetLeft + btn.offsetWidth / 2;
-        const dist = Math.abs(center - mid);
-        if (dist < closestDist) { closestDist = dist; closest = btn; }
-      });
-      if (closest) {
-        const n = Number(closest.dataset.page);
-        if (n && n !== scrubberActivePage) {
-          scrubberSetActiveVisual(n);
-          scrubberScrollRulerToPage(n, true);
-        }
-      }
+    const endRulerInteraction = () => {
+      if (!scrubberRulerInteracting) return;
+      scrubberRulerInteracting = false;
+      scrubberPreviewInteractionActive = false;
+      scrubberMarkerDrag = null;
       clearTimeout(scrubberSettleTimer);
-      scrubberSettleTimer = setTimeout(scrubberOnSettle, 260);
+      scrubberSettleTimer = setTimeout(scrubberOnSettle, 80);
+      scrubberHidePreview();
+    };
+    document.addEventListener('pointerup', endRulerInteraction, { passive: true });
+    document.addEventListener('pointercancel', endRulerInteraction, { passive: true });
+    const updateRulerPosition = () => {
+      const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1,
+        Math.round(pageRuler.scrollLeft / PAGE_RULER_TICK_WIDTH)));
+      const page = TOTAL_MUSHAF_PAGES - index;
+      if (scrubberPreviewInteractionActive) scrubberShowPreview(page);
+      if (page !== scrubberActivePage) scrubberSetActiveVisual(page);
+      clearTimeout(scrubberSettleTimer);
+      // نحمّل الصفحة بعد استقرار السحب لحظيًا، مع استمرار عرض رقم الصفحة على الكبسولة أثناء الحركة.
+      scrubberSettleTimer = setTimeout(scrubberOnSettle, 180);
+    };
+    pageRuler.addEventListener('pointermove', (event) => {
+      if (!scrubberMarkerDrag || scrubberMarkerDrag.pointerId !== event.pointerId) return;
+      const deltaX = event.clientX - scrubberMarkerDrag.lastX;
+      scrubberMarkerDrag.lastX = event.clientX;
+      const maxScroll = Math.max(0, pageRuler.scrollWidth - pageRuler.clientWidth);
+      pageRuler.scrollLeft = Math.max(0, Math.min(maxScroll, pageRuler.scrollLeft - deltaX));
+      updateRulerPosition();
+    }, { passive: false });
+    pageRuler.addEventListener('scroll', () => {
+      if (scrubberRulerProgrammatic) return;
+      updateRulerPosition();
     }, { passive: true });
-
-    if (pageRuler) {
-      pageRuler.addEventListener('pointerdown', () => { scrubberRulerInteracting = true; });
-      const endRulerInteraction = () => {
-        if (!scrubberRulerInteracting) return;
-        scrubberRulerInteracting = false;
-        clearTimeout(scrubberSettleTimer);
-        scrubberSettleTimer = setTimeout(scrubberOnSettle, 80);
-      };
-      document.addEventListener('pointerup', endRulerInteraction, { passive: true });
-      document.addEventListener('pointercancel', endRulerInteraction, { passive: true });
-      pageRuler.addEventListener('scroll', () => {
-        if (scrubberRulerProgrammatic) return;
-        const index = Math.max(0, Math.min(TOTAL_MUSHAF_PAGES - 1,
-          Math.round(pageRuler.scrollLeft / PAGE_RULER_TICK_WIDTH)));
-        const page = TOTAL_MUSHAF_PAGES - index;
-        if (page !== scrubberActivePage) scrubberSetActiveVisual(page);
-        clearTimeout(scrubberSettleTimer);
-        // A short pause during a drag commits that page immediately; another
-        // drag continues from the newly loaded page without queueing requests.
-        scrubberSettleTimer = setTimeout(scrubberOnSettle, 180);
-      }, { passive: true });
-      pageRuler.addEventListener('keydown', (event) => {
-        const delta = event.key === 'ArrowLeft' ? 1 : event.key === 'ArrowRight' ? -1 :
-          event.key === 'PageDown' ? 10 : event.key === 'PageUp' ? -10 : 0;
-        if (!delta) return;
-        event.preventDefault();
-        const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, (scrubberActivePage || state.currentPage || 1) + delta));
-        scrubberSetActiveVisual(page);
-        scrubberScrollPageIntoView(page, true);
-        scrubberScrollRulerToPage(page, true);
-        clearTimeout(scrubberSettleTimer);
-        scrubberSettleTimer = setTimeout(scrubberOnSettle, 180);
-      });
-    }
+    pageRuler.addEventListener('keydown', (event) => {
+      const delta = event.key === 'ArrowLeft' ? 1 : event.key === 'ArrowRight' ? -1 :
+        event.key === 'PageDown' ? 10 : event.key === 'PageUp' ? -10 : 0;
+      if (!delta) return;
+      event.preventDefault();
+      const page = Math.max(1, Math.min(TOTAL_MUSHAF_PAGES, (scrubberActivePage || state.currentPage || 1) + delta));
+      scrubberSetActiveVisual(page);
+      scrubberScrollRulerToPage(page, true);
+      scrubberShowPreview(page);
+      clearTimeout(scrubberSettleTimer);
+      scrubberSettleTimer = setTimeout(() => { scrubberOnSettle(); scrubberHidePreview(); }, 180);
+    });
 
     // زرار "رجوع" (جنب السماعة): يظهر بس بعد قفزة مباشرة لصفحة بعيدة عن
     // آخر صفحة كنت فيها، وبيرجّعك ليها بضغطة واحدة
@@ -6130,7 +6157,6 @@
       backBtn.addEventListener('click', () => {
         if (!scrubberAnchorPage) return;
         scrubberSetActiveVisual(scrubberAnchorPage);
-        scrubberScrollPageIntoView(scrubberAnchorPage, true);
         scrubberScrollRulerToPage(scrubberAnchorPage, true);
         clearTimeout(scrubberSettleTimer);
         scrubberSettleTimer = setTimeout(scrubberOnSettle, 380);
@@ -30308,7 +30334,7 @@
     const coachmarks = [
       { tab: 'quran', target: '#mushaf-top-toolbar', fallback: '#mushaf-top-toolbar .mtt-row', title: 'tour.coach_toolbar_title', body: 'tour.coach_toolbar_body', titleFallback: 'أدوات الشريط العلوي', bodyFallback: 'من هنا تدوّر الشاشة، وتشغّل التقليب التلقائي، وتبحث عن آية، وتفتح الفهرس والتفسير. كما تجد اختيار الرواية وموعد الصلاة.' },
       { tab: 'quran', target: '#mushaf-quick-bar', fallback: '#mushaf-bottom-stack', title: 'tour.coach_bottom_title', body: 'tour.coach_bottom_body', titleFallback: 'شريط التنقل السفلي', bodyFallback: 'انتقل من هذا الشريط بين المصحف والصوتيات وأدوات التطبيق والختمة والإعدادات.' },
-      { tab: 'quran', target: '#mushaf-info-group', fallback: '#mushaf-info-popup', title: 'tour.coach_pages_title', body: 'tour.coach_pages_body', titleFallback: 'تقليب الصفحات', bodyFallback: 'اسحب أرقام الصفحات في الشريط السفلي للتنقل مباشرة، أو استخدم كبسولتي السورة والآية للوصول بسرعة.' }
+      { tab: 'quran', target: '#mushaf-info-group', fallback: '#mushaf-info-popup', title: 'tour.coach_pages_title', body: 'tour.coach_pages_body', titleFallback: 'تقليب الصفحات', bodyFallback: 'اسحب مسطرة الصفحات في الشريط السفلي للتنقل مباشرة، أو استخدم كبسولتي السورة والآية للوصول بسرعة.' }
     ];
     let phase = 'slides';
     let step = 0;

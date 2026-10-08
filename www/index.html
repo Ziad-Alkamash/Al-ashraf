@@ -975,6 +975,11 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
     </div>
   </section>
 
+  <div id="mip-scrub-preview" class="mip-scrub-preview" role="status" aria-live="polite" aria-hidden="true">
+    <span id="mip-scrub-preview-surah"></span>
+    <span id="mip-scrub-preview-page"></span>
+  </div>
+
   <!-- تبويب الأذكار -->
   <section id="view-azkar" class="view">
     <div class="list-page">
@@ -5244,8 +5249,7 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
 
   </div>
 
-  <!-- مجموعة معلومات الصفحة: كبسولتان بره المستطيل (اسم السورة + رقم الآية)
-       وتحتهم مستطيل التقليب (منزلق أرقام الصفحات + شريط التقدّم) بس -->
+  <!-- مجموعة معلومات الصفحة: كبسولتا السورة والآية، ومسطرة تقليب الصفحات -->
   <div id="mushaf-info-group" class="mip-group">
     <div class="mip-caps-row">
       <button type="button" id="mip-surah" class="mip-cap mip-surah-name" aria-label="فتح فهرس السور"></button>
@@ -5261,9 +5265,6 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
       <div id="mam-grid" class="mam-grid"></div>
     </div>
     <div id="mushaf-info-popup" class="mushaf-info-popup" aria-hidden="true">
-      <div class="mip-scrubber-wrap">
-        <div id="mip-ayah-scrubber" class="mip-ayah-scrubber"></div>
-      </div>
       <div id="mip-page-ruler" class="mip-page-ruler" role="slider" tabindex="0" aria-label="التنقل بين صفحات المصحف" aria-valuemin="1" aria-valuemax="604" aria-valuenow="1">
         <div id="mip-page-ruler-track" class="mip-page-ruler-track" aria-hidden="true"></div>
         <span class="mip-page-ruler-marker" aria-hidden="true"></span>
