@@ -1,42 +1,62 @@
 {
   "enabled": true,
-  "versionName": "5.5.24",
-  "versionCode": 51,
+  "versionName": "5.5.30",
+  "versionCode": 57,
   "minimumVersionCode": 13,
-  "releaseDate": "2026-10-07",
-  "tagName": "v5.5.24",
+  "releaseDate": "2026-10-08",
+  "tagName": "v5.5.30",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "6c9b7b065f30513a5a793828078a58218ee6c228a8a24113498a83ed44ad0268",
+  "sha256": "d66ae75a090c455222e33db764be5331140b41493009987b0757c4b6ac00265d",
   "releaseNotes": [
-    "تحسين حجم أيقونة التطبيق."
+    "ضبط هوامش صفحات المصحف والتسميع وتحسين التظليل والتقليب.",
+    "تحسين مزامنة التلاوة وحذف ملفات SVG القديمة لتوفير مساحة.",
+    "تسهيل الوصول لأعضاء الختمة الجماعية وإعداداتها."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "تحسين حجم أيقونة التطبيق."
+      "ضبط هوامش صفحات المصحف والتسميع وتحسين التظليل والتقليب.",
+      "تحسين مزامنة التلاوة وحذف ملفات SVG القديمة لتوفير مساحة.",
+      "تسهيل الوصول لأعضاء الختمة الجماعية وإعداداتها."
     ],
     "fa": [
-      "اندازهٔ نماد برنامه بهبود یافت."
+      "حاشیه‌های صفحات قرآن و تلاوت تمرینی و نمایش هایلایت و ورق‌زدن بهبود یافت.",
+      "همگام‌سازی تلاوت بهتر شد و فایل‌های قدیمی SVG برای آزادسازی فضا حذف شدند.",
+      "دسترسی به اعضا و تنظیمات ختم گروهی ساده‌تر شد."
     ],
     "en": [
-      "Adjusted the app icon size."
+      "Improved Quran page and tasmee spacing, highlighting, and page turning.",
+      "Improved recitation timing and removed legacy SVG pages to free storage.",
+      "Made group khatma members and settings easier to access."
     ],
     "fr": [
-      "Taille de l’icône de l’application ajustée."
+      "Amélioration des marges, du surlignage et du défilement des pages du Coran et de tasmee.",
+      "Synchronisation audio améliorée et suppression des anciens SVG pour libérer de l’espace.",
+      "Accès simplifié aux membres et aux paramètres des khatmas collectives."
     ],
     "tr": [
-      "Uygulama simgesinin boyutu düzenlendi."
+      "Kur’an ve tesmiye sayfalarının boşlukları, vurgulaması ve çevrilmesi iyileştirildi.",
+      "Kıraat senkronizasyonu iyileştirildi; yer açmak için eski SVG sayfaları kaldırıldı.",
+      "Toplu hatim üyelerine ve ayarlarına erişim kolaylaştırıldı."
     ],
     "ur": [
-      "ایپ آئیکن کا سائز بہتر کیا گیا۔"
+      "قرآن اور تسمیع صفحات کے حاشیے، نمایاں کرنے اور صفحہ پلٹنے میں بہتری۔",
+      "تلاوت کی ہم آہنگی بہتر اور جگہ خالی کرنے کے لیے پرانے SVG صفحات حذف کیے گئے۔",
+      "اجتماعی ختم کے اراکین اور ترتیبات تک رسائی آسان بنائی گئی۔"
     ],
     "id": [
-      "Ukuran ikon aplikasi disesuaikan."
+      "Margin, sorotan, dan perpindahan halaman Al-Qur’an serta tasmi ditingkatkan.",
+      "Sinkronisasi bacaan diperbaiki dan SVG lama dihapus untuk menghemat ruang.",
+      "Akses anggota dan pengaturan khatam bersama dibuat lebih mudah."
     ],
     "ru": [
-      "Скорректирован размер значка приложения."
+      "Улучшены поля, подсветка и перелистывание страниц Корана и тасми.",
+      "Синхронизация чтения улучшена, старые SVG-страницы удалены для экономии места.",
+      "Доступ к участникам и настройкам коллективного хатма стал проще."
     ],
     "es": [
-      "Se ajustó el tamaño del icono de la aplicación."
+      "Se mejoraron los márgenes, el resaltado y el paso de páginas del Corán y tasmee.",
+      "Se mejoró la sincronización y se eliminaron SVG antiguos para liberar espacio.",
+      "Se facilitó el acceso a los miembros y ajustes de la lectura colectiva."
     ]
   }
 }
