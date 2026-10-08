@@ -25852,6 +25852,17 @@ body.theme-night .autoscroll-speed-pill .autoscroll-playpause-btn {
 body.theme-night .autoscroll-speed-pill .autoscroll-playpause-btn:active {
   background: color-mix(in srgb, var(--gold-soft) 28%, var(--paper));
 }
+
+/* شريط معلومات الصفحة خارج #mushaf-wrap؛ ثبّت ألوانه في الوضع الليلي
+   حتى لا يحتفظ بقيم الصفحة الفاتحة بعد تغيير الثيم. */
+body.theme-night #page-foot-bar {
+  background: #000 !important;
+  color: #aaa !important;
+}
+body.theme-night #page-foot-bar #surah-progress,
+body.theme-night #page-foot-bar #page-hizb-info {
+  color: #aaa !important;
+}
 body.theme-night .autoscroll-speed-thumb {
   background: var(--gold-soft);
   box-shadow: 0 0 0 2px rgba(0,0,0,.86), 0 1px 3px rgba(0,0,0,.45);

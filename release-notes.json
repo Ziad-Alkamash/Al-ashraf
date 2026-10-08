@@ -1,47 +1,38 @@
 {
   "ar": [
-    "تحسين مسطرة تقليب الصفحات وزر الرجوع لآخر موضع قراءة.",
-    "تحديث لوحة التمرير التلقائي: مسطرة أوضح، خلفية مميزة، وزر إيقاف مؤقت.",
-    "تحسين شكل مؤشر السرعة واستجابته للسحب."
+    "إصلاح لون شريط معلومات الصفحة في الوضع الداكن.",
+    "تسريع حركة تقليب الصفحات وتحسين سلاستها."
   ],
   "fa": [
-    "خط‌کش ورق‌زدن صفحات و دکمه بازگشت به آخرین محل مطالعه بهبود یافت.",
-    "پنل پیمایش خودکار با خط‌کش واضح‌تر، پس‌زمینه مشخص و دکمه مکث به‌روزرسانی شد.",
-    "ظاهر نشانگر سرعت و پاسخ آن به کشیدن بهبود یافت."
+    "رنگ نوار اطلاعات صفحه در حالت تاریک اصلاح شد.",
+    "حرکت ورق‌زدن صفحات سریع‌تر و روان‌تر شد."
   ],
   "en": [
-    "Improved the page-turn ruler and return-to-reading-position button.",
-    "Updated auto-scroll controls with a clearer ruler, distinct background, and pause button.",
-    "Improved the speed indicator and drag response."
+    "Fixed the page information bar color in dark mode.",
+    "Made page turns faster and smoother."
   ],
   "fr": [
-    "Amélioration de la règle de défilement des pages et du bouton de retour à la lecture.",
-    "Commandes de défilement automatique mises à jour avec une règle plus claire et un bouton pause.",
-    "Amélioration de l’indicateur de vitesse et du glissement."
+    "Correction de la couleur de la barre d’informations en mode sombre.",
+    "Défilement des pages plus rapide et plus fluide."
   ],
   "tr": [
-    "Sayfa çevirme cetveli ve son okuma konumuna dönme düğmesi iyileştirildi.",
-    "Otomatik kaydırma denetimleri daha belirgin cetvel ve duraklatma düğmesiyle yenilendi.",
-    "Hız göstergesi ve sürükleme tepkisi iyileştirildi."
+    "Karanlık modda sayfa bilgi çubuğunun rengi düzeltildi.",
+    "Sayfa geçişleri hızlandırıldı ve yumuşatıldı."
   ],
   "ur": [
-    "صفحہ پلٹنے کے پیمانے اور آخری مطالعہ مقام پر واپسی کے بٹن کو بہتر بنایا گیا۔",
-    "خودکار اسکرول کنٹرولز میں واضح پیمانہ، الگ پس منظر اور توقف کا بٹن شامل کیا گیا۔",
-    "رفتار کے اشارے اور ڈریگ کے ردعمل کو بہتر بنایا گیا۔"
+    "ڈارک موڈ میں صفحے کی معلومات کی پٹی کا رنگ درست کیا گیا۔",
+    "صفحہ پلٹنے کی حرکت تیز اور ہموار کی گئی۔"
   ],
   "id": [
-    "Penggaris pergantian halaman dan tombol kembali ke posisi bacaan terakhir ditingkatkan.",
-    "Kontrol gulir otomatis diperbarui dengan penggaris lebih jelas dan tombol jeda.",
-    "Indikator kecepatan dan respons geser ditingkatkan."
+    "Memperbaiki warna bilah informasi halaman pada mode gelap.",
+    "Pergantian halaman dibuat lebih cepat dan halus."
   ],
   "ru": [
-    "Улучшены линейка перелистывания и кнопка возврата к последнему месту чтения.",
-    "Панель автопрокрутки обновлена: более заметная линейка и кнопка паузы.",
-    "Улучшены индикатор скорости и реакция на перетаскивание."
+    "Исправлен цвет панели сведений о странице в тёмном режиме.",
+    "Перелистывание страниц стало быстрее и плавнее."
   ],
   "es": [
-    "Se mejoraron la regla de páginas y el botón para volver a la última posición de lectura.",
-    "Controles de desplazamiento automático actualizados con una regla más visible y botón de pausa.",
-    "Se mejoraron el indicador de velocidad y la respuesta al arrastre."
+    "Se corrigió el color de la barra de información en modo oscuro.",
+    "El cambio de página ahora es más rápido y fluido."
   ]
 }

@@ -3036,7 +3036,7 @@
         resolve();
       };
       activeMushafTransition = { finish };
-      moving.forEach((element) => element.style.setProperty('transition', 'transform 240ms cubic-bezier(.22,.61,.36,1)', 'important'));
+      moving.forEach((element) => element.style.setProperty('transition', 'transform 180ms cubic-bezier(.2,.75,.3,1)', 'important'));
       onEnd = (event) => {
         if (event.propertyName !== 'transform') return;
         moving.forEach((element) => element.removeEventListener('transitionend', onEnd));
@@ -3048,7 +3048,7 @@
         if (settled) return;
         if (current) current.style.transform = mushafPageTransformX(endCurrent, false, axis);
         if (neighbor) neighbor.style.transform = mushafPageTransformX(endNeighbor, true, axis);
-        fallbackTimer = setTimeout(() => finish(), 300);
+        fallbackTimer = setTimeout(() => finish(), 240);
       });
     });
   }
