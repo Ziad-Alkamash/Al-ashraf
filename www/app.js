@@ -9699,6 +9699,13 @@
     { id: 3, name: 'قناة القرآن الكريم', url: 'https://win.holol.com/live/quran/playlist.m3u8' },
     { id: 4, name: 'قناة السنة النبوية', url: 'https://win.holol.com/live/sunnah/playlist.m3u8' },
   ];
+  // MP3Quran's public HLS endpoint can be temporarily unreachable on some
+  // networks. Keep its channel metadata, but try the broadcaster's Akamai HLS
+  // feed first and fall back to the API URL if the CDN is unavailable.
+  const LIVE_TV_HLS_FALLBACKS = {
+    3: 'https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8',
+    4: 'https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8',
+  };
   const LIVE_BROADCAST_DATA_URL = './live-broadcast-data.json';
   const LIVE_BROADCAST_API = 'https://mp3quran.net/api/v3';
   const LIVE_BROADCAST_CACHE_KEY = 'mushaf_live_broadcasts_v1';
@@ -9743,6 +9750,9 @@
         sourceId: st.id,
         name: st.name,
         url: st.url,
+        fallbackUrls: st.source === 'mp3quran-tv'
+          ? [LIVE_TV_HLS_FALLBACKS[Number(st.id)]].filter(Boolean)
+          : (Array.isArray(st.fallbackUrls) ? st.fallbackUrls : []),
         emoji: '📻',
         icon: 'icon-live-radio',
         art: `art-${(index % 5) + 1}`,
@@ -9859,7 +9869,11 @@
 
   function getLiveStreamUrls(st) {
     const dynamic = st.dynamicUrl ? [st.dynamicUrl] : [];
-    return [...dynamic, st.url, ...(st.fallbackUrls || [])];
+    // Prefer the tested, CORS-enabled CDN alternative for live TV channels;
+    // the API stream remains the next choice and can still recover on its own.
+    return st.source === 'mp3quran-tv'
+      ? [...dynamic, ...(st.fallbackUrls || []), st.url]
+      : [...dynamic, st.url, ...(st.fallbackUrls || [])];
   }
 
   /* ------------------------------------------------------------------ */
@@ -10080,39 +10094,34 @@
     // لسه شغال في الخلفية (بينتظر await) يكتشف فورًا إنه بقى قديم
     // ويوقف نفسه، حتى لو كان بيحمّل *نفس* الإذاعة اللي إحنا بنوقفها دلوقتي
     liveRadioGeneration += 1;
-    if (liveRadioAbortController) { liveRadioAbortController.abort(); liveRadioAbortController = null; }
+    disposeLiveRadioPlayback();
     if (liveRadioRetryTimer) { clearTimeout(liveRadioRetryTimer); liveRadioRetryTimer = null; }
     if (liveRadioSwitchTimer) { clearTimeout(liveRadioSwitchTimer); liveRadioSwitchTimer = null; }
-    if (liveRadioEl) {
-      const oldEl = liveRadioEl;
-      try {
-        if (liveRadioHls) { liveRadioHls.destroy(); liveRadioHls = null; }
-        // نكتم الصوت فورًا كأول خطوة (قبل أي حاجة تانية): حتى لو لأي
-        // سبب فشلت باقي خطوات الإيقاف تحت أو اتأخرت، صوت الإذاعة القديمة
-        // مش هيتسمع تاني من نفس اللحظة دي
-        oldEl.muted = true;
-        oldEl.pause();
-        oldEl.removeAttribute('src');
-        oldEl.src = '';
-        // .load() ضروري هنا مش زيادة: بعض أنواع البث (خصوصًا الروابط
-        // اللي بتيجي من مرآة ديناميكية زي radio-browser، وممكن تبقى
-        // HLS أو اتصال طويل مختلف عن Icecast العادي) ما بتتقفلش فعليًا
-        // بمجرد pause() + مسح src بس على بعض متصفحات/WebViews الموبايل؛
-        // العنصر بيفضل شغال أو محتفظ بالاتصال في الخلفية. استدعاء
-        // load() بعد مسح الـ src بيجبر المتصفح يلغي أي اتصال شبكة قائم
-        // فورًا بدل ما يفضل معلّق. ده اللي كان بيسبب سماع إذاعتين في
-        // نفس الوقت لما تتقفل إذاعة وتتفتح واحدة تانية بسرعة
-        oldEl.load();
-        if (oldEl.classList.contains('live-audio-only-stream')) oldEl.remove();
-      } catch (e) { /* تجاهل */ }
-      liveRadioEl = null;
-    }
     liveRadioActiveId = null;
     liveRadioRetryCount = 0;
     liveRadioUrlIndex = 0;
     setLiveRadioCardState(null, 'idle');
     updateLiveNowPlayingBar();
     disableBackgroundModeIfIdle();
+  }
+
+  function disposeLiveRadioPlayback() {
+    if (liveRadioAbortController) { liveRadioAbortController.abort(); liveRadioAbortController = null; }
+    if (liveRadioHls) {
+      try { liveRadioHls.destroy(); } catch (e) { /* تجاهل */ }
+      liveRadioHls = null;
+    }
+    if (!liveRadioEl) return;
+    const oldEl = liveRadioEl;
+    liveRadioEl = null;
+    try {
+      oldEl.muted = true;
+      oldEl.pause();
+      oldEl.removeAttribute('src');
+      oldEl.src = '';
+      oldEl.load();
+      if (oldEl.classList.contains('live-audio-only-stream')) oldEl.remove();
+    } catch (e) { /* تجاهل */ }
   }
 
   // بيبدأ تشغيل إذاعة من جديد فعليًا (بيتنادى أول مرة، وكمان تلقائيًا لو
@@ -10245,7 +10254,14 @@
           if (myGeneration !== liveRadioGeneration) return;
           const fail = () => handleLiveRadioFailure(st, myGeneration);
           if (Hls.isSupported()) {
-            liveRadioHls = new Hls({ enableWorker: true, lowLatencyMode: true, maxBufferLength: 20 });
+            liveRadioHls = new Hls({
+              enableWorker: true,
+              lowLatencyMode: true,
+              maxBufferLength: 20,
+              manifestLoadingTimeOut: 10000,
+              levelLoadingTimeOut: 10000,
+              fragLoadingTimeOut: 15000,
+            });
             liveRadioHls.on(Hls.Events.ERROR, (_event, data) => { if (data.fatal) fail(); });
             liveRadioHls.on(Hls.Events.MANIFEST_PARSED, () => {
               if (myGeneration === liveRadioGeneration) liveRadioEl.play().catch(fail);
@@ -10271,6 +10287,8 @@
     // فوق) — نداء فشل جاي من تشغيلة قديمة (اتوقفت أو اتبدّلت) لازم
     // يتجاهل نفسه حتى لو حاليًا الإذاعة الشغالة هي نفس الإذاعة بالاسم
     if (myGeneration !== liveRadioGeneration) return;
+    if (liveRadioRetryTimer) return;
+    disposeLiveRadioPlayback();
 
     if (liveRadioRetryCount < LIVE_RADIO_MAX_AUTO_RETRIES) {
       // لسه فيه محاولات مسموحة على نفس الرابط الحالي (ممكن يكون فشل مؤقت)

@@ -1,12 +1,12 @@
 {
   "ar": [
-    "تحسين تصميم البحث والتبويبات ودوائر أعداد الإذاعات في صفحة مباشر."
+    "إصلاح تشغيل قناتي القرآن الكريم والسنة النبوية بإضافة بث احتياطي وتنظيف مشغل HLS عند إعادة المحاولة."
   ],
   "fa": [
     "طراحی جست‌وجو، برگه‌ها و نشانگر تعداد رادیوها در صفحه پخش زنده بهبود یافت."
   ],
   "en": [
-    "Improved the live page search field, category tabs, and station count badges."
+    "Fixed live channel playback with backup HLS streams and safer player retries."
   ],
   "fr": [
     "Amélioration de la recherche, des onglets et des compteurs de radios sur la page Direct."

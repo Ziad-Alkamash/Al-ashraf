@@ -8,7 +8,7 @@
 // 'install' يجيب كل الملفات من جديد بمحتواها المحدَّث
 // Keep the shell cache suffix aligned with versionCode in version.properties.
 // MainActivity uses that value to clear only old app-shell caches on APK upgrade.
-const CACHE_NAME = 'mushaf-ashraf-v86';
+const CACHE_NAME = 'mushaf-ashraf-v87';
 
 // طبقة تخزين منفصلة لبيانات القرآن المجلوبة من الإنترنت (صفحات المصحف، التفسير، الصوتيات، معاني الكلمات)
 // تبقى هذه البيانات محفوظة دائمًا حتى بعد تحديث التطبيق، ولا تُمسح إلا يدويًا من إعدادات المتصفح
@@ -27,6 +27,7 @@ const ASSETS_TO_CACHE = [
   './app-version.json',
   './app-version.js',
   './live-broadcast-data.json',
+  './vendor/hls.min.js',
   './splash-mark.webp',
   './splash-night.mp4',
   './splash-light.mp4',
@@ -283,7 +284,7 @@ self.addEventListener('install', (event) => {
       const cache = await caches.open(CACHE_NAME);
       const uniqueAssets = [...new Set(ASSETS_TO_CACHE)];
       const coreAssets = new Set([
-        './', './index.html', './app.js', './app-version.js', './app-version.json',
+        './', './index.html', './app.js', './app-version.js', './app-version.json', './vendor/hls.min.js',
         './style.css', './i18n.js', './apk-update.js', './apk-update-core.js', './sw.js', './sunnah-features-i18n.js'
       ]);
       const results = await Promise.allSettled(uniqueAssets.map((asset) => cache.add(asset)));
