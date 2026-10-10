@@ -2,73 +2,46 @@
   "ar": [
     "تحديث تصميم صفحة الأذكار والأدعية وصورة سبحة جديدة.",
     "أذكار النوم والسفر صارت تفتح مباشرة، مع معاينة وباقي القوائم عبر «المزيد».",
-    "تحسين بدء التطبيق عند انقطاع الإنترنت.",
-    "إصلاح تحديث لون شريط معلومات الصفحة عند التبديل بين الوضعين الفاتح والداكن.",
-    "إظهار زخرفة أرقام الآيات كاملة وتحسين سلاسة تقليب الصفحات في الوضع الداكن.",
-    "أرقام الصفحة وكبسولة المؤشر بخط رقمي أوضح ومتناسق."
+    "تحسين بدء التطبيق عند انقطاع الإنترنت."
   ],
   "fa": [
     "طراحی صفحه اذکار و دعاها با تصویر تسبیح جدید به‌روزرسانی شد.",
     "اذکار خواب و سفر اکنون باز می‌شوند و پیوند «بیشتر» فهرست کامل را نشان می‌دهد.",
-    "شروع برنامه در حالت آفلاین بهبود یافت.",
-    "رنگ نوار اطلاعات صفحه هنگام جابه‌جایی بین حالت روشن و تاریک اصلاح شد.",
-    "نشان آیه کامل نمایش داده می‌شود و ورق‌زدن در حالت تاریک روان‌تر شد.",
-    "اعداد صفحه و نشانگر با قلم عددی خواناتر نمایش داده می‌شوند."
+    "شروع برنامه در حالت آفلاین بهبود یافت."
   ],
   "en": [
     "Redesigned the adhkar and duas page with a new tasbih hero image.",
     "Sleep and travel adhkar now open correctly; preview cards link to the full lists.",
-    "Improved startup when the device is offline.",
-    "Fixed the page information bar color when switching between light and dark modes.",
-    "Prevented clipped ayah markers and improved page-turn smoothness in dark mode.",
-    "Updated page and scrubber numbers to use the clearer numeric font."
+    "Improved startup when the device is offline."
   ],
   "fr": [
     "Refonte de la page des invocations avec une nouvelle image de chapelet.",
     "Les invocations du sommeil et du voyage s’ouvrent correctement; « Plus » affiche les listes complètes.",
-    "Amélioration du démarrage hors ligne.",
-    "Correction de la couleur de la barre d’informations lors du changement de thème.",
-    "Les ornements des versets ne sont plus coupés et le défilement est plus fluide en mode sombre.",
-    "Les numéros de page et du curseur utilisent une police numérique plus lisible."
+    "Amélioration du démarrage hors ligne."
   ],
   "tr": [
     "Zikir ve dua sayfası yeni bir tesbih görseliyle yenilendi.",
     "Uyku ve yolculuk zikirleri artık açılıyor; «Daha fazla» tüm listeleri gösteriyor.",
-    "Çevrimdışı başlatma iyileştirildi.",
-    "Açık ve koyu mod arasında geçişte sayfa bilgi çubuğunun rengi düzeltildi.",
-    "Ayet işaretlerinin kesilmesi önlendi ve koyu modda sayfa çevirme akıcılaştırıldı.",
-    "Sayfa ve cetvel numaraları daha okunaklı sayısal yazı tipini kullanıyor."
+    "Çevrimdışı başlatma iyileştirildi."
   ],
   "ur": [
     "اذکار اور دعاؤں کے صفحے کو نئی تسبیح کی تصویر کے ساتھ بہتر بنایا گیا۔",
     "سونے اور سفر کے اذکار اب کھلتے ہیں، جبکہ مزید کا بٹن مکمل فہرستیں دکھاتا ہے۔",
-    "آف لائن آغاز بہتر بنایا گیا۔",
-    "لائٹ اور ڈارک موڈ کے درمیان تبدیلی پر صفحہ معلومات کی پٹی کا رنگ درست کیا گیا۔",
-    "آیات کے نشانات کٹنے سے بچائے اور ڈارک موڈ میں صفحہ پلٹنا ہموار کیا گیا۔",
-    "صفحہ اور اسکرُبر کے اعداد زیادہ واضح عددی فونٹ میں دکھائے جاتے ہیں۔"
+    "آف لائن آغاز بہتر بنایا گیا۔"
   ],
   "id": [
     "Halaman zikir dan doa diperbarui dengan gambar tasbih baru.",
     "Zikir tidur dan perjalanan kini terbuka; “Lainnya” menampilkan daftar lengkap.",
-    "Peningkatan saat aplikasi dimulai tanpa internet.",
-    "Memperbaiki warna bilah informasi halaman saat berpindah antara mode terang dan gelap.",
-    "Mencegah ornamen ayat terpotong dan melancarkan pergantian halaman dalam mode gelap.",
-    "Nomor halaman dan scrubber memakai font angka yang lebih jelas."
+    "Peningkatan saat aplikasi dimulai tanpa internet."
   ],
   "ru": [
     "Обновлена страница зикров и дуа с новым изображением тасбиха.",
     "Зикры перед сном и в поездке теперь открываются; «Ещё» показывает полные списки.",
-    "Улучшен запуск приложения без интернета.",
-    "Исправлен цвет панели сведений о странице при переключении светлой и тёмной темы.",
-    "Орнаменты аятов больше не обрезаются, перелистывание в тёмной теме стало плавнее.",
-    "Номера страниц и линейки используют более чёткий цифровой шрифт."
+    "Улучшен запуск приложения без интернета."
   ],
   "es": [
     "Se rediseñó la página de súplicas con una nueva imagen de tasbih.",
     "Las súplicas de dormir y viajar ya se abren; «Más» muestra las listas completas.",
-    "Se mejoró el inicio sin conexión.",
-    "Se corrigió el color de la barra de información al cambiar entre los modos claro y oscuro.",
-    "Los adornos de las aleyas ya no se cortan y el cambio de página es más fluido en modo oscuro.",
-    "Los números de página y del indicador usan una fuente numérica más legible."
+    "Se mejoró el inicio sin conexión."
   ]
 }
