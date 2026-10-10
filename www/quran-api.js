@@ -991,6 +991,14 @@ const QuranAPI = (() => {
   // رابط ملف صوتي لسورة كاملة بصوت قارئ محدد
   function getSurahAudioURL(surahNumber, editionId) {
     const ed = editionId || 'ar.alafasy';
+    // MP3Quran catalog readers must always stream from their own API server.
+    // Older builds could cache a timing file from another reader under this
+    // ID; bypass that override at the central URL resolver as a final guard.
+    const catalogReciter = ed.startsWith('mp3quran.') && RECITERS.find((r) => r.id === ed);
+    if (catalogReciter && catalogReciter.server) {
+      const server = String(catalogReciter.server).replace(/\/+$/, '');
+      return `${server}/${String(surahNumber).padStart(3, '0')}.mp3`;
+    }
     const cachedUrl = CUSTOM_SURAH_AUDIO_URLS[ed] && CUSTOM_SURAH_AUDIO_URLS[ed][Number(surahNumber)];
     if (cachedUrl) return cachedUrl;
     if (CUSTOM_SURAH_AUDIO[ed]) return CUSTOM_SURAH_AUDIO[ed](surahNumber);
