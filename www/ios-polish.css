@@ -1,0 +1,18 @@
+/* Small WebKit-specific refinements for the native iOS shell.
+   Keep Quran text selection and the app's existing theme/layout untouched. */
+html.ios-native {
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.ios-native :is(button, a, [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The Quran reader intentionally supports selection, so only native controls
+   suppress iOS's long-press callout rather than disabling it on the page. */
+html.ios-native :is(button, input, select, textarea) {
+  -webkit-touch-callout: none;
+}

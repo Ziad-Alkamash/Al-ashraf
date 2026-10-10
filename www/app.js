@@ -26637,6 +26637,12 @@
   /* التسجيل والتشغيل الرئيسي                                         */
   /* ---------------------------------------------------------------- */
   function registerServiceWorker() {
+    // Native iOS assets are versioned with the app bundle. A PWA worker must
+    // not cache that bundle or intercept Capacitor's local asset origin.
+    const platform = window.Capacitor && window.Capacitor.getPlatform
+      ? window.Capacitor.getPlatform()
+      : '';
+    if (platform === 'ios') return;
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')

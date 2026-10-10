@@ -1,0 +1,76 @@
+name: iOS unsigned device build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ios-sideload-build.yml'
+      - 'capacitor.config.json'
+      - 'ios/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'version.properties'
+      - 'www/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-sideload-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build unsigned iPhone IPA
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Sync Capacitor iOS project
+        run: npx cap sync ios
+
+      - name: Build for physical iPhone without paid signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          version_name="$(awk -F= '$1 == "versionName" { print $2 }' version.properties)"
+          version_code="$(awk -F= '$1 == "versionCode" { print $2 }' version.properties)"
+          test -n "$version_name" && test -n "$version_code"
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/AlAshrafDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="$version_name" \
+            CURRENT_PROJECT_VERSION="$version_code" \
+            build
+
+          app_path="$RUNNER_TEMP/AlAshrafDerivedData/Build/Products/Release-iphoneos/App.app"
+          test -d "$app_path" || { echo 'The iOS app bundle was not created.'; exit 1; }
+          package_dir="$RUNNER_TEMP/AlAshrafIPA"
+          mkdir -p "$package_dir/Payload"
+          cp -R "$app_path" "$package_dir/Payload/AlAshraf.app"
+          ditto -c -k --sequesterRsrc --keepParent "$package_dir/Payload" "$RUNNER_TEMP/AlAshraf-unsigned.ipa"
+
+      - name: Upload unsigned IPA for later sideloading
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlAshraf-iOS-unsigned
+          path: ${{ runner.temp }}/AlAshraf-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14

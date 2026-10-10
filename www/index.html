@@ -25,6 +25,16 @@
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <script>
+    // Mark the native iOS shell before the application styles are loaded, so
+    // iPhone-specific touch and typography polish never flashes on Android or web.
+    try {
+      if (window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'ios') {
+        document.documentElement.classList.add('ios-native');
+      }
+    } catch (_) { /* The browser/PWA build has no native Capacitor bridge. */ }
+  </script>
+
   <!-- الخطوط -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,6 +52,7 @@
   <link rel="stylesheet" href="unified-theme-pages.css">
   <link rel="stylesheet" href="apk-update.css">
   <link rel="stylesheet" href="khatma-group.css">
+  <link rel="stylesheet" href="ios-polish.css">
   <!-- حارس امتلاء التخزين المحلي (localStorage): التطبيق بيخزّن في localStorage نسخة من كل
        صفحة/تفسير/بحث بيجيبه من الإنترنت (مفاتيح بادئة بـ almus-hraf-cache:) ومفيش حد
        أقصى ولا تنظيف لها، فمع الاستخدام المساحة (~٥ ميجا) بتتملي بالكامل. ساعتها أي
@@ -5541,7 +5552,9 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
 <script src="khatma-group.js" defer></script>
 
 <script>
-  if ('serviceWorker' in navigator) {
+  var isNativeIOS = window.Capacitor && typeof window.Capacitor.getPlatform === 'function' &&
+    window.Capacitor.getPlatform() === 'ios';
+  if (!isNativeIOS && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
         .then(reg => console.log('PWA Service Worker Registered Successfully!', reg))
