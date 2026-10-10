@@ -1,29 +1,29 @@
 {
   "ar": [
-    "تنظيم صفحة مباشر في تبويبات منفصلة للإذاعات العامة والقنوات وإذاعات القراء."
+    "تحسين تصميم البحث والتبويبات ودوائر أعداد الإذاعات في صفحة مباشر."
   ],
   "fa": [
-    "صفحه پخش زنده به برگه‌های جداگانه برای رادیوهای عمومی، شبکه‌ها و قاریان تقسیم شد."
+    "طراحی جست‌وجو، برگه‌ها و نشانگر تعداد رادیوها در صفحه پخش زنده بهبود یافت."
   ],
   "en": [
-    "Live broadcasts are now organized into separate tabs for general stations, channels, and reciters."
+    "Improved the live page search field, category tabs, and station count badges."
   ],
   "fr": [
-    "Les directs sont répartis en onglets distincts : radios générales, chaînes et récitateurs."
+    "Amélioration de la recherche, des onglets et des compteurs de radios sur la page Direct."
   ],
   "tr": [
-    "Canlı yayınlar genel radyolar, kanallar ve kâriler için ayrı sekmelerde düzenlendi."
+    "Canlı sayfadaki arama, kategori sekmeleri ve radyo sayısı rozetleri iyileştirildi."
   ],
   "ur": [
-    "لائیو نشریات کو عمومی ریڈیو، چینلز اور قراء کے الگ ٹیبز میں ترتیب دیا گیا ہے۔"
+    "لائیو صفحے پر تلاش، ٹیبز اور ریڈیو کی تعداد کے بیجز کو بہتر بنایا گیا ہے۔"
   ],
   "id": [
-    "Siaran langsung kini dipisahkan ke tab radio umum, saluran, dan qari."
+    "Pencarian, tab kategori, dan lencana jumlah radio di halaman siaran langsung ditingkatkan."
   ],
   "ru": [
-    "Трансляции разделены на вкладки общих радиостанций, каналов и чтецов."
+    "Улучшены поиск, вкладки категорий и счётчики радиостанций на странице эфира."
   ],
   "es": [
-    "Las emisiones en directo ahora se organizan en pestañas de radios generales, canales y recitadores."
+    "Se mejoraron la búsqueda, las pestañas y los indicadores de emisoras en la página En directo."
   ]
 }
