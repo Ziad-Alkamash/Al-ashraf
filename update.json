@@ -1,42 +1,42 @@
 {
   "enabled": true,
-  "versionName": "5.5.47",
-  "versionCode": 74,
+  "versionName": "5.5.48",
+  "versionCode": 75,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-10",
-  "tagName": "v5.5.47",
+  "tagName": "v5.5.48",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "81732b38b03c68bef6f9f7a40cb7c9ca6c856395830b849f6ab6cdfff2609e2e",
+  "sha256": "8308d10ab985d6008319168568a454fbcdc9c08a3880c51531e0992afb570d4f",
   "releaseNotes": [
-    "تُحتسب أذكار الورد اليومي تلقائيًا عند إكمال عدّادات القسم."
+    "إضافة قناتي القرآن الكريم والسنة النبوية إلى الإذاعات مع تشغيل صوتي فقط."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "تُحتسب أذكار الورد اليومي تلقائيًا عند إكمال عدّادات القسم."
+      "إضافة قناتي القرآن الكريم والسنة النبوية إلى الإذاعات مع تشغيل صوتي فقط."
     ],
     "fa": [
-      "ذکرهای روزانه پس از تکمیل شمارنده‌های همه موارد یک بخش، به‌طور خودکار ثبت می‌شوند."
+      "شبکه‌های قرآن کریم و سنت نبوی به رادیوها افزوده شدند و فقط صدا پخش می‌شود."
     ],
     "en": [
-      "Daily adhkar now count as complete automatically after every counter in a section is finished."
+      "Added Quran and Sunnah channels to the radio list with audio-only playback."
     ],
     "fr": [
-      "Les invocations quotidiennes sont validées automatiquement après la fin de tous les compteurs d’une section."
+      "Les chaînes du Coran et de la Sunna rejoignent les radios avec une lecture audio uniquement."
     ],
     "tr": [
-      "Bir bölümdeki tüm sayaçlar tamamlandığında günlük zikirler otomatik tamamlanır."
+      "Kur’an ve Sünnet kanalları radyolara eklendi; yalnızca ses çalınır."
     ],
     "ur": [
-      "کسی حصے کے تمام کاؤنٹر مکمل ہونے پر روزانہ کے اذکار خودکار طور پر مکمل شمار ہوں گے۔"
+      "قرآن اور سنت کے چینلز ریڈیو فہرست میں شامل کر دیے گئے ہیں، صرف آڈیو چلتی ہے۔"
     ],
     "id": [
-      "Zikir harian otomatis ditandai selesai setelah semua penghitung dalam bagian selesai."
+      "Kanal Quran dan Sunnah ditambahkan ke daftar radio dengan pemutaran audio saja."
     ],
     "ru": [
-      "Ежедневные зикры отмечаются выполненными после завершения всех счётчиков раздела."
+      "Каналы Корана и Сунны добавлены в список радио с воспроизведением только звука."
     ],
     "es": [
-      "Los adhkar diarios se completan automáticamente al terminar todos los contadores de una sección."
+      "Se añadieron los canales del Corán y la Sunna a la radio con reproducción solo de audio."
     ]
   }
 }
