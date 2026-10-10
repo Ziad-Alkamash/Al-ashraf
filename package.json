@@ -22,7 +22,8 @@
     "@capacitor/screen-orientation": "^8.0.1",
     "@capacitor/share": "^8.0.1",
     "@capacitor/status-bar": "^8.0.3",
-    "@capgo/capacitor-speech-recognition": "^8.2.0"
+    "@capgo/capacitor-speech-recognition": "^8.2.0",
+    "hls.js": "^1.7.3"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

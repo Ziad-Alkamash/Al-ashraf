@@ -1017,7 +1017,7 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
     </div>
   </section>
 
-  <!-- تبويب "مباشر": إذاعات القرآن الكريم اللايف (بث حي مستمر، مش تلاوات مسجّلة) -->
+  <!-- تبويب "مباشر": قنوات تلفزيونية وإذاعات قرآنية مباشرة -->
   <section id="view-live" class="view">
     <div class="list-page live-radio-page">
       <div class="page-topbar">
@@ -1028,10 +1028,10 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
       <div class="live-radio-head">
         <span class="live-radio-eyebrow">
           <span class="live-radio-eyebrow-dot"></span>
-          <span data-i18n="page.live.eyebrow">بث مباشر على مدار الساعة</span>
+          <span data-i18n="page.live.eyebrow">قنوات وإذاعات مباشرة</span>
         </span>
-        <h2 class="live-radio-title" data-i18n="page.live.title">إذاعات القرآن الكريم</h2>
-        <p class="live-radio-subtitle" data-i18n="page.live.subtitle">اختر إذاعة لتستمع للبث الحي مباشرة، بلا تحميل ولا انقطاع</p>
+        <h2 class="live-radio-title" data-i18n="page.live.title">مباشر</h2>
+        <p class="live-radio-subtitle" data-i18n="page.live.subtitle">قنوات تلفزيونية وإذاعات للقرّاء والبث الإسلامي المباشر</p>
       </div>
 
       <section class="live-radio-feature" aria-label="بث القرآن المباشر">
@@ -1050,6 +1050,25 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
           <span class="live-radio-feature-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
         </div>
       </section>
+
+      <section class="live-radio-section live-tv-section" aria-labelledby="live-tv-title">
+        <div class="live-radio-list-heading">
+          <div><span class="live-radio-list-kicker">بث تلفزيوني مباشر</span><h3 id="live-tv-title">قنوات القرآن والسنة</h3></div>
+          <span class="live-radio-station-count" id="live-tv-count">قناتان</span>
+        </div>
+        <div class="live-tv-list" id="live-tv-list"></div>
+      </section>
+
+      <section class="live-tv-player" id="live-tv-player" hidden aria-label="مشغل القناة المباشرة">
+        <div class="live-tv-player-heading"><div><span>تشغيل الآن</span><strong id="live-tv-playing-name">—</strong></div>
+          <button type="button" id="live-tv-close" aria-label="إغلاق مشغل القناة"><svg><use href="#icon-close"></use></svg></button>
+        </div>
+        <video id="live-tv-video" controls playsinline webkit-playsinline preload="none"></video>
+        <p class="live-tv-player-status" id="live-tv-status" aria-live="polite"></p>
+      </section>
+
+      <label class="live-radio-search"><svg aria-hidden="true"><use href="#icon-search"></use></svg><input id="live-radio-search" type="search" placeholder="ابحث باسم القارئ أو الإذاعة" autocomplete="off" aria-label="ابحث في الإذاعات"><button type="button" id="live-radio-search-clear" aria-label="مسح البحث" hidden><svg><use href="#icon-close"></use></svg></button></label>
+      <p class="live-radio-empty" id="live-radio-empty" hidden>لا توجد إذاعة بهذا الاسم.</p>
 
       <!-- مشغّل مصغّر ثابت أعلى القائمة: يظهر بس وقت ما فيه إذاعة شغّالة -->
       <div class="live-now-playing" id="live-now-playing" hidden>
@@ -1087,14 +1106,20 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
         </button>
       </div>
 
-      <div class="live-radio-list-heading">
-        <div>
-          <span class="live-radio-list-kicker" data-i18n="page.live.list_kicker">استمع الآن</span>
-          <h3 data-i18n="page.live.list_title">اختر إذاعتك</h3>
+      <section class="live-radio-section" aria-labelledby="live-reciter-radio-title">
+        <div class="live-radio-list-heading">
+          <div><span class="live-radio-list-kicker">استمع الآن</span><h3 id="live-reciter-radio-title">إذاعات القراء</h3></div>
+          <span class="live-radio-station-count" id="live-reciter-count">—</span>
         </div>
-        <span class="live-radio-station-count" data-i18n="page.live.station_count">٥ محطات</span>
-      </div>
-      <div class="live-radio-list" id="live-radio-list"></div>
+        <div class="live-radio-list" id="live-reciter-list"></div>
+      </section>
+      <section class="live-radio-section live-general-radio-section" aria-labelledby="live-general-radio-title">
+        <div class="live-radio-list-heading">
+          <div><span class="live-radio-list-kicker">محطات متنوعة</span><h3 id="live-general-radio-title">إذاعات القرآن والسنة</h3></div>
+          <span class="live-radio-station-count" id="live-general-count">—</span>
+        </div>
+        <div class="live-radio-list" id="live-general-list"></div>
+      </section>
 
       <div class="live-radio-note">
         <span class="live-radio-note-icon" aria-hidden="true">
