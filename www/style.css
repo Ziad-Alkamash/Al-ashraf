@@ -25894,6 +25894,29 @@ body.theme-night .autoscroll-speed-thumb {
 /* صفحة البث الموسّعة: بحث، وفصل واضح بين إذاعات القراء والعامة. */
 #view-live .live-radio-section { margin-top: 27px; }
 #view-live .live-audio-only-stream { position: fixed; z-index: -1; inset-inline-start: -2px; bottom: -2px; width: 1px; height: 1px; opacity: 0; pointer-events: none; clip-path: inset(50%); }
+#view-live .live-radio-tabs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; width: 100%;
+  margin: 15px auto 5px; padding: 5px; border: 1px solid color-mix(in srgb, var(--ap-olive) 12%, var(--live-line));
+  border-radius: 17px; background: color-mix(in srgb, var(--ap-olive-soft) 52%, var(--live-surface));
+}
+#view-live .live-radio-tab {
+  display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; min-height: 42px;
+  padding: 7px 6px; border-radius: 12px; color: var(--live-soft-ink); background: transparent;
+  font: 750 clamp(10px, 2.8vw, 12px)/1.3 var(--ap-font); white-space: nowrap;
+  transition: color .18s ease, background .18s ease, box-shadow .18s ease, transform .15s ease;
+}
+#view-live .live-radio-tab:active { transform: scale(.98); }
+#view-live .live-radio-tab[aria-selected="true"] {
+  color: #fff; background: linear-gradient(135deg, var(--live-forest-2), var(--ap-olive));
+  box-shadow: 0 3px 9px color-mix(in srgb, var(--ap-olive) 24%, transparent);
+}
+#view-live .live-radio-tab b {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding-inline: 5px;
+  border-radius: 999px; color: var(--ap-olive); background: color-mix(in srgb, var(--ap-olive) 10%, #fff);
+  font: 800 10px/1 var(--ap-digit-font, var(--ap-font));
+}
+#view-live .live-radio-tab[aria-selected="true"] b { color: var(--ap-olive); background: rgba(255,255,255,.92); }
+#view-live .live-radio-tabs:focus-within { outline: 2px solid color-mix(in srgb, var(--ap-olive) 32%, transparent); outline-offset: 2px; }
 #view-live .live-radio-search { display: flex; align-items: center; gap: 10px; width: min(100%, 1060px); height: 48px; margin: 0 auto 12px; padding-inline: 14px 9px; border: 1px solid var(--live-line); border-radius: 15px; color: var(--live-soft-ink); background: var(--live-surface); }
 #view-live .live-radio-search > svg { width: 19px; height: 19px; flex: 0 0 19px; color: var(--ap-olive); fill: none; stroke: currentColor; stroke-width: 2; }
 #view-live .live-radio-search input { width: 100%; min-width: 0; height: 100%; border: 0; outline: 0; color: var(--ap-ink); background: transparent; font: 600 13px/1.4 var(--ap-font); }

@@ -9713,7 +9713,15 @@
   }
 
   function isGeneralLiveRadio(st) {
-    return st.source === 'featured' || st.source === 'mp3quran-tv' || LIVE_GENERAL_RADIO_RE.test(st.name || '');
+    return st.source === 'featured' || (st.source !== 'mp3quran-tv' && LIVE_GENERAL_RADIO_RE.test(st.name || ''));
+  }
+
+  function getLiveRadioGroups() {
+    return {
+      general: LIVE_RADIO_STATIONS.filter((st) => st.source !== 'mp3quran-tv' && isGeneralLiveRadio(st)),
+      channels: LIVE_RADIO_STATIONS.filter((st) => st.source === 'mp3quran-tv'),
+      reciters: LIVE_RADIO_STATIONS.filter((st) => st.source !== 'mp3quran-tv' && !isGeneralLiveRadio(st)),
+    };
   }
 
   function classifyLiveRadio(radios, tvChannels = []) {
@@ -9946,17 +9954,29 @@
   }
 
   function renderLiveBroadcastSections() {
-    const reciters = LIVE_RADIO_STATIONS.filter((st) => !isGeneralLiveRadio(st));
-    const general = LIVE_RADIO_STATIONS.filter(isGeneralLiveRadio);
-    renderLiveRadioCards($('#live-reciter-list'), reciters);
-    renderLiveRadioCards($('#live-general-list'), general);
+    const groups = getLiveRadioGroups();
+    renderLiveRadioCards($('#live-general-list'), groups.general);
+    renderLiveRadioCards($('#live-channels-list'), groups.channels);
+    renderLiveRadioCards($('#live-reciter-list'), groups.reciters);
     const formatCount = (n) => new Intl.NumberFormat('en').format(n);
     const reciterCount = $('#live-reciter-count');
     const generalCount = $('#live-general-count');
-    if (reciterCount) reciterCount.innerHTML = `<b>${formatCount(reciters.length)}</b> إذاعة`;
-    if (generalCount) generalCount.innerHTML = `<b>${formatCount(general.length)}</b> إذاعة`;
+    const channelCount = $('#live-channels-section-count');
+    if (reciterCount) reciterCount.innerHTML = `<b>${formatCount(groups.reciters.length)}</b> إذاعة`;
+    if (generalCount) generalCount.innerHTML = `<b>${formatCount(groups.general.length)}</b> إذاعة`;
+    if (channelCount) channelCount.innerHTML = `<b>${formatCount(groups.channels.length)}</b> إذاعة`;
+    const tabCounts = {
+      '#live-general-tab-count': groups.general.length,
+      '#live-channels-count': groups.channels.length,
+      '#live-reciter-tab-count': groups.reciters.length,
+    };
+    Object.entries(tabCounts).forEach(([selector, count]) => {
+      const badge = $(selector);
+      if (badge) badge.textContent = formatCount(count);
+    });
     const featureCount = $('.live-radio-feature-meta [data-i18n="page.live.feature_count"]');
     if (featureCount) featureCount.textContent = `${formatCount(LIVE_RADIO_STATIONS.length)} إذاعة ومحطة صوتية`;
+    setLiveRadioCategory(activeLiveRadioCategory);
     applyLiveRadioSearch();
   }
 
@@ -9965,9 +9985,9 @@
 
   function applyLiveRadioSearch() {
     const query = normalizeLiveName($('#live-radio-search')?.value || '');
-    const general = LIVE_RADIO_STATIONS.filter(isGeneralLiveRadio);
-    const reciters = LIVE_RADIO_STATIONS.filter((st) => !isGeneralLiveRadio(st));
-    const applyGroup = (selector, stations) => {
+    const groups = getLiveRadioGroups();
+    let activeVisible = 0;
+    const applyGroup = (category, selector, stations) => {
       const root = $(selector);
       if (!root) return;
       let visible = 0;
@@ -9978,17 +9998,35 @@
         if (match) visible += 1;
       });
       const section = root.closest('.live-radio-section');
-      if (section) section.hidden = !!query && visible === 0;
+      if (section) section.hidden = category !== activeLiveRadioCategory;
+      if (category === activeLiveRadioCategory) activeVisible = visible;
     };
-    applyGroup('#live-reciter-list', reciters);
-    applyGroup('#live-general-list', general);
+    applyGroup('general', '#live-general-list', groups.general);
+    applyGroup('channels', '#live-channels-list', groups.channels);
+    applyGroup('reciters', '#live-reciter-list', groups.reciters);
     const clear = $('#live-radio-search-clear');
     if (clear) clear.hidden = !query;
     const empty = $('#live-radio-empty');
-    if (empty) empty.hidden = !query || $$('.live-radio-card:not([hidden])').length > 0;
+    if (empty) empty.hidden = activeVisible > 0;
+  }
+
+  function setLiveRadioCategory(category) {
+    if (!['general', 'channels', 'reciters'].includes(category)) return;
+    activeLiveRadioCategory = category;
+    $$('.live-radio-tab[role="tab"]').forEach((tab) => {
+      const selected = tab.dataset.liveFilter === category;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      tab.classList.toggle('active', selected);
+    });
+    $$('[data-live-category]').forEach((section) => {
+      section.hidden = section.dataset.liveCategory !== category;
+    });
+    applyLiveRadioSearch();
   }
 
   let liveRadioCardFitObserver = null;
+  let activeLiveRadioCategory = 'general';
   function fitLiveRadioCardNames() {
     // الأسماء الطويلة تُقصّ بصريًا إلى سطرين عبر CSS مع بقاء الاسم كاملًا
     // في title؛ لا نقلّص الخط آليًا حتى لا تصبح أسماء القراء غير مقروءة.
@@ -10342,6 +10380,11 @@
     loadLiveBroadcastData();
 
     liveView.addEventListener('click', (e) => {
+      const tab = e.target.closest('.live-radio-tab');
+      if (tab) {
+        setLiveRadioCategory(tab.dataset.liveFilter);
+        return;
+      }
       if (e.target.closest('#live-radio-search-clear')) {
         const input = $('#live-radio-search');
         if (input) { input.value = ''; input.focus(); }
@@ -10352,6 +10395,19 @@
       if (!card) return;
       addRipple(card, e);
       playLiveRadio(card.dataset.liveId);
+    });
+
+    const tabs = $('.live-radio-tabs');
+    if (tabs) tabs.addEventListener('keydown', (e) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+      const items = $$('.live-radio-tab', tabs);
+      const index = items.indexOf(document.activeElement);
+      if (index < 0) return;
+      e.preventDefault();
+      const next = e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1
+        : (index + (e.key === 'ArrowLeft' ? 1 : -1) + items.length) % items.length;
+      items[next].focus();
+      setLiveRadioCategory(items[next].dataset.liveFilter);
     });
 
     const search = $('#live-radio-search');

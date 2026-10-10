@@ -1054,6 +1054,18 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
       <label class="live-radio-search"><svg aria-hidden="true"><use href="#icon-search"></use></svg><input id="live-radio-search" type="search" placeholder="ابحث باسم القارئ أو الإذاعة" autocomplete="off" aria-label="ابحث في الإذاعات"><button type="button" id="live-radio-search-clear" aria-label="مسح البحث" hidden><svg><use href="#icon-close"></use></svg></button></label>
       <p class="live-radio-empty" id="live-radio-empty" hidden>لا توجد إذاعة بهذا الاسم.</p>
 
+      <nav class="live-radio-tabs" role="tablist" aria-label="تصنيف الإذاعات">
+        <button type="button" class="live-radio-tab" id="live-tab-general" role="tab" aria-selected="true" aria-controls="live-general-section" data-live-filter="general">
+          <span data-i18n="page.live.tabs.general">إذاعات عامة</span><b id="live-general-tab-count">—</b>
+        </button>
+        <button type="button" class="live-radio-tab" id="live-tab-channels" role="tab" aria-selected="false" aria-controls="live-channels-section" data-live-filter="channels" tabindex="-1">
+          <span data-i18n="page.live.tabs.channels">إذاعات القنوات</span><b id="live-channels-count">—</b>
+        </button>
+        <button type="button" class="live-radio-tab" id="live-tab-reciters" role="tab" aria-selected="false" aria-controls="live-reciter-section" data-live-filter="reciters" tabindex="-1">
+          <span data-i18n="page.live.tabs.reciters">إذاعات القرّاء</span><b id="live-reciter-tab-count">—</b>
+        </button>
+      </nav>
+
       <!-- مشغّل مصغّر ثابت أعلى القائمة: يظهر بس وقت ما فيه إذاعة شغّالة -->
       <div class="live-now-playing" id="live-now-playing" hidden>
         <div class="live-now-playing-art" id="live-now-art">📻</div>
@@ -1090,19 +1102,26 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
         </button>
       </div>
 
-      <section class="live-radio-section" aria-labelledby="live-reciter-radio-title">
+      <section class="live-radio-section" id="live-general-section" role="tabpanel" aria-labelledby="live-tab-general" data-live-category="general">
         <div class="live-radio-list-heading">
-          <div><span class="live-radio-list-kicker">استمع الآن</span><h3 id="live-reciter-radio-title">إذاعات القراء</h3></div>
-          <span class="live-radio-station-count" id="live-reciter-count">—</span>
-        </div>
-        <div class="live-radio-list" id="live-reciter-list"></div>
-      </section>
-      <section class="live-radio-section live-general-radio-section" aria-labelledby="live-general-radio-title">
-        <div class="live-radio-list-heading">
-          <div><span class="live-radio-list-kicker">محطات متنوعة</span><h3 id="live-general-radio-title">إذاعات القرآن والسنة</h3></div>
+          <div><span class="live-radio-list-kicker">محطات متنوعة</span><h3 data-i18n="page.live.tabs.general">إذاعات عامة</h3></div>
           <span class="live-radio-station-count" id="live-general-count">—</span>
         </div>
         <div class="live-radio-list" id="live-general-list"></div>
+      </section>
+      <section class="live-radio-section" id="live-channels-section" role="tabpanel" aria-labelledby="live-tab-channels" data-live-category="channels" hidden>
+        <div class="live-radio-list-heading">
+          <div><span class="live-radio-list-kicker">بث مباشر صوتي</span><h3 data-i18n="page.live.tabs.channels">إذاعات القنوات</h3></div>
+          <span class="live-radio-station-count" id="live-channels-section-count">—</span>
+        </div>
+        <div class="live-radio-list" id="live-channels-list"></div>
+      </section>
+      <section class="live-radio-section" id="live-reciter-section" role="tabpanel" aria-labelledby="live-tab-reciters" data-live-category="reciters" hidden>
+        <div class="live-radio-list-heading">
+          <div><span class="live-radio-list-kicker">استمع الآن</span><h3 data-i18n="page.live.tabs.reciters">إذاعات القرّاء</h3></div>
+          <span class="live-radio-station-count" id="live-reciter-count">—</span>
+        </div>
+        <div class="live-radio-list" id="live-reciter-list"></div>
       </section>
 
       <div class="live-radio-note">

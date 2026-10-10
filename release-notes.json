@@ -1,29 +1,29 @@
 {
   "ar": [
-    "إضافة قناتي القرآن الكريم والسنة النبوية إلى الإذاعات مع تشغيل صوتي فقط."
+    "تنظيم صفحة مباشر في تبويبات منفصلة للإذاعات العامة والقنوات وإذاعات القراء."
   ],
   "fa": [
-    "شبکه‌های قرآن کریم و سنت نبوی به رادیوها افزوده شدند و فقط صدا پخش می‌شود."
+    "صفحه پخش زنده به برگه‌های جداگانه برای رادیوهای عمومی، شبکه‌ها و قاریان تقسیم شد."
   ],
   "en": [
-    "Added Quran and Sunnah channels to the radio list with audio-only playback."
+    "Live broadcasts are now organized into separate tabs for general stations, channels, and reciters."
   ],
   "fr": [
-    "Les chaînes du Coran et de la Sunna rejoignent les radios avec une lecture audio uniquement."
+    "Les directs sont répartis en onglets distincts : radios générales, chaînes et récitateurs."
   ],
   "tr": [
-    "Kur’an ve Sünnet kanalları radyolara eklendi; yalnızca ses çalınır."
+    "Canlı yayınlar genel radyolar, kanallar ve kâriler için ayrı sekmelerde düzenlendi."
   ],
   "ur": [
-    "قرآن اور سنت کے چینلز ریڈیو فہرست میں شامل کر دیے گئے ہیں، صرف آڈیو چلتی ہے۔"
+    "لائیو نشریات کو عمومی ریڈیو، چینلز اور قراء کے الگ ٹیبز میں ترتیب دیا گیا ہے۔"
   ],
   "id": [
-    "Kanal Quran dan Sunnah ditambahkan ke daftar radio dengan pemutaran audio saja."
+    "Siaran langsung kini dipisahkan ke tab radio umum, saluran, dan qari."
   ],
   "ru": [
-    "Каналы Корана и Сунны добавлены в список радио с воспроизведением только звука."
+    "Трансляции разделены на вкладки общих радиостанций, каналов и чтецов."
   ],
   "es": [
-    "Se añadieron los canales del Corán y la Sunna a la radio con reproducción solo de audio."
+    "Las emisiones en directo ahora se organizan en pestañas de radios generales, canales y recitadores."
   ]
 }
