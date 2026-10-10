@@ -11502,7 +11502,6 @@
       if (typeof ibtihalatCurrentAudio !== 'undefined' && ibtihalatCurrentAudio) stopIbtihalatPlayback();
 
       const ed = forcedReciter || getSelectedReciter();
-      autoCacheSurahForOffline(surahNumber, ed);
       // القراء من نوع isCustomAudioReciter يشغّلون ملف السورة الكاملة؛ لو توفر
       // توقيت موثوق مطابق لنفس الملف نستخدم حدوده، وإلا يبقى القفز تقديريًا.
       // باقي القراء (العاديين
@@ -15274,32 +15273,6 @@
       }
     }
     return { ok: false, error: lastError };
-  }
-
-  // حفظ السورة الحالية تلقائيًا بعد بدء الاستماع؛ التشغيل يبدأ من المصدر
-  // المعتاد فورًا، والتنزيل يكمل في الخلفية حتى تتاح السورة بدون إنترنت لاحقًا.
-  const autoSurahOfflineJobs = new Map();
-  const autoSurahOfflineNotice = new Set();
-  async function autoCacheSurahForOffline(surahNumber, editionId) {
-    if (!audioStorageSupported() || !navigator.onLine) return;
-    const key = `${editionId}:${surahNumber}`;
-    if (autoSurahOfflineJobs.has(key) || getDownloadedSurahSetSync(editionId).has(surahNumber)) return;
-    const task = (async () => {
-      try {
-        const cache = await QuranAudioOffline.openAudioStore(AUDIO_CACHE_NAME);
-        const result = await fetchSurahAudioWithRetry(cache, surahNumber, editionId, 1, null, null);
-        if (result.ok) {
-          markSurahDownloadedLocal(editionId, surahNumber);
-          markReciterDownloaded(editionId);
-        }
-      } catch (e) { /* يظل التشغيل أونلاين؛ يعاد الحفظ في المرة القادمة */ }
-      finally { autoSurahOfflineJobs.delete(key); }
-    })();
-    autoSurahOfflineJobs.set(key, task);
-    if (!autoSurahOfflineNotice.has(editionId)) {
-      autoSurahOfflineNotice.add(editionId);
-      showToast('سيتم حفظ السورة على جهازك للاستماع إليها لاحقًا بدون إنترنت');
-    }
   }
 
   /* ------------------------------------------------------------------ */
