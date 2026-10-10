@@ -9703,7 +9703,7 @@
   const LIVE_BROADCAST_API = 'https://mp3quran.net/api/v3';
   const LIVE_BROADCAST_CACHE_KEY = 'mushaf_live_broadcasts_v1';
   const LIVE_GENERAL_RADIO_RE = /القرآن|القران|السنة|العامة|متنوعة|تلاوات خاشعة|تكبيرات|الفتاوى|الرقية|سورة|تفسير|أذكار|اذكار|ترجمة|صور من حياة|في ظلال|المختصر|كتاب الاختيارات|آيات|فضل شهر|صحيح|قصص|رياض الصالحين|الشمائل|حديث/;
-  let liveTvHls = null;
+  let liveRadioHls = null;
   let liveHlsScriptPromise = null;
 
   function normalizeLiveName(name) {
@@ -9713,28 +9713,33 @@
   }
 
   function isGeneralLiveRadio(st) {
-    return st.source === 'featured' || LIVE_GENERAL_RADIO_RE.test(st.name || '');
+    return st.source === 'featured' || st.source === 'mp3quran-tv' || LIVE_GENERAL_RADIO_RE.test(st.name || '');
   }
 
-  function classifyLiveRadio(radios) {
-    const apiNames = new Set((radios || []).map((st) => normalizeLiveName(st.name)));
-    const apiUrls = new Set((radios || []).map((st) => st.url).filter(Boolean));
+  function classifyLiveRadio(radios, tvChannels = []) {
+    const allApiStations = [
+      ...(tvChannels || []).map((st) => ({ ...st, id: `mp3quran-tv-${st.id}`, source: 'mp3quran-tv', audioOnlyHls: true })),
+      ...(radios || []),
+    ];
+    const apiNames = new Set(allApiStations.map((st) => normalizeLiveName(st.name)));
+    const apiUrls = new Set(allApiStations.map((st) => st.url).filter(Boolean));
     // احتفظ بالمحطات القديمة التي لا يغطيها الـAPI، واعرض كل عناصره
     // دون إسقاط أي رواية مكررة للاسم نفسه.
     const featured = LIVE_RADIO_STATIONS
       .filter((st) => !apiNames.has(normalizeLiveName(st.name))
         && ![st.url, ...(st.fallbackUrls || [])].some((url) => apiUrls.has(url)))
       .map((st) => ({ ...st, source: 'featured' }));
-    const fromApi = (radios || []).filter((st) => st && st.id != null && st.name && st.url)
+    const fromApi = allApiStations.filter((st) => st && st.id != null && st.name && st.url)
       .map((st, index) => ({
-        id: `mp3quran-radio-${st.id}`,
+        id: st.source === 'mp3quran-tv' ? st.id : `mp3quran-radio-${st.id}`,
         sourceId: st.id,
         name: st.name,
         url: st.url,
         emoji: '📻',
         icon: 'icon-live-radio',
         art: `art-${(index % 5) + 1}`,
-        source: 'mp3quran',
+        source: st.source || 'mp3quran',
+        audioOnlyHls: !!st.audioOnlyHls,
       }));
     LIVE_RADIO_STATIONS = [...featured, ...fromApi];
   }
@@ -9750,8 +9755,8 @@
       if (response.ok) data = await response.json();
     } catch (e) { /* ملف البيانات المضمّن هو fallback للعمل دون اتصال */ }
     if (data && Array.isArray(data.radios)) {
-      classifyLiveRadio(data.radios);
       if (Array.isArray(data.livetv) && data.livetv.length) LIVE_TV_CHANNELS = data.livetv;
+      classifyLiveRadio(data.radios, LIVE_TV_CHANNELS);
       try { localStorage.setItem(LIVE_BROADCAST_CACHE_KEY, JSON.stringify(data)); } catch (e) { /* سعة التخزين */ }
       renderLiveBroadcastSections();
     }
@@ -9769,8 +9774,8 @@
         radios: radioData.radios.map(({ id, name, url }) => ({ id, name, url })),
         livetv: tvData.livetv.map(({ id, name, url }) => ({ id, name, url })),
       };
-      classifyLiveRadio(data.radios);
       LIVE_TV_CHANNELS = data.livetv;
+      classifyLiveRadio(data.radios, LIVE_TV_CHANNELS);
       try { localStorage.setItem(LIVE_BROADCAST_CACHE_KEY, JSON.stringify(data)); } catch (e) { /* سعة التخزين */ }
       renderLiveBroadcastSections();
     } catch (e) { /* نحتفظ بالقائمة المحلية؛ البث المباشر نفسه يحتاج اتصالًا */ }
@@ -9948,29 +9953,15 @@
     const formatCount = (n) => new Intl.NumberFormat('en').format(n);
     const reciterCount = $('#live-reciter-count');
     const generalCount = $('#live-general-count');
-    const tvCount = $('#live-tv-count');
     if (reciterCount) reciterCount.innerHTML = `<b>${formatCount(reciters.length)}</b> إذاعة`;
     if (generalCount) generalCount.innerHTML = `<b>${formatCount(general.length)}</b> إذاعة`;
-    if (tvCount) tvCount.innerHTML = `<b>${formatCount(LIVE_TV_CHANNELS.length)}</b> قناة`;
     const featureCount = $('.live-radio-feature-meta [data-i18n="page.live.feature_count"]');
-    if (featureCount) featureCount.textContent = `${formatCount(LIVE_TV_CHANNELS.length)} قنوات تلفزيونية · ${formatCount(LIVE_RADIO_STATIONS.length)} إذاعة`;
-    renderLiveTvChannels();
+    if (featureCount) featureCount.textContent = `${formatCount(LIVE_RADIO_STATIONS.length)} إذاعة ومحطة صوتية`;
     applyLiveRadioSearch();
   }
 
   // أبقِ اسم الدالة متوافقًا مع مستمع تغيير اللغة/الثيم الموجود في التطبيق.
   function renderLiveRadioList() { renderLiveBroadcastSections(); }
-
-  function renderLiveTvChannels() {
-    const list = $('#live-tv-list');
-    if (!list) return;
-    list.innerHTML = LIVE_TV_CHANNELS.map((channel, index) => `
-      <button type="button" class="live-tv-card art-${(index % 5) + 1}" data-live-tv-id="${escapeHTML(channel.id)}" aria-label="تشغيل ${escapeHTML(channel.name)}">
-        <span class="live-tv-card-art"><svg><use href="#${index % 2 ? 'icon-mosque' : 'icon-live-radio'}"></use></svg></span>
-        <span class="live-tv-card-copy"><strong>${escapeHTML(channel.name)}</strong><small><i></i> بث تلفزيوني مباشر</small></span>
-        <span class="live-tv-card-play"><svg><use href="#icon-play"></use></svg></span>
-      </button>`).join('');
-  }
 
   function applyLiveRadioSearch() {
     const query = normalizeLiveName($('#live-radio-search')?.value || '');
@@ -10057,6 +10048,7 @@
     if (liveRadioEl) {
       const oldEl = liveRadioEl;
       try {
+        if (liveRadioHls) { liveRadioHls.destroy(); liveRadioHls = null; }
         // نكتم الصوت فورًا كأول خطوة (قبل أي حاجة تانية): حتى لو لأي
         // سبب فشلت باقي خطوات الإيقاف تحت أو اتأخرت، صوت الإذاعة القديمة
         // مش هيتسمع تاني من نفس اللحظة دي
@@ -10073,6 +10065,7 @@
         // فورًا بدل ما يفضل معلّق. ده اللي كان بيسبب سماع إذاعتين في
         // نفس الوقت لما تتقفل إذاعة وتتفتح واحدة تانية بسرعة
         oldEl.load();
+        if (oldEl.classList.contains('live-audio-only-stream')) oldEl.remove();
       } catch (e) { /* تجاهل */ }
       liveRadioEl = null;
     }
@@ -10185,14 +10178,14 @@
 
       const urls = getLiveStreamUrls(st);
       const currentUrl = urls[Math.min(liveRadioUrlIndex, urls.length - 1)];
-      const resolvedUrl = await resolveLiveStreamUrl(currentUrl);
+      const resolvedUrl = st.audioOnlyHls ? currentUrl : await resolveLiveStreamUrl(currentUrl);
       // ممكن المستخدم يكون غيّر الإذاعة أو أوقف البث وإحنا لسه بنحل
       // الرابط (اللي بياخد وقت)؛ لو كده مانبدأش تشغيل قديم
       if (myGeneration !== liveRadioGeneration) return;
 
       const controller = new AbortController();
       liveRadioAbortController = controller;
-      liveRadioEl = new Audio(resolvedUrl);
+      liveRadioEl = st.audioOnlyHls ? document.createElement('video') : new Audio(resolvedUrl);
       enableBackgroundModeForAudio();
 
       liveRadioEl.addEventListener('playing', () => {
@@ -10202,8 +10195,33 @@
       }, { signal: controller.signal });
       liveRadioEl.addEventListener('pause', updateLiveNowPlayingBar, { signal: controller.signal });
       liveRadioEl.addEventListener('error', () => handleLiveRadioFailure(st, myGeneration), { signal: controller.signal });
-
-      liveRadioEl.play().catch(() => handleLiveRadioFailure(st, myGeneration));
+      if (st.audioOnlyHls) {
+        liveRadioEl.setAttribute('playsinline', '');
+        liveRadioEl.setAttribute('webkit-playsinline', '');
+        liveRadioEl.setAttribute('aria-hidden', 'true');
+        liveRadioEl.disablePictureInPicture = true;
+        liveRadioEl.preload = 'none';
+        liveRadioEl.className = 'live-audio-only-stream';
+        document.body.appendChild(liveRadioEl);
+        loadLiveHlsLibrary().then((Hls) => {
+          if (myGeneration !== liveRadioGeneration) return;
+          const fail = () => handleLiveRadioFailure(st, myGeneration);
+          if (Hls.isSupported()) {
+            liveRadioHls = new Hls({ enableWorker: true, lowLatencyMode: true, maxBufferLength: 20 });
+            liveRadioHls.on(Hls.Events.ERROR, (_event, data) => { if (data.fatal) fail(); });
+            liveRadioHls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (myGeneration === liveRadioGeneration) liveRadioEl.play().catch(fail);
+            });
+            liveRadioHls.loadSource(resolvedUrl);
+            liveRadioHls.attachMedia(liveRadioEl);
+          } else if (liveRadioEl.canPlayType('application/vnd.apple.mpegurl')) {
+            liveRadioEl.src = resolvedUrl;
+            liveRadioEl.play().catch(fail);
+          } else fail();
+        }).catch(() => handleLiveRadioFailure(st, myGeneration));
+      } else {
+        liveRadioEl.play().catch(() => handleLiveRadioFailure(st, myGeneration));
+      }
     } catch (e) { handleLiveRadioFailure(st, myGeneration); }
   }
 
@@ -10251,7 +10269,6 @@
   }
 
   function playLiveRadio(id) {
-    closeLiveTvPlayer();
     const st = LIVE_RADIO_STATIONS.find((s) => s.id === id);
     if (!st) return;
 
@@ -10318,65 +10335,6 @@
     return liveHlsScriptPromise;
   }
 
-  function closeLiveTvPlayer() {
-    if (liveTvHls) { liveTvHls.destroy(); liveTvHls = null; }
-    const video = $('#live-tv-video');
-    if (video) {
-      video.pause();
-      video.removeAttribute('src');
-      video.load();
-    }
-    const player = $('#live-tv-player');
-    if (player) player.hidden = true;
-    $$('.live-tv-card').forEach((card) => card.classList.remove('playing'));
-  }
-
-  async function playLiveTvChannel(channel) {
-    if (!channel) return;
-    stopLiveRadio();
-    closeLiveTvPlayer();
-    const panel = $('#live-tv-player');
-    const video = $('#live-tv-video');
-    const status = $('#live-tv-status');
-    if (!panel || !video) return;
-    panel.hidden = false;
-    $('#live-tv-playing-name').textContent = channel.name;
-    if (status) status.textContent = 'جارٍ تجهيز البث المباشر…';
-    $$('.live-tv-card').forEach((card) => card.classList.toggle('playing', String(card.dataset.liveTvId) === String(channel.id)));
-    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-    const showFailure = () => {
-      if (status) status.textContent = 'تعذّر تشغيل البث في هذه اللحظة. تحقق من اتصال الإنترنت وحاول مرة أخرى.';
-    };
-    video.onerror = showFailure;
-    try {
-      const Hls = await loadLiveHlsLibrary();
-      if (!panel.isConnected || panel.hidden) return;
-      if (Hls.isSupported()) {
-        liveTvHls = new Hls({ enableWorker: true, lowLatencyMode: true, maxBufferLength: 20 });
-        liveTvHls.on(Hls.Events.ERROR, (_event, data) => {
-          if (data.fatal && status) status.textContent = 'حدثت مشكلة في بث القناة. جرّب إعادة تشغيلها بعد لحظات.';
-        });
-        liveTvHls.on(Hls.Events.MANIFEST_PARSED, () => {
-          if (status) status.textContent = '';
-          video.play().catch(showFailure);
-        });
-        liveTvHls.loadSource(channel.url);
-        liveTvHls.attachMedia(video);
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = channel.url;
-        video.play().then(() => { if (status) status.textContent = ''; }).catch(showFailure);
-      } else {
-        if (status) status.textContent = 'متصفحك لا يدعم تشغيل البث المرئي بصيغة HLS.';
-      }
-    } catch (error) {
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = channel.url;
-        video.play().then(() => { if (status) status.textContent = ''; }).catch(showFailure);
-      } else showFailure();
-    }
-  }
-
   function initLiveRadio() {
     const liveView = $('#view-live');
     if (!liveView) return;
@@ -10384,13 +10342,6 @@
     loadLiveBroadcastData();
 
     liveView.addEventListener('click', (e) => {
-      const tvCard = e.target.closest('.live-tv-card');
-      if (tvCard) {
-        const channel = LIVE_TV_CHANNELS.find((item) => String(item.id) === String(tvCard.dataset.liveTvId));
-        playLiveTvChannel(channel);
-        return;
-      }
-      if (e.target.closest('#live-tv-close')) { closeLiveTvPlayer(); return; }
       if (e.target.closest('#live-radio-search-clear')) {
         const input = $('#live-radio-search');
         if (input) { input.value = ''; input.focus(); }
@@ -10405,12 +10356,6 @@
 
     const search = $('#live-radio-search');
     if (search) search.addEventListener('input', applyLiveRadioSearch);
-    const tvVideo = $('#live-tv-video');
-    if (tvVideo) tvVideo.addEventListener('playing', () => {
-      const status = $('#live-tv-status');
-      if (status) status.textContent = '';
-    });
-
     const nowToggleBtn = $('#live-now-toggle-btn');
     if (nowToggleBtn) {
       nowToggleBtn.addEventListener('click', () => {

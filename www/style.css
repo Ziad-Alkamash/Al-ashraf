@@ -25891,37 +25891,9 @@ body.theme-night .autoscroll-speed-thumb {
   box-shadow: 0 0 0 2px rgba(0,0,0,.86), 0 1px 3px rgba(0,0,0,.45);
 }
 
-/* صفحة البث الموسّعة: قنوات تلفزيونية، بحث، وفصل واضح بين إذاعات القراء والعامة. */
+/* صفحة البث الموسّعة: بحث، وفصل واضح بين إذاعات القراء والعامة. */
 #view-live .live-radio-section { margin-top: 27px; }
-#view-live .live-tv-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 1060px; margin-inline: auto; }
-#view-live .live-tv-card {
-  display: grid; grid-template-columns: 54px minmax(0, 1fr) 40px; align-items: center; gap: 12px;
-  min-width: 0; min-height: 82px; padding: 12px 14px; border: 1px solid var(--live-line);
-  border-radius: 19px; color: var(--ap-ink); background: var(--live-surface); text-align: start;
-  box-shadow: 0 5px 16px rgba(33,45,31,.045); transition: transform .16s ease, border-color .18s ease, background .18s ease;
-}
-#view-live .live-tv-card:active { transform: scale(.985); }
-#view-live .live-tv-card.playing { border-color: color-mix(in srgb, var(--ap-olive) 52%, var(--live-line)); background: color-mix(in srgb, var(--ap-olive-soft) 48%, var(--live-surface)); }
-#view-live .live-tv-card-art { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px; color: var(--ap-olive); background: var(--ap-olive-soft); }
-#view-live .live-tv-card-art svg { width: 27px; height: 27px; fill: currentColor; }
-#view-live .live-tv-card-copy { display: grid; gap: 5px; min-width: 0; }
-#view-live .live-tv-card-copy strong { overflow: hidden; font-size: 14px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-#view-live .live-tv-card-copy small { display: flex; align-items: center; gap: 6px; color: var(--live-soft-ink); font-size: 10px; font-weight: 650; }
-#view-live .live-tv-card-copy small i { width: 6px; height: 6px; border-radius: 50%; background: #c94d47; box-shadow: 0 0 0 3px color-mix(in srgb, #c94d47 15%, transparent); }
-#view-live .live-tv-card-play { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 13px; color: #fff; background: var(--live-forest-2); }
-#view-live .live-tv-card-play svg { width: 15px; height: 15px; fill: currentColor; }
-body.theme-night #view-live .live-tv-card-play { color: #192019; background: var(--live-gold); }
-#view-live .live-tv-player { width: 100%; max-width: 1060px; margin: 16px auto 0; overflow: hidden; border: 1px solid var(--live-line); border-radius: 22px; background: var(--live-surface); box-shadow: 0 9px 26px rgba(25,35,25,.09); }
-#view-live .live-tv-player[hidden] { display: none !important; }
-#view-live .live-tv-player-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 15px; color: var(--ap-ink); }
-#view-live .live-tv-player-heading > div { display: grid; gap: 3px; min-width: 0; }
-#view-live .live-tv-player-heading span { color: var(--ap-olive); font-size: 10px; font-weight: 800; }
-#view-live .live-tv-player-heading strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
-#view-live #live-tv-close { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; color: var(--ap-ink); background: var(--ap-olive-soft); }
-#view-live #live-tv-close svg { width: 15px; height: 15px; }
-#view-live #live-tv-video { display: block; width: 100%; max-height: min(62vw, 560px); aspect-ratio: 16 / 9; background: #080a08; object-fit: contain; }
-#view-live .live-tv-player-status { min-height: 0; margin: 0; padding: 0 14px; color: var(--live-soft-ink); font-size: 11px; }
-#view-live .live-tv-player-status:not(:empty) { padding-block: 9px 11px; }
+#view-live .live-audio-only-stream { position: fixed; z-index: -1; inset-inline-start: -2px; bottom: -2px; width: 1px; height: 1px; opacity: 0; pointer-events: none; clip-path: inset(50%); }
 #view-live .live-radio-search { display: flex; align-items: center; gap: 10px; width: min(100%, 1060px); height: 48px; margin: 0 auto 12px; padding-inline: 14px 9px; border: 1px solid var(--live-line); border-radius: 15px; color: var(--live-soft-ink); background: var(--live-surface); }
 #view-live .live-radio-search > svg { width: 19px; height: 19px; flex: 0 0 19px; color: var(--ap-olive); fill: none; stroke: currentColor; stroke-width: 2; }
 #view-live .live-radio-search input { width: 100%; min-width: 0; height: 100%; border: 0; outline: 0; color: var(--ap-ink); background: transparent; font: 600 13px/1.4 var(--ap-font); }
@@ -25938,12 +25910,6 @@ body.theme-night #view-live .live-tv-card-play { color: #192019; background: var
 #view-live .live-radio-station-count { white-space: nowrap; }
 @media (max-width: 560px) {
   #view-live .live-radio-section { margin-top: 22px; }
-  #view-live .live-tv-list { grid-template-columns: minmax(0, 1fr); gap: 9px; }
-  #view-live .live-tv-card { min-height: 72px; grid-template-columns: 48px minmax(0, 1fr) 36px; padding: 10px 11px; border-radius: 16px; }
-  #view-live .live-tv-card-art { width: 48px; height: 48px; border-radius: 14px; }
-  #view-live .live-tv-card-copy strong { font-size: 13px; }
-  #view-live .live-tv-card-play { width: 34px; height: 34px; }
-  #view-live .live-tv-player { border-radius: 18px; }
 }
 
 /* Final responsive overrides for the adhkar dashboard. */

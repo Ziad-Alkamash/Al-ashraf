@@ -240,7 +240,7 @@
       'page.live.badge': 'مباشر',
       'page.live.starting': 'جاري التشغيل...',
       'page.live.title': 'مباشر',
-      'page.live.subtitle': 'قنوات تلفزيونية وإذاعات للقرّاء والبث الإسلامي المباشر',
+      'page.live.subtitle': 'إذاعات للقرّاء والبث الإسلامي المباشر',
       'page.live.feature_kicker': 'صوت يرافق يومك',
       'page.live.feature_title': 'لحظات من السكينة، أينما كنت',
       'page.live.feature_live': 'بث متواصل',

@@ -1,29 +1,29 @@
 {
   "ar": [
-    "تُحتسب أذكار الورد اليومي تلقائيًا عند إكمال عدّادات القسم."
+    "إضافة قناتي القرآن الكريم والسنة النبوية إلى الإذاعات مع تشغيل صوتي فقط."
   ],
   "fa": [
-    "ذکرهای روزانه پس از تکمیل شمارنده‌های همه موارد یک بخش، به‌طور خودکار ثبت می‌شوند."
+    "شبکه‌های قرآن کریم و سنت نبوی به رادیوها افزوده شدند و فقط صدا پخش می‌شود."
   ],
   "en": [
-    "Daily adhkar now count as complete automatically after every counter in a section is finished."
+    "Added Quran and Sunnah channels to the radio list with audio-only playback."
   ],
   "fr": [
-    "Les invocations quotidiennes sont validées automatiquement après la fin de tous les compteurs d’une section."
+    "Les chaînes du Coran et de la Sunna rejoignent les radios avec une lecture audio uniquement."
   ],
   "tr": [
-    "Bir bölümdeki tüm sayaçlar tamamlandığında günlük zikirler otomatik tamamlanır."
+    "Kur’an ve Sünnet kanalları radyolara eklendi; yalnızca ses çalınır."
   ],
   "ur": [
-    "کسی حصے کے تمام کاؤنٹر مکمل ہونے پر روزانہ کے اذکار خودکار طور پر مکمل شمار ہوں گے۔"
+    "قرآن اور سنت کے چینلز ریڈیو فہرست میں شامل کر دیے گئے ہیں، صرف آڈیو چلتی ہے۔"
   ],
   "id": [
-    "Zikir harian otomatis ditandai selesai setelah semua penghitung dalam bagian selesai."
+    "Kanal Quran dan Sunnah ditambahkan ke daftar radio dengan pemutaran audio saja."
   ],
   "ru": [
-    "Ежедневные зикры отмечаются выполненными после завершения всех счётчиков раздела."
+    "Каналы Корана и Сунны добавлены в список радио с воспроизведением только звука."
   ],
   "es": [
-    "Los adhkar diarios se completan automáticamente al terminar todos los contadores de una sección."
+    "Se añadieron los canales del Corán y la Sunna a la radio con reproducción solo de audio."
   ]
 }
