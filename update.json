@@ -1,24 +1,24 @@
 {
   "enabled": true,
-  "versionName": "5.5.53",
-  "versionCode": 80,
+  "versionName": "5.5.54",
+  "versionCode": 81,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-10",
-  "tagName": "v5.5.53",
+  "tagName": "v5.5.54",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "ad5b850962caf6b5e8adbb87b244c5bf49ca9c3d88bb151d02eedb53ee65f9bb",
+  "sha256": "093bbb1192ad0a8357b1b22920b970ab1022c8e03f71f58f66e6fb9ea42327f3",
   "releaseNotes": [
-    "إيقاف تنزيل السور تلقائيًا أثناء الاستماع؛ التنزيل أصبح عند طلبه من صفحة مصحف القارئ فقط."
+    "إصلاح ربط ملف الصوت بالقارئ المحدد ومنع تشغيل تسجيل قارئ آخر بسبب توقيت قديم."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "إيقاف تنزيل السور تلقائيًا أثناء الاستماع؛ التنزيل أصبح عند طلبه من صفحة مصحف القارئ فقط."
+      "إصلاح ربط ملف الصوت بالقارئ المحدد ومنع تشغيل تسجيل قارئ آخر بسبب توقيت قديم."
     ],
     "fa": [
       "طراحی جست‌وجو، برگه‌ها و نشانگر تعداد رادیوها در صفحه پخش زنده بهبود یافت."
     ],
     "en": [
-      "Surahs no longer download automatically during playback; downloads start only from the reciter mushaf page."
+      "Fixed reciter audio-source matching and stale timing associations that could play another reciter."
     ],
     "fr": [
       "Amélioration de la recherche, des onglets et des compteurs de radios sur la page Direct."
