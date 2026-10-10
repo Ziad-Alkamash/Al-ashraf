@@ -1021,15 +1021,25 @@ const QuranAPI = (() => {
     const normalizedServer = server && /^https:\/\//i.test(server) ? (server.endsWith('/') ? server : `${server}/`) : null;
     const existing = RECITERS.find((r) => r.id === id);
     const record = { id, name, nameLatin: nameLatin || name, nameRu: nameRu || name };
+    // Keep the canonical source on the reciter record so timing/audio matching
+    // can verify the exact recording folder before using an ayah map.
+    if (server !== undefined) record.server = normalizedServer;
     if (mushafEdition) record.mushafEdition = mushafEdition;
     if (surahList) record.surahList = String(surahList);
     if (moshafId != null) record.moshafId = Number(moshafId);
     if (readKind) record.readKind = String(readKind);
-    if (timingReadId != null) record.timingReadId = Number(timingReadId);
+    // `null` means the refreshed API catalog found no exact timing source;
+    // clear any earlier association instead of retaining a stale read ID.
+    if (timingReadId !== undefined) record.timingReadId = timingReadId == null ? null : Number(timingReadId);
     if (catalogSource) record.catalogSource = String(catalogSource);
     if (existing) Object.assign(existing, record);
     else RECITERS.push(record);
-    if (normalizedServer) CUSTOM_SURAH_AUDIO[id] = (n) => `${normalizedServer}${String(n).padStart(3, '0')}.mp3`;
+    if (normalizedServer) {
+      // A previous release could have cached a timing file's URL against this
+      // reciter ID. The API server is canonical; discard that stale override.
+      delete CUSTOM_SURAH_AUDIO_URLS[id];
+      CUSTOM_SURAH_AUDIO[id] = (n) => `${normalizedServer}${String(n).padStart(3, '0')}.mp3`;
+    }
     else CUSTOM_SURAH_AUDIO[id] = (n) => (CUSTOM_SURAH_AUDIO_URLS[id] && CUSTOM_SURAH_AUDIO_URLS[id][Number(n)]) || '';
     if (typeof urlResolver === 'function') CUSTOM_SURAH_AUDIO_RESOLVERS[id] = urlResolver;
     return true;

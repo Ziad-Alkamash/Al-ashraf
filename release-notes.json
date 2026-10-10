@@ -1,12 +1,12 @@
 {
   "ar": [
-    "إيقاف تنزيل السور تلقائيًا أثناء الاستماع؛ التنزيل أصبح عند طلبه من صفحة مصحف القارئ فقط."
+    "إصلاح ربط ملف الصوت بالقارئ المحدد ومنع تشغيل تسجيل قارئ آخر بسبب توقيت قديم."
   ],
   "fa": [
     "طراحی جست‌وجو، برگه‌ها و نشانگر تعداد رادیوها در صفحه پخش زنده بهبود یافت."
   ],
   "en": [
-    "Surahs no longer download automatically during playback; downloads start only from the reciter mushaf page."
+    "Fixed reciter audio-source matching and stale timing associations that could play another reciter."
   ],
   "fr": [
     "Amélioration de la recherche, des onglets et des compteurs de radios sur la page Direct."
