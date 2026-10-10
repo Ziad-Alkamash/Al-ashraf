@@ -1,24 +1,24 @@
 {
   "enabled": true,
-  "versionName": "5.5.50",
-  "versionCode": 77,
+  "versionName": "5.5.51",
+  "versionCode": 78,
   "minimumVersionCode": 13,
   "releaseDate": "2026-10-10",
-  "tagName": "v5.5.50",
+  "tagName": "v5.5.51",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "ea6697efb9ebbfe4e6f51897d578f06491fce958dc553262c01bf08f60ff9adc",
+  "sha256": "a074aee89bf6323087bc3e634470bf524de0810124a7cd435509d2bdb3b7e032",
   "releaseNotes": [
-    "تحسين تصميم البحث والتبويبات ودوائر أعداد الإذاعات في صفحة مباشر."
+    "إصلاح تشغيل قناتي القرآن الكريم والسنة النبوية بإضافة بث احتياطي وتنظيف مشغل HLS عند إعادة المحاولة."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "تحسين تصميم البحث والتبويبات ودوائر أعداد الإذاعات في صفحة مباشر."
+      "إصلاح تشغيل قناتي القرآن الكريم والسنة النبوية بإضافة بث احتياطي وتنظيف مشغل HLS عند إعادة المحاولة."
     ],
     "fa": [
       "طراحی جست‌وجو، برگه‌ها و نشانگر تعداد رادیوها در صفحه پخش زنده بهبود یافت."
     ],
     "en": [
-      "Improved the live page search field, category tabs, and station count badges."
+      "Fixed live channel playback with backup HLS streams and safer player retries."
     ],
     "fr": [
       "Amélioration de la recherche, des onglets et des compteurs de radios sur la page Direct."
