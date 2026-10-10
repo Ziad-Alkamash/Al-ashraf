@@ -11812,6 +11812,35 @@
     if (detailEl) detailEl.textContent = `${toArabicDigits(completed)} من ${toArabicDigits(AZKAR_DAILY_SECTION_IDS.length)} أذكار مكتملة اليوم`;
   }
 
+  function setAzkarDailySectionCompleted(sectionId, isComplete) {
+    if (!AZKAR_DAILY_SECTION_IDS.includes(sectionId)) return;
+    const progress = getAzkarDailyProgress();
+    const alreadyComplete = progress.completed.includes(sectionId);
+    if (alreadyComplete !== isComplete) {
+      progress.completed = isComplete
+        ? [...progress.completed, sectionId]
+        : progress.completed.filter((id) => id !== sectionId);
+      try { localStorage.setItem(AZKAR_DAILY_PROGRESS_KEY, JSON.stringify(progress)); } catch (e) { /* تجاهل امتلاء التخزين */ }
+    }
+    const completeButton = $(`[data-azkar-complete="${sectionId}"]`);
+    if (completeButton) {
+      completeButton.classList.toggle('is-complete', isComplete);
+      completeButton.setAttribute('aria-pressed', String(isComplete));
+      const label = completeButton.querySelector('span');
+      if (label) label.textContent = isComplete ? 'تم إتمام هذا الورد' : 'أتممت هذا الورد';
+    }
+    updateAzkarDailyProgress();
+  }
+
+  function updateDailyProgressFromCounters(wrap) {
+    const sectionId = wrap?.dataset?.azkarDailySection;
+    if (!sectionId || !AZKAR_DAILY_SECTION_IDS.includes(sectionId)) return;
+    const counters = $$('.tasbih-counter', wrap);
+    if (!counters.length) return;
+    const allItemsCompleted = counters.every((counter) => (Number(counter.dataset.count) || 0) >= (Number(counter.dataset.target) || 1));
+    if (allItemsCompleted) setAzkarDailySectionCompleted(sectionId, true);
+  }
+
   // يبني HTML لبطاقات عناصر قسم واحد (أذكار أو أدعية) — تُستخدم عند فتح صفحة القسم كاملة
   function buildDhikrItemsHTML(items, favType, sectionId) {
     return items
@@ -11864,6 +11893,7 @@
     }
     updateAzkarAudioProgress(false);
     contentEl.innerHTML = buildDhikrItemsHTML(section.items, favType, section.id);
+    contentEl.dataset.azkarDailySection = favType === 'azkar' && AZKAR_DAILY_SECTION_IDS.includes(section.id) ? section.id : '';
     if (favType === 'azkar' && AZKAR_DAILY_SECTION_IDS.includes(section.id)) {
       const completed = getAzkarDailyProgress().completed.includes(section.id);
       contentEl.insertAdjacentHTML('beforeend', `
@@ -11873,16 +11903,7 @@
         </button>`);
       const completeButton = contentEl.querySelector('[data-azkar-complete]');
       completeButton.addEventListener('click', () => {
-        const progress = getAzkarDailyProgress();
-        const wasComplete = progress.completed.includes(section.id);
-        progress.completed = wasComplete
-          ? progress.completed.filter((id) => id !== section.id)
-          : [...progress.completed, section.id];
-        try { localStorage.setItem(AZKAR_DAILY_PROGRESS_KEY, JSON.stringify(progress)); } catch (e) { /* تجاهل امتلاء التخزين */ }
-        completeButton.classList.toggle('is-complete', !wasComplete);
-        completeButton.setAttribute('aria-pressed', String(!wasComplete));
-        completeButton.querySelector('span').textContent = wasComplete ? 'أتممت هذا الورد' : 'تم إتمام هذا الورد';
-        updateAzkarDailyProgress();
+        setAzkarDailySectionCompleted(section.id, !getAzkarDailyProgress().completed.includes(section.id));
       });
     }
     initTasbihCounters(contentEl);
@@ -12927,6 +12948,7 @@
         }
         btn.dataset.count = String(count);
         updateTasbihVisual(btn);
+        if (count === target) updateDailyProgressFromCounters(wrap);
 
         if (count === target) {
           if (navigator.vibrate) navigator.vibrate([25, 40, 25]);

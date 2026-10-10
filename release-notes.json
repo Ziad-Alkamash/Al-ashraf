@@ -1,47 +1,29 @@
 {
   "ar": [
-    "تحديث تصميم صفحة الأذكار والأدعية وصورة سبحة جديدة.",
-    "أذكار النوم والسفر صارت تفتح مباشرة، مع معاينة وباقي القوائم عبر «المزيد».",
-    "تحسين بدء التطبيق عند انقطاع الإنترنت."
+    "تُحتسب أذكار الورد اليومي تلقائيًا عند إكمال عدّادات القسم."
   ],
   "fa": [
-    "طراحی صفحه اذکار و دعاها با تصویر تسبیح جدید به‌روزرسانی شد.",
-    "اذکار خواب و سفر اکنون باز می‌شوند و پیوند «بیشتر» فهرست کامل را نشان می‌دهد.",
-    "شروع برنامه در حالت آفلاین بهبود یافت."
+    "ذکرهای روزانه پس از تکمیل شمارنده‌های همه موارد یک بخش، به‌طور خودکار ثبت می‌شوند."
   ],
   "en": [
-    "Redesigned the adhkar and duas page with a new tasbih hero image.",
-    "Sleep and travel adhkar now open correctly; preview cards link to the full lists.",
-    "Improved startup when the device is offline."
+    "Daily adhkar now count as complete automatically after every counter in a section is finished."
   ],
   "fr": [
-    "Refonte de la page des invocations avec une nouvelle image de chapelet.",
-    "Les invocations du sommeil et du voyage s’ouvrent correctement; « Plus » affiche les listes complètes.",
-    "Amélioration du démarrage hors ligne."
+    "Les invocations quotidiennes sont validées automatiquement après la fin de tous les compteurs d’une section."
   ],
   "tr": [
-    "Zikir ve dua sayfası yeni bir tesbih görseliyle yenilendi.",
-    "Uyku ve yolculuk zikirleri artık açılıyor; «Daha fazla» tüm listeleri gösteriyor.",
-    "Çevrimdışı başlatma iyileştirildi."
+    "Bir bölümdeki tüm sayaçlar tamamlandığında günlük zikirler otomatik tamamlanır."
   ],
   "ur": [
-    "اذکار اور دعاؤں کے صفحے کو نئی تسبیح کی تصویر کے ساتھ بہتر بنایا گیا۔",
-    "سونے اور سفر کے اذکار اب کھلتے ہیں، جبکہ مزید کا بٹن مکمل فہرستیں دکھاتا ہے۔",
-    "آف لائن آغاز بہتر بنایا گیا۔"
+    "کسی حصے کے تمام کاؤنٹر مکمل ہونے پر روزانہ کے اذکار خودکار طور پر مکمل شمار ہوں گے۔"
   ],
   "id": [
-    "Halaman zikir dan doa diperbarui dengan gambar tasbih baru.",
-    "Zikir tidur dan perjalanan kini terbuka; “Lainnya” menampilkan daftar lengkap.",
-    "Peningkatan saat aplikasi dimulai tanpa internet."
+    "Zikir harian otomatis ditandai selesai setelah semua penghitung dalam bagian selesai."
   ],
   "ru": [
-    "Обновлена страница зикров и дуа с новым изображением тасбиха.",
-    "Зикры перед сном и в поездке теперь открываются; «Ещё» показывает полные списки.",
-    "Улучшен запуск приложения без интернета."
+    "Ежедневные зикры отмечаются выполненными после завершения всех счётчиков раздела."
   ],
   "es": [
-    "Se rediseñó la página de súplicas con una nueva imagen de tasbih.",
-    "Las súplicas de dormir y viajar ya se abren; «Más» muestra las listas completas.",
-    "Se mejoró el inicio sin conexión."
+    "Los adhkar diarios se completan automáticamente al terminar todos los contadores de una sección."
   ]
 }
