@@ -150,6 +150,13 @@
       }
       var video = document.getElementById('splash-video');
       if (!video) return;
+      // Never let the intro video cover the app indefinitely if startup stalls.
+      window.__splashWatchdogTimer = setTimeout(function () {
+        var splash = document.getElementById('splash');
+        if (!splash) return;
+        splash.classList.add('fade-out');
+        setTimeout(function () { splash.remove(); }, 540);
+      }, 6500);
       video.addEventListener('playing', function () {
         var splash = document.getElementById('splash');
         if (splash) splash.classList.add('splash-video-ready');
@@ -1920,54 +1927,53 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
 
         <div class="explore-tpl" data-cat="azkar_duas">
           <div class="nav-grid">
-            <!-- المسبحة + أدعية الأحبة جنب بعض، كل واحدة ناخدة 50% من عرض
-                 الصفحة (شوف .explore-duo-row في style.css)، بدل ما
-                 تكونوا صفين مستقلين زي باقي عناصر القسم -->
-            <div class="explore-duo-row">
-              <button class="nav-item" data-tab="tasbih">
-                <span class="settings-card-label">
-                  <span class="settings-card-icon nav-item-icon-img clr-4">
-                    <img src="images/tasbih.webp" alt="" width="26" height="26" draggable="false">
-                  </span>
-                  <span class="settings-card-text">
-                    <span class="settings-card-title" data-i18n="nav.item.tasbih">المسبحة</span>
-                    <span class="settings-card-sub" data-i18n="nav.item.tasbih_sub">سبّح واذكر الله بعدّاد إلكتروني</span>
-                  </span>
-                </span>
-                <svg class="acc-chevron"><use href="#icon-chevron-down"></use></svg>
+            <article class="azkar-daily-card" aria-label="وردك اليوم">
+              <div class="azkar-daily-copy">
+                <span class="azkar-daily-kicker">وردك اليوم</span>
+                <h3>اجعل ذكر الله جزءًا من يومك</h3>
+                <p>ابدأ بالقليل وداوم عليه؛ أذكار الصباح والمساء والنوم والسفر في مكان واحد.</p>
+                <span class="azkar-daily-detail" id="azkar-daily-detail">٠ من ٤ أذكار مكتملة اليوم</span>
+              </div>
+              <div class="azkar-daily-ring" id="azkar-daily-progress" role="progressbar" aria-label="إنجاز وردك اليوم" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" style="--azkar-progress: 0%">
+                <span class="azkar-daily-ring-inner"><strong id="azkar-daily-percent">0%</strong><small>إنجاز</small></span>
+              </div>
+            </article>
+
+            <h3 class="azkar-dashboard-heading">أذكارك اليومية</h3>
+            <div class="azkar-quick-grid azkar-quick-grid-primary">
+              <button type="button" class="azkar-quick-card" data-section-id="sabah">
+                <span class="azkar-quick-icon">🌤️</span><span class="azkar-quick-title">أذكار الصباح</span><span class="azkar-quick-sub">ابدأ يومك بذكر الله</span>
               </button>
-              <button class="nav-item" data-action="loved-ones">
-                <span class="settings-card-label">
-                  <span class="settings-card-icon clr-11"><svg><use href="#icon-dots-scatter"></use></svg></span>
-                  <span class="settings-card-text">
-                    <span class="settings-card-title" data-i18n="nav.item.loved_ones">أدعية الأحبة</span>
-                    <span class="settings-card-sub" data-i18n="nav.item.loved_ones_sub">أدعية خاصة بمن تحب من الأحياء والأموات</span>
-                  </span>
-                </span>
-                <svg class="acc-chevron"><use href="#icon-chevron-down"></use></svg>
+              <button type="button" class="azkar-quick-card" data-section-id="masaa">
+                <span class="azkar-quick-icon">🌙</span><span class="azkar-quick-title">أذكار المساء</span><span class="azkar-quick-sub">طمأنينة قبل نهاية اليوم</span>
+              </button>
+              <button type="button" class="azkar-quick-card" data-section-id="naom">
+                <span class="azkar-quick-icon">🌘</span><span class="azkar-quick-title">أذكار النوم</span><span class="azkar-quick-sub">اختم يومك بالذكر</span>
+              </button>
+              <button type="button" class="azkar-quick-card" data-section-id="safar">
+                <span class="azkar-quick-icon">✈️</span><span class="azkar-quick-title">أذكار السفر</span><span class="azkar-quick-sub">رفيقك في طريقك</span>
               </button>
             </div>
 
-            <!-- بدل ما يكون قسم الأذكار وقسم الأدعية فوق بعض (يخلّي الأدعية
-                 مش ظاهرة إلا بعد سكرول طويل تحت كل عناصر الأذكار)، اتنين
-                 تابّات جنب بعض ظاهرين مع أول فتح للصفحة، وتحتهم لوحة واحدة
-                 بس ظاهرة في كل مرة (initExploreAzkarDuasTabs في app.js) —
-                 فالمستخدم يعرف إن في أدعية من غير ما يحتاج يسكرول خالص.
-                 كل عنصر جوه اللوحتين هو نفس عناصر صفحتي الأذكار/الأدعية
-                 الحقيقية (AZKAR_DATA / DUAS_DATA عبر renderAccordion)،
-                 والضغط عليه بيفتح قائمة الذكر/الدعاء نفسها زي بالظبط
-                 الضغط عليه جوه صفحته الأصلية -->
-            <div class="segmented-control explore-azkar-duas-tabs" role="tablist">
-              <button type="button" class="segmented-btn active" data-etab="azkar" data-i18n="nav.item.azkar">الأذكار</button>
-              <button type="button" class="segmented-btn" data-etab="duas" data-i18n="nav.item.duas">الأدعية</button>
-            </div>
+            <button type="button" class="nav-item azkar-tasbih-card" data-tab="tasbih">
+              <span class="settings-card-label">
+                <span class="settings-card-icon nav-item-icon-img"><img src="images/tasbih.webp" alt="" width="30" height="30" draggable="false"></span>
+                <span class="settings-card-text"><span class="settings-card-title" data-i18n="nav.item.tasbih">المسبحة</span><span class="settings-card-sub" data-i18n="nav.item.tasbih_sub">سبّح واذكر الله بعدّاد إلكتروني</span></span>
+              </span>
+              <span class="azkar-tasbih-arrow" aria-hidden="true">←</span>
+            </button>
 
-            <div class="explore-azkar-duas-panel" data-epanel="azkar">
-              <div class="azkar-modern-list" id="explore-azkar-list"></div>
-            </div>
-            <div class="explore-azkar-duas-panel" data-epanel="duas" hidden>
-              <div class="azkar-modern-list" id="explore-duas-list"></div>
-            </div>
+            <section class="azkar-more-section azkar-preview-section">
+              <header class="azkar-more-heading"><h3 class="azkar-dashboard-heading">الأذكار والأدعية</h3><button type="button" class="azkar-more-link" data-open-azkar-duas-more>المزيد <span aria-hidden="true">←</span></button></header>
+              <div class="azkar-preview-grid">
+              <button type="button" class="nav-item azkar-loved-ones-card" data-action="loved-ones">
+                <span class="settings-card-label"><span class="settings-card-icon"><svg><use href="#icon-dots-scatter"></use></svg></span><span class="settings-card-text"><span class="settings-card-title" data-i18n="nav.item.loved_ones">أدعية الأحبة</span><span class="settings-card-sub" data-i18n="nav.item.loved_ones_sub">أدعية خاصة بمن تحب من الأحياء والأموات</span></span></span>
+                <svg class="acc-chevron"><use href="#icon-chevron-down"></use></svg>
+              </button>
+                <div class="azkar-preview-sublist" id="explore-azkar-list"></div>
+                <div class="azkar-preview-sublist" id="explore-duas-list"></div>
+              </div>
+            </section>
           </div>
         </div>
 
@@ -4045,6 +4051,24 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
         </div>
       </header>
       <div id="explore-category-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="azkar-duas-more-overlay" class="overlay overlay-fullpage">
+  <div class="overlay-sheet dhikr-list-sheet fullpage-shell nawawi-sheet azkar-duas-more-sheet">
+    <div class="overlay-head nawawi-topbar">
+      <button type="button" class="icon-btn nawawi-close" id="btn-close-azkar-duas-more" aria-label="إغلاق"><svg><use href="#icon-close"></use></svg></button>
+    </div>
+    <div class="fullpage-scroll">
+      <header class="ap-hero nawawi-hero azkar-duas-more-hero">
+        <div class="ap-hero-art" aria-hidden="true"><img class="azkar-duas-more-image" src="images/azkar-tasbih-hero.jpg" alt="" fetchpriority="high"></div>
+        <div class="ap-hero-text"><h2 class="ap-title">الأذكار والأدعية</h2><p class="ap-subtitle">كل الأذكار والأدعية في مكان واحد</p></div>
+      </header>
+      <main class="azkar-duas-more-content">
+        <section class="azkar-more-section"><h3 class="azkar-dashboard-heading">باقي الأذكار</h3><div class="azkar-modern-list" id="azkar-duas-more-azkar-list"></div></section>
+        <section class="azkar-more-section"><h3 class="azkar-dashboard-heading">الأدعية</h3><div class="azkar-modern-list" id="azkar-duas-more-duas-list"></div></section>
+      </main>
     </div>
   </div>
 </div>

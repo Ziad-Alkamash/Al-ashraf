@@ -77,6 +77,12 @@ const QuranAPI = (() => {
     if (cached && Date.now() - cached.t < ttlHours * 3600 * 1000) {
       return cached.v;
     }
+    // On a confirmed offline launch, prefer stale local data and skip network
+    // retries so startup is not delayed by two request timeouts.
+    if (global.navigator && global.navigator.onLine === false) {
+      if (cached && cached.v) return cached.v;
+      throw new Error('لا يوجد اتصال بالإنترنت ولا توجد بيانات محفوظة لهذه الصفحة');
+    }
 
     const timeoutMs = (opts && opts.timeoutMs) || 12000;
     let lastErr;

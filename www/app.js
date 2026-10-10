@@ -11779,6 +11779,39 @@
   /* ---------------------------------------------------------------- */
   /* الأذكار والأدعية                                                 */
   /* ---------------------------------------------------------------- */
+  const AZKAR_DAILY_SECTION_IDS = ['sabah', 'masaa', 'naom', 'safar'];
+  const AZKAR_DAILY_PROGRESS_KEY = 'almus-hraf:azkar-daily-progress';
+
+  function localAzkarDayKey() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
+
+  function getAzkarDailyProgress() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(AZKAR_DAILY_PROGRESS_KEY) || 'null');
+      if (saved && saved.day === localAzkarDayKey() && Array.isArray(saved.completed)) {
+        return { day: saved.day, completed: AZKAR_DAILY_SECTION_IDS.filter((id) => saved.completed.includes(id)) };
+      }
+    } catch (e) { /* ابدأ ورد اليوم من جديد لو تعذّر قراءة الحالة */ }
+    return { day: localAzkarDayKey(), completed: [] };
+  }
+
+  function updateAzkarDailyProgress() {
+    const progress = getAzkarDailyProgress();
+    const completed = progress.completed.length;
+    const percent = Math.round((completed / AZKAR_DAILY_SECTION_IDS.length) * 100);
+    const ring = $('#azkar-daily-progress');
+    const percentEl = $('#azkar-daily-percent');
+    const detailEl = $('#azkar-daily-detail');
+    if (ring) {
+      ring.style.setProperty('--azkar-progress', `${percent}%`);
+      ring.setAttribute('aria-valuenow', String(completed));
+    }
+    if (percentEl) percentEl.textContent = `${percent}%`;
+    if (detailEl) detailEl.textContent = `${toArabicDigits(completed)} من ${toArabicDigits(AZKAR_DAILY_SECTION_IDS.length)} أذكار مكتملة اليوم`;
+  }
+
   // يبني HTML لبطاقات عناصر قسم واحد (أذكار أو أدعية) — تُستخدم عند فتح صفحة القسم كاملة
   function buildDhikrItemsHTML(items, favType, sectionId) {
     return items
@@ -11831,6 +11864,27 @@
     }
     updateAzkarAudioProgress(false);
     contentEl.innerHTML = buildDhikrItemsHTML(section.items, favType, section.id);
+    if (favType === 'azkar' && AZKAR_DAILY_SECTION_IDS.includes(section.id)) {
+      const completed = getAzkarDailyProgress().completed.includes(section.id);
+      contentEl.insertAdjacentHTML('beforeend', `
+        <button type="button" class="azkar-mark-complete${completed ? ' is-complete' : ''}" data-azkar-complete="${section.id}" aria-pressed="${completed}">
+          <svg aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+          <span>${completed ? 'تم إتمام هذا الورد' : 'أتممت هذا الورد'}</span>
+        </button>`);
+      const completeButton = contentEl.querySelector('[data-azkar-complete]');
+      completeButton.addEventListener('click', () => {
+        const progress = getAzkarDailyProgress();
+        const wasComplete = progress.completed.includes(section.id);
+        progress.completed = wasComplete
+          ? progress.completed.filter((id) => id !== section.id)
+          : [...progress.completed, section.id];
+        try { localStorage.setItem(AZKAR_DAILY_PROGRESS_KEY, JSON.stringify(progress)); } catch (e) { /* تجاهل امتلاء التخزين */ }
+        completeButton.classList.toggle('is-complete', !wasComplete);
+        completeButton.setAttribute('aria-pressed', String(!wasComplete));
+        completeButton.querySelector('span').textContent = wasComplete ? 'أتممت هذا الورد' : 'تم إتمام هذا الورد';
+        updateAzkarDailyProgress();
+      });
+    }
     initTasbihCounters(contentEl);
     openOverlay('#dhikr-list-overlay');
   }
@@ -11951,6 +12005,7 @@
     const categoryOverlay = $('#explore-category-overlay');
     if (categoryOverlay) categoryOverlay.classList.toggle('sunnah-dashboard-open', catId === 'sunnah');
     if (categoryOverlay) categoryOverlay.classList.toggle('quran-hero-open', catId === 'quran');
+    if (categoryOverlay) categoryOverlay.classList.toggle('azkar-duas-dashboard-open', catId === 'azkar_duas');
     const titleEl = $('#explore-category-title');
     if (titleEl) titleEl.textContent = tUI('nav.section.' + catId, EXPLORE_CATEGORY_TITLES[catId] || '');
     const subtitleEl = $('#explore-category-subtitle');
@@ -11987,27 +12042,37 @@
     $$('.nav-cat-count[data-cat-count]').forEach(function (span) {
       const cat = span.dataset.catCount;
       const tpl = $('.explore-tpl[data-cat="' + cat + '"]', $('#explore-tpl-stash'));
-      const count = tpl ? $$('.nav-item', tpl).length : 0;
+      const count = !tpl ? 0 : cat === 'azkar_duas'
+        ? $$('.nav-item, .azkar-quick-card, .azkar-modern-row', tpl).length
+        : $$('.nav-item', tpl).length;
       if (count > 0) span.textContent = localizedItemCountLabel(count);
     });
   }
 
-  // تابّات "الأذكار / الأدعية" أعلى قائمة عناصرهم جوه صفحة قسم "الأذكار
-  // والأدعية" في استكشف الأشرف — بتبدّل أي لوحة (panel) من الاتنين ظاهرة
-  // بس، من غير ما تلمس renderAccordion أو محتوى القوائم نفسه
+  // وصل كروت الورد السريعة إلى أقسامها، وارسم تقدم الورد اليومي في البطاقة.
   function initExploreAzkarDuasTabs() {
-    const tabs = $$('.explore-azkar-duas-tabs .segmented-btn');
-    if (!tabs.length) return;
-    tabs.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        if (btn.classList.contains('active')) return;
-        tabs.forEach((b) => b.classList.toggle('active', b === btn));
-        const key = btn.dataset.etab;
-        $$('.explore-azkar-duas-panel').forEach((panel) => {
-          panel.hidden = panel.dataset.epanel !== key;
-        });
+    const template = $('.explore-tpl[data-cat="azkar_duas"]', $('#explore-tpl-stash'));
+    $$('.azkar-quick-card[data-section-id]', template).forEach((button) => {
+      button.addEventListener('click', () => {
+        const section = AZKAR_DATA?.find((item) => item.id === button.dataset.sectionId);
+        if (section) openDhikrListOverlay(section, 'azkar');
       });
     });
+    $$('[data-open-azkar-duas-more]', template).forEach((button) => {
+      button.addEventListener('click', openAzkarDuasMoreOverlay);
+    });
+    const closeBtn = $('#btn-close-azkar-duas-more');
+    if (closeBtn) closeBtn.addEventListener('click', () => closeOverlay('#azkar-duas-more-overlay'));
+    initDragToClose('#azkar-duas-more-overlay .overlay-head', '#azkar-duas-more-overlay .overlay-sheet', () => closeOverlay('#azkar-duas-more-overlay'));
+    updateAzkarDailyProgress();
+  }
+
+  function openAzkarDuasMoreOverlay() {
+    const quickSections = new Set(AZKAR_DAILY_SECTION_IDS);
+    const remainingAzkar = AZKAR_DATA.filter((section) => !quickSections.has(section.id));
+    renderAccordion('#azkar-duas-more-azkar-list', remainingAzkar, 'azkar');
+    renderAccordion('#azkar-duas-more-duas-list', DUAS_DATA, 'duas');
+    openOverlay('#azkar-duas-more-overlay');
   }
 
   let sunnahDailyHadithTimer = null;
@@ -12824,6 +12889,17 @@
     $$('.azkar-modern-row', wrap).forEach((head, i) => {
       head.addEventListener('click', () => openDhikrListOverlay(dataset[i], favType));
     });
+  }
+
+  function renderExploreAzkarList() {
+    if (typeof AZKAR_DATA === 'undefined') return;
+    const quickSections = new Set(AZKAR_DAILY_SECTION_IDS);
+    renderAccordion('#explore-azkar-list', AZKAR_DATA.filter((section) => !quickSections.has(section.id)).slice(0, 2), 'azkar');
+  }
+
+  function renderExploreDuasList() {
+    if (typeof DUAS_DATA === 'undefined') return;
+    renderAccordion('#explore-duas-list', DUAS_DATA.slice(0, 1), 'duas');
   }
 
   /* -------- المسبحة الإلكترونية: عدّاد لمسي لكل ذكر -------- */
@@ -24316,8 +24392,8 @@
         if (typeof DUAS_DATA !== 'undefined') renderAccordion('#duas-accordion', DUAS_DATA, 'duas');
         // نفس القوائم بالظبط لكن مكرّرة جوه صفحة "الأذكار والأدعية" داخل
         // استكشف الأشرف (explore-tpl data-cat="azkar_duas")
-        if (typeof AZKAR_DATA !== 'undefined') renderAccordion('#explore-azkar-list', AZKAR_DATA, 'azkar');
-        if (typeof DUAS_DATA !== 'undefined') renderAccordion('#explore-duas-list', DUAS_DATA, 'duas');
+        if (typeof AZKAR_DATA !== 'undefined') renderExploreAzkarList();
+        if (typeof DUAS_DATA !== 'undefined') renderExploreDuasList();
       } catch (e) { /* تجاهل */ }
       // إعادة ترجمة نصوص المسبحة (الذكر الحالي، شريط الاختيار السريع،
       // ونافذة إدارة الأذكار لو كانت مفتوحة)
@@ -30098,6 +30174,10 @@
       ? await window.QuranOffline.isDownloaded()
       : isEditionOffline(savedEdition);
     if (chosenEditionReady) return;
+    // If the reader files are not present and the device is offline, still
+    // allow the app shell and its locally available features to open. The
+    // reader itself will show its existing offline download guidance.
+    if (navigator.onLine === false) return;
 
     // نُخفي شاشة البداية (splash) فورًا هنا لأن الحاجز سيبقى ظاهرًا لفترة
     // أطول (بانتظار ضغط المستخدم على زر التحميل)، فلا داعي لبقاء splash
@@ -30669,7 +30749,7 @@
     // حاجز التحميل الإلزامي: نستنّاه هنا قبل أي شيء آخر (خصوصًا قبل تحميل
     // الصفحة المحفوظة أدناه)، حتى تُضمَن قراءة كل الصفحات لاحقًا من الجهاز
     // مباشرة وبدون إنترنت، بدل الاعتماد على تعذّر الشبكة وقت القراءة نفسها
-    try { await initOfflineGate(); } catch (e) { console.error('initOfflineGate error:', e); }
+    try { await withTimeout(initOfflineGate(), 2500); } catch (e) { console.error('initOfflineGate error:', e); }
     safeCall(initBackNavigation, 'initBackNavigation');
     safeCall(initStatusBar, 'initStatusBar');
     safeCall(initNotificationChannel, 'initNotificationChannel');
@@ -30755,8 +30835,8 @@
     // المخفي #explore-tpl-stash وقت النداء ده، وده كافي لـ renderAccordion
     // (بتدوّر بـ id على مستوى المستند كله)، وتترحّل بعدين مع باقي القسم
     // لما المستخدم يفتحه (شوف openExploreCategory)
-    if (typeof AZKAR_DATA !== 'undefined') safeCall(() => renderAccordion('#explore-azkar-list', AZKAR_DATA, 'azkar'), 'renderAccordion(explore-azkar-list)');
-    if (typeof DUAS_DATA !== 'undefined') safeCall(() => renderAccordion('#explore-duas-list', DUAS_DATA, 'duas'), 'renderAccordion(explore-duas-list)');
+    if (typeof AZKAR_DATA !== 'undefined') safeCall(renderExploreAzkarList, 'renderExploreAzkarList');
+    if (typeof DUAS_DATA !== 'undefined') safeCall(renderExploreDuasList, 'renderExploreDuasList');
 
     safeCall(initExploreCategoryOverlay, 'initExploreCategoryOverlay');
     safeCall(initExploreAzkarDuasTabs, 'initExploreAzkarDuasTabs');
@@ -30794,13 +30874,13 @@
     safeCall(loadSurahIndex, 'loadSurahIndex');
 
     const savedPage = Number(localStorage.getItem('almus-hraf:currentPage') || 1);
-    await loadPage(savedPage);
-
-    // الواجهة الرئيسية للتطبيق بقت صفحة "أدوات المسلم" — بنفتحها بعد ما
-    // صفحة المصحف المحفوظة تتحمّل وتتقاس صح (viaPopstate=true عشان مندفعش
-    // حالة زيادة في الـ history تخلي زر الرجوع يروح للمصحف بدل الخروج)
+    // Open the shell without waiting for a network-dependent Mushaf page.
+    // loadPage still prefers locally downloaded data and updates the reader
+    // when it resolves; offline failures no longer hold the splash over the app.
     safeCall(() => switchToTab('tools', true), 'startOnTools');
+    void loadPage(savedPage).catch((error) => console.warn('Initial Mushaf page load failed:', error));
 
+    // لا تربط إخفاء شاشة البداية بتحميل الصفحة؛ الصفحة قد تعتمد على الشبكة.
     setTimeout(() => {
       const splash = $('#splash');
       if (splash) {
