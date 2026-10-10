@@ -8611,7 +8611,6 @@
   // "resolveAyahPlaybackSource is not defined" في كل مرة، وده كان السبب
   // الحقيقي وراء فشل زرار "استماع لهذه الآية فقط" في كل مرة ومع كل قارئ،
   // بينما التشغيل المتواصل (المُعرّف جوه نفس initSurahAudioPlayer) كان شغال عادي
-  const timingRetryAfter = new Map();
   async function resolveAyahPlaybackSource(surahNumber, ayahNumber, ed) {
     // Prefer the exact ayah recording whenever one exists. Timing maps can
     // only be used with the specific full-surah recording they were created for.
@@ -8626,37 +8625,41 @@
       // Offline with no downloaded ayah clip: try MP3Quran's matching full file.
     }
 
-    const timingKey = `${ed}:${surahNumber}`;
     let timingData = null;
-    if (window.Mp3QuranTiming && Date.now() >= (timingRetryAfter.get(timingKey) || 0)) {
-      const timingRequest = Mp3QuranTiming.getAyahTimings(ed, surahNumber).catch(() => null);
-      const timeoutSentinel = {};
-      // Let the official request finish in the background and warm its cache,
-      // but don't make the user wait through its long network timeout.
-      timingData = await Promise.race([
-        timingRequest,
-        new Promise((resolve) => setTimeout(() => resolve(timeoutSentinel), 1400))
-      ]);
-      if (timingData === timeoutSentinel || !timingData) {
-        // Avoid imposing the same timeout before every ayah when a reciter has
-        // no official timing or the timing server is temporarily slow.
-        timingRetryAfter.set(timingKey, Date.now() + 30000);
-        timingRequest.then((lateResult) => { if (lateResult) timingRetryAfter.delete(timingKey); });
-        timingData = null;
+    if (window.Mp3QuranTiming) {
+      // Use the official map from the first frame when it is available locally.
+      // For a reader with an official timing source, fetch/await that exact map
+      // on a cold cache before seeking; readers without one use the existing
+      // local verse-length estimate and never borrow another reader's timing.
+      timingData = Mp3QuranTiming.getCachedAyahTimings?.(ed, surahNumber) || null;
+      if (!timingData) {
+        const timingRequest = Mp3QuranTiming.getAyahTimings(ed, surahNumber).catch(() => null);
+        if (Mp3QuranTiming.hasOfficialTimingSource?.(ed)) timingData = await timingRequest;
       }
     }
-    // Some official tracks are incomplete (for example a late ayah may be
-    // absent). Never treat a partial map as a valid seek for every ayah.
+    // Guard custom catalog entries against any stale timing map that points to
+    // a different reader's folder.
+    if (timingData && QuranAPI.RECITERS) {
+      const selectedReciter = QuranAPI.RECITERS.find((item) => item.id === ed);
+      if (selectedReciter?.catalogSource === 'mp3quran' && selectedReciter.server) {
+        const folderOf = (value, isAudioFile) => {
+          try {
+            const url = new URL(String(value || '').replace(/^http:/i, 'https:'));
+            if (isAudioFile) url.pathname = url.pathname.replace(/\d{3}\.mp3$/i, '');
+            return `${url.hostname.toLowerCase()}${url.pathname.replace(/\/+$/, '')}/`;
+          } catch (_) { return ''; }
+        };
+        if (folderOf(timingData.audioUrl, true) !== folderOf(selectedReciter.server, false)) timingData = null;
+      }
+    }
     const requestedTiming = timingData?.bounds?.find((bound) => Number(bound.ayah) === Number(ayahNumber));
     if (requestedTiming && timingData.audioUrl) {
-      const timedAudio = await resolveOfflineAudioSrc(timingData.audioUrl);
-      const availableOffline = /^blob:/i.test(String(timedAudio || ''));
-      if (navigator.onLine !== false || availableOffline) {
-        if (QuranAPI.setCustomSurahAudioURL) QuranAPI.setCustomSurahAudioURL(ed, surahNumber, timingData.audioUrl);
-        return { url: timedAudio, approx: true, timings: timingData.bounds };
-      }
+      return {
+        url: await resolveOfflineAudioSrc(timingData.audioUrl),
+        approx: true,
+        timings: timingData.bounds
+      };
     }
-
     if (QuranAPI.ensureCustomSurahAudioURL) await QuranAPI.ensureCustomSurahAudioURL(ed, surahNumber);
     const surahURL = QuranAPI.getSurahAudioURL(surahNumber, ed);
     return { url: await resolveOfflineAudioSrc(surahURL), approx: true, timings: null };

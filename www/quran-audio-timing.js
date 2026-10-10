@@ -7,12 +7,12 @@
   const RECITERS_URL = 'https://www.mp3quran.net/api/v3/reciters?language=ar';
   const RECITERS_EN_URL = 'https://www.mp3quran.net/api/v3/reciters?language=eng';
   const TIMING_URL = 'https://www.mp3quran.net/api/v3/ayat_timing';
-  const READS_CACHE_KEY = 'almus-hraf:mp3quran-timing-reads:v7';
-  // v9 forces every reader/surah pair to be fetched again from MP3Quran.
-  // Previous timing maps may have been saved against a mismatched audio file.
-  const TIMING_CACHE_PREFIX = 'almus-hraf:mp3quran-ayah-timing:v9:';
+  const READS_CACHE_KEY = 'almus-hraf:mp3quran-timing-reads:v8';
+  // v10 invalidates timing maps/catalog associations created before the
+  // strict reader-audio-folder check in app.js.
+  const TIMING_CACHE_PREFIX = 'almus-hraf:mp3quran-ayah-timing:v10:';
   const READS_TTL = 7 * 24 * 60 * 60 * 1000;
-  const CATALOG_CACHE_KEY = 'almus-hraf:mp3quran-reciter-catalog:v7';
+  const CATALOG_CACHE_KEY = 'almus-hraf:mp3quran-reciter-catalog:v8';
   const CATALOG_TTL = 24 * 60 * 60 * 1000;
   const TIMING_TTL = 30 * 24 * 60 * 60 * 1000;
   const pending = new Map();
@@ -336,9 +336,10 @@
     if (pending.has(key)) return pending.get(key);
 
     const request = (async () => {
+      let read = null;
       try {
         const reads = await loadReads();
-        const read = matchingRead(ed, reads);
+        read = matchingRead(ed, reads);
         const cacheMatchesRead = cachedTimingsMatchRead(cached, read, surahNumber);
         if (cacheMatchesRead && Date.now() - cached.savedAt < TIMING_TTL) {
           const bounds = normalizeTimings(cached.items);
@@ -372,6 +373,26 @@
     return request;
   }
 
-  global.Mp3QuranTiming = { getAyahTimings, loadCatalog, getCatalogReciters: () => catalogReciters };
+  function hasOfficialTimingSource(ed) {
+    const reciter = (QuranAPI.RECITERS || []).find((item) => item.id === ed);
+    if (reciter && reciter.timingReadId) return true;
+    return !!READ_ID_BY_EDITION[String(ed || '')];
+  }
+
+  // Playback can consume a verified local timing map synchronously. On a cold
+  // cache, callers may load the matching official map before positioning audio.
+  function getCachedAyahTimings(ed, surah) {
+    const surahNumber = Number(surah);
+    if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) return null;
+    const cached = readCache(`${TIMING_CACHE_PREFIX}${encodeURIComponent(ed)}:${surahNumber}`);
+    const reads = readCache(READS_CACHE_KEY);
+    if (!cached || !reads || !Array.isArray(reads.items)) return null;
+    const read = matchingRead(ed, reads.items);
+    if (!cachedTimingsMatchRead(cached, read, surahNumber) || Date.now() - cached.savedAt >= TIMING_TTL) return null;
+    const bounds = normalizeTimings(cached.items);
+    return bounds ? { bounds, audioUrl: cached.audioUrl, readId: Number(read.id) } : null;
+  }
+
+  global.Mp3QuranTiming = { getAyahTimings, getCachedAyahTimings, hasOfficialTimingSource, loadCatalog, getCatalogReciters: () => catalogReciters };
   loadCatalog();
 })(window);
