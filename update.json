@@ -1,24 +1,24 @@
 {
   "enabled": true,
-  "versionName": "5.5.54",
-  "versionCode": 81,
+  "versionName": "5.5.56",
+  "versionCode": 83,
   "minimumVersionCode": 13,
-  "releaseDate": "2026-10-10",
-  "tagName": "v5.5.54",
+  "releaseDate": "2026-10-11",
+  "tagName": "v5.5.56",
   "downloadUrl": "https://github.com/Ziad-Alkamash/Al-ashraf/releases/latest/download/AlAshraf.apk",
-  "sha256": "093bbb1192ad0a8357b1b22920b970ab1022c8e03f71f58f66e6fb9ea42327f3",
+  "sha256": "026e91560f578230196c7eea6a9cfed447f0c99d94e99c6f5d984c1ea8721876",
   "releaseNotes": [
-    "إصلاح ربط ملف الصوت بالقارئ المحدد ومنع تشغيل تسجيل قارئ آخر بسبب توقيت قديم."
+    "تصحيح مصادر الحسيني العزازي وعثمان الأنصاري ومنع روابط الكاش القديمة من استبدال صوت القارئ."
   ],
   "localizedReleaseNotes": {
     "ar": [
-      "إصلاح ربط ملف الصوت بالقارئ المحدد ومنع تشغيل تسجيل قارئ آخر بسبب توقيت قديم."
+      "تصحيح مصادر الحسيني العزازي وعثمان الأنصاري ومنع روابط الكاش القديمة من استبدال صوت القارئ."
     ],
     "fa": [
       "طراحی جست‌وجو، برگه‌ها و نشانگر تعداد رادیوها در صفحه پخش زنده بهبود یافت."
     ],
     "en": [
-      "Fixed reciter audio-source matching and stale timing associations that could play another reciter."
+      "Corrected Al-Azazi and Al-Ansari audio sources and blocked stale cached URLs from replacing the selected reciter."
     ],
     "fr": [
       "Amélioration de la recherche, des onglets et des compteurs de radios sur la page Direct."
