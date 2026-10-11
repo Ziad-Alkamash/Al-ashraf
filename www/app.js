@@ -16567,7 +16567,7 @@
     { id: 'muallim.minshawi', name: 'محمد صديق المنشاوي', latin: 'Mohamed Siddiq Al-Minshawi', aliases: ['محمد صديق المنشاوي', 'المنشاوي'] },
     // المصحف المعلم للعزازي على المصدر الرسمي متاح من السورة ٥٨ إلى ١١٤ فقط.
     // حصر القائمة يمنع محاولة تشغيل روابط غير موجودة التي كانت تظهر كأخطاء متقطعة.
-    { id: 'muallim.azazi', name: 'الحسيني العزازي', latin: 'Al-Husseini Al-Azazi', aliases: ['الحسيني العزازي', 'الحسين العزازي', 'العزازي'], server: 'https://server8.mp3quran.net/download/3zazi/', surahList: Array.from({ length: 57 }, (_, index) => index + 58).join(',') },
+    { id: 'muallim.azazi', name: 'الحسيني العزازي', latin: 'Al-Husseini Al-Azazi', aliases: ['الحسيني العزازي', 'الحسين العزازي', 'العزازي'], server: 'https://cdn.mp3quran.net/audio/husayni-azazi/r1/', surahList: Array.from({ length: 57 }, (_, index) => index + 58).join(',') },
     { id: 'muallim.husary', name: 'محمود خليل الحصري', latin: 'Mahmoud Khalil Al-Husary', aliases: ['محمود خليل الحصري', 'الحصري'], server: 'https://archive.org/download/Mushaf_Moalim_3/' }
   ];
   const TEACHING_SOURCE_BY_ID = Object.create(null);
@@ -16601,10 +16601,14 @@
     records.forEach((source) => {
       const person = TEACHING_RECITERS.find((r) => r.id === source.id);
       if (!person || (!source.server && !source.midadRecitations) || typeof QuranAPI === 'undefined' || !QuranAPI.registerCustomSurahReciter) return;
-      const availableSurahs = Array.from(new Set(String(source.surahList || '').split(',').map(Number)
+      // Treat built-in teaching sources as authoritative even when an older
+      // local catalog contains a stale server URL.
+      const sourceServer = person.server || source.server;
+      const sourceSurahList = person.surahList || source.surahList;
+      const availableSurahs = Array.from(new Set(String(sourceSurahList || '').split(',').map(Number)
         .filter((n) => Number.isInteger(n) && n >= 1 && n <= TOTAL_SURAHS)));
       if (!availableSurahs.length) return;
-      const server = source.server ? String(source.server).replace(/^http:\/\//i, 'https://') : null;
+      const server = sourceServer ? String(sourceServer).replace(/^http:\/\//i, 'https://') : null;
       const midadRecitations = source.midadRecitations || null;
       const urlResolver = midadRecitations ? (async (surahNumber) => {
         const recitationId = midadRecitations[String(surahNumber)];
@@ -16615,12 +16619,16 @@
         apCacheMidadAudio(source.id, surahNumber, audioUrl);
         return audioUrl;
       }) : undefined;
-      if (!QuranAPI.registerCustomSurahReciter({ id: source.id, name: person.name, nameLatin: person.latin, nameRu: person.latin, server: server || undefined, urlResolver, surahList: source.surahList })) return;
-      TEACHING_SOURCE_BY_ID[source.id] = { ...source, server };
-      const audioCache = apReadMidadAudioCache(source.id);
-      Object.entries(audioCache).forEach(([surah, entry]) => {
-        if (entry && entry.expiresAt > Date.now()) QuranAPI.setCustomSurahAudioURL(source.id, Number(surah), entry.url);
-      });
+      if (!QuranAPI.registerCustomSurahReciter({ id: source.id, name: person.name, nameLatin: person.latin, nameRu: person.latin, server: server || undefined, urlResolver, surahList: sourceSurahList })) return;
+      TEACHING_SOURCE_BY_ID[source.id] = { ...source, server, surahList: sourceSurahList };
+      // روابط الكاش تخص صفحات مداد فقط. لا نسمح للكاش القديم بتجاوز رابط
+      // الخادم الرسمي الثابت (مثل مصدر الحسيني العزازي).
+      if (midadRecitations) {
+        const audioCache = apReadMidadAudioCache(source.id);
+        Object.entries(audioCache).forEach(([surah, entry]) => {
+          if (entry && entry.expiresAt > Date.now()) QuranAPI.setCustomSurahAudioURL(source.id, Number(surah), entry.url);
+        });
+      }
     });
   }
   const AP_MUALLIM_AUDIO_CACHE_KEY = 'almus-hraf:muallimAudioUrls:v1';
@@ -16733,7 +16741,9 @@
         const server = String(moshaf.server || '').replace(/^http:\/\//i, 'https://');
         if (!family || readKind === 'معلم' || !/^https:\/\//i.test(server)) return;
         const surahs = Array.from(new Set(String(moshaf.surah_list || '').split(',').map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= TOTAL_SURAHS))).sort((a, b) => a - b);
-        if (surahs.length !== TOTAL_SURAHS) return;
+        // Some official catalogs contain a valid partial recitation (for
+        // example Othman Al-Ansari). Keep every listed surah available.
+        if (!surahs.length) return;
         const name = String(reciter.name || '').trim();
         if (!name || isExcludedAudioReciter(name)) return;
         const nameKey = `${family}:${apCatalogNameKey(name)}:${readKind}`;
@@ -16762,7 +16772,7 @@
     sources.forEach((source) => {
       if (!source || !source.id || !source.server || !source.mushafEdition || !source.surahList || isExcludedAudioReciter(source.name)) return;
       const surahs = Array.from(new Set(String(source.surahList).split(',').map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= TOTAL_SURAHS)));
-      if (surahs.length !== TOTAL_SURAHS) return;
+      if (!surahs.length) return;
       const mode = source.readKind || (/مجود/.test(apNormalizeArabicName(source.name)) ? 'مجود' : 'مرتل');
       const key = `${source.mushafEdition}:${apCatalogNameKey(source.name)}:${mode}`;
       if (seen.has(key)) return;
@@ -16786,7 +16796,7 @@
       cached.forEach((source) => {
         if (!source || !source.surahList || isExcludedAudioReciter(source.name)) return;
         const surahs = new Set(String(source.surahList).split(',').map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= TOTAL_SURAHS));
-        if (surahs.size !== TOTAL_SURAHS) return;
+        if (!surahs.size) return;
         const mode = source.readKind || (/مجود/.test(apNormalizeArabicName(source.name)) ? 'مجود' : 'مرتل');
         const key = `${source.mushafEdition}:${apCatalogNameKey(source.name)}:${mode}`;
         if (seenCached.has(key)) return;
@@ -16795,6 +16805,18 @@
       });
       try { localStorage.setItem(AP_AUDIO_RECITER_CATALOG_KEY, JSON.stringify(validCached)); } catch (_) { /* تجاهل امتلاء التخزين */ }
     }
+    // Pin this verified partial catalog entry so older local catalogs cannot
+    // route Othman Al-Ansari through another reciter's server, including offline.
+    registerAudioReciterCatalog([{
+      id: 'mp3quran.216.216',
+      name: 'عثمان الأنصاري',
+      nameLatin: 'Othman Al-Ansari',
+      server: 'https://cdn.mp3quran.net/audio/othman-ansari/r1/',
+      mushafEdition: 'hafs',
+      surahList: '1,2,3,4,5,6,7,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,58,59,60,61,62,63,64,65,66,67,68,69,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114',
+      moshafId: 216,
+      readKind: 'مرتل'
+    }]);
     if (Date.now() - audioReciterCatalogLastLoadedAt < 5 * 60 * 1000) return cached;
     if (audioReciterCatalogLoad) return audioReciterCatalogLoad;
     audioReciterCatalogLoad = (async () => {

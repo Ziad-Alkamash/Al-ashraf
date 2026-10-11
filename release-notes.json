@@ -1,12 +1,12 @@
 {
   "ar": [
-    "تثبيت رابط الصوت الأصلي لكل قارئ ومنع الروابط القديمة من استبدال صوت القارئ المختار."
+    "تصحيح مصادر الحسيني العزازي وعثمان الأنصاري ومنع روابط الكاش القديمة من استبدال صوت القارئ."
   ],
   "fa": [
     "طراحی جست‌وجو، برگه‌ها و نشانگر تعداد رادیوها در صفحه پخش زنده بهبود یافت."
   ],
   "en": [
-    "Pinned each reciter to its own source and blocked stale URLs from replacing the selected audio."
+    "Corrected Al-Azazi and Al-Ansari audio sources and blocked stale cached URLs from replacing the selected reciter."
   ],
   "fr": [
     "Amélioration de la recherche, des onglets et des compteurs de radios sur la page Direct."
