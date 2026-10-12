@@ -14,6 +14,7 @@ android/app/build/
 android/app/release/
 android/app/build.zip
 dist/
+firebase-public/
 work/
 
 # Firebase local state

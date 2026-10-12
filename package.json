@@ -4,6 +4,7 @@
   "main": "app.js",
   "scripts": {
     "postinstall": "patch-package",
+    "deploy:firebase": "node tools/prepare-firebase-site.mjs && firebase deploy --only hosting",
     "test": "node --test"
   },
   "keywords": [],

@@ -1,7 +1,7 @@
 {
   "hosting": {
     "site": "almushaf-alashraf-b284b",
-    "public": "www",
+    "public": "firebase-public",
     "ignore": [
       "firebase.json",
       "**/node_modules/**"
