@@ -15,6 +15,7 @@ const totalPages = 604;
 const concurrency = 8;
 
 function replaceExactlyOnce(source, from, to, file) {
+  source = source.replace(/\r\n/g, '\n');
   const first = source.indexOf(from);
   if (first < 0 || source.indexOf(from, first + from.length) >= 0) {
     throw new Error(`Expected one patch point in ${file}; source may have changed.`);
@@ -23,8 +24,7 @@ function replaceExactlyOnce(source, from, to, file) {
 }
 
 async function patchFirebaseOnlyAppCopies() {
-  const firebaseHostCheck = `!window.QuranOffline?.isNativeReady?.() &&
-      ['almushaf-alashraf-b284b.web.app', 'almushaf-alashraf-b284b.firebaseapp.com'].includes(location.hostname)`;
+  const firebaseHostCheck = `!window.QuranOffline?.isNativeReady?.() && location.protocol === 'https:'`;
 
   const apiPath = path.join(publicDir, 'quran-api.js');
   let api = await fs.readFile(apiPath, 'utf8');
@@ -42,6 +42,28 @@ async function patchFirebaseOnlyAppCopies() {
     api,
     'data = await cachedFetchJSON(`${BASE}/page/${pageNumber}/quran-uthmani`);',
     'data = await cachedFetchJSON(pageURL(pageNumber));',
+    'quran-api.js'
+  );
+  api = replaceExactlyOnce(
+    api,
+    `    // On a confirmed offline launch, prefer stale local data and skip network
+    // retries so startup is not delayed by two request timeouts.
+    if (global.navigator && global.navigator.onLine === false) {
+      if (cached && cached.v) return cached.v;
+      throw new Error('لا يوجد اتصال بالإنترنت ولا توجد بيانات محفوظة لهذه الصفحة');
+    }`,
+    `    // Same-origin Quran assets are locally hosted by Firebase. Some mobile browsers
+    // report navigator.onLine=false even while those same-origin requests are reachable.
+    let isSameOriginQuranAsset = false;
+    try {
+      const requestURL = new URL(url, location.href);
+      isSameOriginQuranAsset = requestURL.origin === location.origin && requestURL.pathname.startsWith('/quran-data/');
+    } catch (_) {}
+    // For external APIs, prefer stale local data when the browser confirms offline.
+    if (global.navigator && global.navigator.onLine === false && !isSameOriginQuranAsset) {
+      if (cached && cached.v) return cached.v;
+      throw new Error('لا يوجد اتصال بالإنترنت ولا توجد بيانات محفوظة لهذه الصفحة');
+    }`,
     'quran-api.js'
   );
   api = replaceExactlyOnce(
@@ -126,10 +148,54 @@ async function fetchAndWrite(task) {
   throw new Error(`Failed to prepare ${task.destination}: ${lastError?.message || 'unknown error'}`);
 }
 
+async function preparePageTextAssets() {
+  const response = await fetch('https://api.alquran.cloud/v1/quran/quran-uthmani', {
+    signal: AbortSignal.timeout(60000)
+  });
+  if (!response.ok) throw new Error(`Failed to fetch Quran text dataset: HTTP ${response.status}`);
+  const payload = await response.json();
+  const surahs = payload?.data?.surahs;
+  if (payload.code !== 200 || !Array.isArray(surahs) || surahs.length !== 114) {
+    throw new Error('Invalid whole-Quran text dataset');
+  }
+
+  const pages = Array.from({ length: totalPages }, () => []);
+  for (const surah of surahs) {
+    const surahInfo = {
+      number: surah.number,
+      name: surah.name,
+      englishName: surah.englishName,
+      englishNameTranslation: surah.englishNameTranslation,
+      numberOfAyahs: surah.ayahs?.length || 0,
+      revelationType: surah.revelationType
+    };
+    for (const ayah of surah.ayahs || []) {
+      const page = Number(ayah.page);
+      if (page >= 1 && page <= totalPages) pages[page - 1].push({ ...ayah, surah: surahInfo });
+    }
+  }
+
+  for (let index = 0; index < pages.length; index += 1) {
+    if (!pages[index].length) throw new Error(`Quran page ${index + 1} has no ayahs in the text dataset`);
+    const page = index + 1;
+    const data = {
+      code: 200,
+      status: 'OK',
+      data: { number: page, ayahs: pages[index], edition: payload.data.edition }
+    };
+    await fs.writeFile(
+      path.join(pageTextDir, `${String(page).padStart(3, '0')}.json`),
+      JSON.stringify(data)
+    );
+  }
+  console.log(`Prepared local Quran text for all ${pages.length} pages from one verified dataset.`);
+}
+
 async function main() {
   await fs.rm(publicDir, { recursive: true, force: true });
   await fs.cp(sourceDir, publicDir, { recursive: true });
   await Promise.all([fs.mkdir(pageDir, { recursive: true }), fs.mkdir(fontDir, { recursive: true }), fs.mkdir(pageTextDir, { recursive: true })]);
+  await preparePageTextAssets();
 
   const tasks = [];
   for (let page = 1; page <= totalPages; page += 1) {
@@ -138,11 +204,6 @@ async function main() {
       type: 'json',
       url: `${qcfRepo}/pages/${padded}.json`,
       destination: path.join(pageDir, `${padded}.json`)
-    });
-    tasks.push({
-      type: 'page-text',
-      url: `https://api.alquran.cloud/v1/page/${page}/quran-uthmani`,
-      destination: path.join(pageTextDir, `${padded}.json`)
     });
   }
   for (let font = 1; font <= 47; font += 1) {
