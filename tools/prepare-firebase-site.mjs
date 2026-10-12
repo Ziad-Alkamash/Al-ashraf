@@ -25,6 +25,12 @@ function replaceExactlyOnce(source, from, to, file) {
 
 async function patchFirebaseOnlyAppCopies() {
   const firebaseHostCheck = `!window.QuranOffline?.isNativeReady?.() && location.protocol === 'https:'`;
+  const htmlPath = path.join(publicDir, 'index.html');
+  let html = await fs.readFile(htmlPath, 'utf8');
+  const assetVersion = Date.now();
+  html = replaceExactlyOnce(html, '<script src="quran-api.js"></script>', `<script src="quran-api.js?v=${assetVersion}"></script>`, 'index.html');
+  html = replaceExactlyOnce(html, '<script src="app.js"></script>', `<script src="app.js?v=${assetVersion}"></script>`, 'index.html');
+  await fs.writeFile(htmlPath, html);
 
   const apiPath = path.join(publicDir, 'quran-api.js');
   let api = await fs.readFile(apiPath, 'utf8');
@@ -60,7 +66,7 @@ async function patchFirebaseOnlyAppCopies() {
       isSameOriginQuranAsset = requestURL.origin === location.origin && requestURL.pathname.startsWith('/quran-data/');
     } catch (_) {}
     // For external APIs, prefer stale local data when the browser confirms offline.
-    if (global.navigator && global.navigator.onLine === false && !isSameOriginQuranAsset) {
+    if (window.navigator && window.navigator.onLine === false && !isSameOriginQuranAsset) {
       if (cached && cached.v) return cached.v;
       throw new Error('لا يوجد اتصال بالإنترنت ولا توجد بيانات محفوظة لهذه الصفحة');
     }`,
