@@ -40,6 +40,12 @@ async function patchFirebaseOnlyAppCopies() {
   );
   api = replaceExactlyOnce(
     api,
+    'data = await cachedFetchJSON(`${BASE}/page/${pageNumber}/quran-uthmani`);',
+    'data = await cachedFetchJSON(pageURL(pageNumber));',
+    'quran-api.js'
+  );
+  api = replaceExactlyOnce(
+    api,
     'const remoteUrl = `https://raw.githubusercontent.com/Ziad-Alkamash/quran-qcf4/main/pages/${p}.json`;',
     `const remoteUrl = ${firebaseHostCheck}
       ? new URL(\`/quran-data/qcf4/pages/\${p}.json\`, location.origin).href
