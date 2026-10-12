@@ -8,6 +8,7 @@ const publicDir = path.join(root, 'firebase-public');
 const qcfDir = path.join(publicDir, 'quran-data', 'qcf4');
 const pageDir = path.join(qcfDir, 'pages');
 const fontDir = path.join(qcfDir, 'fonts-woff2');
+const pageTextDir = path.join(publicDir, 'quran-data', 'page-text');
 const qcfRepo = 'https://raw.githubusercontent.com/Ziad-Alkamash/quran-qcf4/main';
 const fontRepo = 'https://cdn.jsdelivr.net/gh/Ziad-Alkamash/quran-qcf4@main/fonts-woff2';
 const totalPages = 604;
@@ -27,6 +28,16 @@ async function patchFirebaseOnlyAppCopies() {
 
   const apiPath = path.join(publicDir, 'quran-api.js');
   let api = await fs.readFile(apiPath, 'utf8');
+  api = replaceExactlyOnce(
+    api,
+    'return `${BASE}/page/${pageNumber}/quran-uthmani`;',
+    `if (!window.QuranOffline?.isNativeReady?.() &&
+      ['almushaf-alashraf-b284b.web.app', 'almushaf-alashraf-b284b.firebaseapp.com'].includes(location.hostname)) {
+      return new URL('/quran-data/page-text/' + String(pageNumber).padStart(3, '0') + '.json', location.origin).href;
+    }
+    return BASE + '/page/' + pageNumber + '/quran-uthmani';`,
+    'quran-api.js'
+  );
   api = replaceExactlyOnce(
     api,
     'const remoteUrl = `https://raw.githubusercontent.com/Ziad-Alkamash/quran-qcf4/main/pages/${p}.json`;',
@@ -91,6 +102,9 @@ async function fetchAndWrite(task) {
       if (task.type === 'json') {
         const data = JSON.parse(buffer.toString('utf8'));
         if (!Array.isArray(data.lines) || data.lines.length === 0) throw new Error('Invalid QCF page data');
+      } else if (task.type === 'page-text') {
+        const data = JSON.parse(buffer.toString('utf8'));
+        if (data.code !== 200 || !Array.isArray(data.data?.ayahs) || data.data.ayahs.length === 0) throw new Error('Invalid Quran page text data');
       } else if (buffer.length < 4 || buffer.toString('ascii', 0, 4) !== 'wOF2') {
         throw new Error('Invalid WOFF2 font data');
       }
@@ -107,7 +121,7 @@ async function fetchAndWrite(task) {
 async function main() {
   await fs.rm(publicDir, { recursive: true, force: true });
   await fs.cp(sourceDir, publicDir, { recursive: true });
-  await Promise.all([fs.mkdir(pageDir, { recursive: true }), fs.mkdir(fontDir, { recursive: true })]);
+  await Promise.all([fs.mkdir(pageDir, { recursive: true }), fs.mkdir(fontDir, { recursive: true }), fs.mkdir(pageTextDir, { recursive: true })]);
 
   const tasks = [];
   for (let page = 1; page <= totalPages; page += 1) {
@@ -116,6 +130,11 @@ async function main() {
       type: 'json',
       url: `${qcfRepo}/pages/${padded}.json`,
       destination: path.join(pageDir, `${padded}.json`)
+    });
+    tasks.push({
+      type: 'page-text',
+      url: `https://api.alquran.cloud/v1/page/${page}/quran-uthmani`,
+      destination: path.join(pageTextDir, `${padded}.json`)
     });
   }
   for (let font = 1; font <= 47; font += 1) {
