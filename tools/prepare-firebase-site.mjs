@@ -64,7 +64,9 @@ async function patchFirebaseOnlyAppCopies() {
   let sw = await fs.readFile(swPath, 'utf8');
   const cacheMatch = sw.match(/const CACHE_NAME = 'mushaf-ashraf-v(\d+)';/);
   if (!cacheMatch) throw new Error('Could not find the Firebase app-shell cache version in sw.js.');
-  sw = sw.replace(cacheMatch[0], `const CACHE_NAME = 'mushaf-ashraf-v${Number(cacheMatch[1]) + 1}';`);
+  // A new deployment must activate a fresh app-shell cache so existing Firebase
+  // installs do not keep the old quran-api.js after a hosting-only update.
+  sw = sw.replace(cacheMatch[0], `const CACHE_NAME = 'mushaf-ashraf-deploy-${Date.now()}';`);
   sw = replaceExactlyOnce(
     sw,
     '  // Always prefer the files bundled in the installed APK for the app shell.',
