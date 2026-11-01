@@ -129,6 +129,24 @@ async function patchFirebaseOnlyAppCopies() {
 }
 
 async function fetchAndWrite(task) {
+  // Reuse a previously verified asset when rebuilding Firebase after an app-only
+  // change. This avoids failing a deployment because an upstream CDN rate-limits
+  // a full re-download of the same 652 Quran assets.
+  try {
+    const existing = await fs.readFile(task.destination);
+    let valid = existing.length >= 4;
+    if (task.type === 'json') {
+      const data = JSON.parse(existing.toString('utf8'));
+      valid = Array.isArray(data.lines) && data.lines.length > 0;
+    } else if (task.type === 'page-text') {
+      const data = JSON.parse(existing.toString('utf8'));
+      valid = data.code === 200 && Array.isArray(data.data?.ayahs) && data.data.ayahs.length > 0;
+    } else {
+      valid = existing.toString('ascii', 0, 4) === 'wOF2';
+    }
+    if (valid) return existing.length;
+  } catch (_) { /* asset missing/corrupt: download a verified replacement below */ }
+
   let lastError;
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {

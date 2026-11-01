@@ -21849,10 +21849,36 @@
     const s = getKhatmaState();
     const sess = soloReadingSession;
     const sessionCovers = !!(sess && sess.active && pageNumber >= sess.startPage && pageNumber <= sess.endPage);
+    const sessionKhatma = sess && s.items.find((k) => k.id === sess.khatmaId);
     // القراءة العادية في المصحف لا تغيّر الختمة الفردية. التقدم يُسجّل فقط
     // أثناء جلسة ورد بدأها المستخدم صراحةً من صفحة الختمة.
-    if (!sessionCovers) return;
-    const active = s.items.find((k) => k.id === sess.khatmaId);
+    if (!sessionCovers) {
+      // الوصول إلى آخر صفحة في الورد لا يعني أن المستخدم انتهى منها؛ نُبقي
+      // الجلسة مفتوحة حتى ينتقل فعلًا للصفحة التالية خارج نطاق الورد؛ وقتها
+      // فقط نسجّل الصفحة الأخيرة ونقرر إن كان الورد قد اكتمل بالفعل.
+      if (sess && sess.active && sessionKhatma && pageNumber > sess.endPage && sess.lastPage >= sess.endPage) {
+        sessionKhatma.pagesRead[sess.endPage] = todayStr();
+        const target = khatmaDailyTarget(sessionKhatma.days);
+        const completedWird = Math.max(1, Math.min(sessionKhatma.days, Math.ceil(sess.endPage / target)));
+        const wirdIsComplete = isKhatmaWirdComplete(sessionKhatma, completedWird);
+        if (wirdIsComplete) {
+          soloReadingSession = null;
+          saveSoloReadingSession(null);
+        }
+        saveKhatmaState(s);
+        safeCall(renderKhatmaProgress, 'renderKhatmaProgress(recordKhatmaPageRead:exitWird)');
+        safeCall(updateSoloReadingBar, 'updateSoloReadingBar(recordKhatmaPageRead:exitWird)');
+        if (wirdIsComplete) {
+          showToast(tUI('khatma_group.toast_done', 'تمّت القراءة، تقبّل الله'));
+          setTimeout(() => {
+            safeCall(() => switchToTab('home'), 'switchToTab(recordKhatmaPageRead:exitWird)');
+            if (typeof soloOpenDetails === 'function') safeCall(soloOpenDetails, 'soloOpenDetails(recordKhatmaPageRead:exitWird)');
+          }, 900);
+        }
+      }
+      return;
+    }
+    const active = sessionKhatma;
     if (!active) return;
 
     const today = todayStr();
@@ -21867,21 +21893,13 @@
       return;
     }
 
-    const wirdIndexBefore = khatmaCurrentWirdIndex(active);
-    active.pagesRead[pageNumber] = today;
+    // الصفحة الأخيرة تظل معلّقة حتى يخرج المستخدم منها إلى الصفحة التالية؛
+    // بذلك لا نعلن إتمام الورد بمجرد فتح آخر صفحة قبل قراءتها.
+    if (pageNumber !== sess.endPage) active.pagesRead[pageNumber] = today;
 
-    let wirdJustCompleted;
     if (sessionCovers) {
       sess.lastPage = pageNumber; // آخر صفحة وصلها، عشان يكمّل منها المرة الجاية
-      wirdJustCompleted = pageNumber === sess.endPage && isKhatmaWirdComplete(active, wirdIndexBefore);
-      if (wirdJustCompleted) {
-        // لا نحتسب الصفحات التي تم تخطيها؛ لا تكتمل الجلسة إلا بعد تسجيل
-        // كل صفحات الورد فعلًا.
-        soloReadingSession = null;
-        saveSoloReadingSession(null);
-      } else {
-        saveSoloReadingSession(sess);
-      }
+      saveSoloReadingSession(sess);
     }
 
     // الحفظ (وبالتبعية العرض والتنبيه) بيحصل من نفس نسخة الحالة اللي
@@ -21893,15 +21911,6 @@
     safeCall(renderKhatmaProgress, 'renderKhatmaProgress(recordKhatmaPageRead)');
     safeCall(updateSoloReadingBar, 'updateSoloReadingBar(recordKhatmaPageRead)');
 
-    if (wirdJustCompleted) {
-      showToast(tUI('khatma_group.toast_done', 'تمّت القراءة، تقبّل الله'));
-      if (sessionCovers) {
-        setTimeout(() => {
-          safeCall(() => switchToTab('home'), 'switchToTab(recordKhatmaPageRead:done)');
-          if (typeof soloOpenDetails === 'function') safeCall(soloOpenDetails, 'soloOpenDetails(recordKhatmaPageRead:done)');
-        }, 900);
-      }
-    }
   }
 
   // بيحسب عدد الأيام المتتالية (تتابع) اللي قرأ فيها المستخدم صفحة واحدة على الأقل،
@@ -27076,6 +27085,40 @@
     });
   }
 
+  // تحديث المواقيت تلقائيًا عند تغيّر اليوم أو فرق التوقيت الصيفي/الشتوي،
+  // حتى لو ظل التطبيق مفتوحًا ولم يرجع المستخدم للخلفية أو يعِد تشغيله.
+  // نراقب توقيت موقع الصلاة نفسه (من بيانات Aladhan)؛ فقد يختلف عن منطقة
+  // الجهاز عندما يختار المستخدم مدينة يدويًا.
+  function initPrayerClockChangeMonitor() {
+    let previousClockKey = '';
+    const getPrayerClockKey = () => {
+      const now = new Date();
+      const timeZone = prayerTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      try {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+        }).formatToParts(now).reduce((result, part) => {
+          if (part.type !== 'literal') result[part.type] = part.value;
+          return result;
+        }, {});
+        const zonedAsUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute));
+        const offsetMinutes = Math.round((zonedAsUtc - now.getTime()) / 60000);
+        return `${parts.year}-${parts.month}-${parts.day}|${offsetMinutes}`;
+      } catch (_) {
+        return `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}|${now.getTimezoneOffset()}`;
+      }
+    };
+
+    previousClockKey = getPrayerClockKey();
+    setInterval(() => {
+      const currentClockKey = getPrayerClockKey();
+      if (currentClockKey === previousClockKey) return;
+      previousClockKey = currentClockKey;
+      safeCall(loadPrayerTimes, 'loadPrayerTimes(prayerClockChange)');
+    }, 60 * 1000);
+  }
+
   // تتبّع مستمر للموقع زي جوجل ماب بالظبط: من غير ما ينتظر رجوع المستخدم
   // للتطبيق (resume) أو يفتحه من جديد، watchPosition بتفضل شغالة في الخلفية
   // طول ما التطبيق مفتوح وتبلّغنا أول ما الإحداثيات تتغيّر فعليًا، فلو
@@ -31056,6 +31099,7 @@
     safeCall(initHardwareBackButton, 'initHardwareBackButton');
     safeCall(initCitySearch, 'initCitySearch');
     safeCall(initPrayerLocationRefreshOnResume, 'initPrayerLocationRefreshOnResume');
+    safeCall(initPrayerClockChangeMonitor, 'initPrayerClockChangeMonitor');
     safeCall(initLiveGeoWatch, 'initLiveGeoWatch');
     safeCall(registerServiceWorker, 'registerServiceWorker');
     safeCall(initOnboardingWizard, 'initOnboardingWizard');
