@@ -1,29 +1,29 @@
 {
   "ar": [
-    "تصحيح مصادر الحسيني العزازي وعثمان الأنصاري ومنع روابط الكاش القديمة من استبدال صوت القارئ."
+    "تأخير إكمال الورد حتى مغادرة آخر صفحة، وتحديث مواقيت الصلاة تلقائيًا عند تغيّر التوقيت."
   ],
   "fa": [
-    "طراحی جست‌وجو، برگه‌ها و نشانگر تعداد رادیوها در صفحه پخش زنده بهبود یافت."
+    "تکمیل ورد پس از خروج از صفحه پایانی انجام می‌شود و اوقات نماز پس از تغییر ساعت به‌طور خودکار به‌روز می‌شوند."
   ],
   "en": [
-    "Corrected Al-Azazi and Al-Ansari audio sources and blocked stale cached URLs from replacing the selected reciter."
+    "Wird completion now waits until you leave its final page, and prayer times refresh automatically when the local time changes."
   ],
   "fr": [
-    "Amélioration de la recherche, des onglets et des compteurs de radios sur la page Direct."
+    "La lecture du wird se termine après la dernière page, et les horaires de prière s’actualisent automatiquement au changement d’heure."
   ],
   "tr": [
-    "Canlı sayfadaki arama, kategori sekmeleri ve radyo sayısı rozetleri iyileştirildi."
+    "Vird son sayfadan çıkınca tamamlanır; saat değiştiğinde namaz vakitleri otomatik yenilenir."
   ],
   "ur": [
-    "لائیو صفحے پر تلاش، ٹیبز اور ریڈیو کی تعداد کے بیجز کو بہتر بنایا گیا ہے۔"
+    "ورد آخری صفحے سے آگے جانے پر مکمل ہوگا، اور وقت کی تبدیلی پر نماز کے اوقات خودکار طور پر تازہ ہوں گے۔"
   ],
   "id": [
-    "Pencarian, tab kategori, dan lencana jumlah radio di halaman siaran langsung ditingkatkan."
+    "Wird selesai setelah meninggalkan halaman terakhir, dan waktu salat diperbarui otomatis saat zona waktu berubah."
   ],
   "ru": [
-    "Улучшены поиск, вкладки категорий и счётчики радиостанций на странице эфира."
+    "Вирд завершается после перехода с последней страницы, а время молитв обновляется автоматически при смене времени."
   ],
   "es": [
-    "Se mejoraron la búsqueda, las pestañas y los indicadores de emisoras en la página En directo."
+    "El wird se completa al salir de su última página y los horarios de oración se actualizan automáticamente al cambiar la hora."
   ]
 }
