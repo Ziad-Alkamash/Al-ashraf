@@ -25925,6 +25925,7 @@
     wird: { enabled: true, time: '21:00', lastSent: '' },
     naom: { enabled: true, time: '22:00', lastSent: '' },
     mayyit4h: { enabled: true, intervalMinutes: 15, lastSentAt: 0 },
+    generalDhikr: { enabled: true, intervalMinutes: 120 },
     salawat: { enabled: false, intervalMinutes: 60, lastSentAt: 0 },
     prayers: { enabled: true, lastSent: {} }
   };
@@ -26691,6 +26692,53 @@
       }
     }
 
+    // تذكير بذكر متنوع على فاصل يحدده المستخدم، ويصل حتى مع إغلاق التطبيق.
+    const generalDhikrToggle = $('#toggle-general-dhikr');
+    const generalDhikrValueInput = $('#general-dhikr-interval-value');
+    const generalDhikrUnitSelect = $('#general-dhikr-interval-unit');
+    if (generalDhikrToggle) {
+      if (!settings.generalDhikr) settings.generalDhikr = { enabled: true, intervalMinutes: 120 };
+      if (!settings.generalDhikr.intervalMinutes) settings.generalDhikr.intervalMinutes = 120;
+      generalDhikrToggle.checked = !!settings.generalDhikr.enabled;
+      generalDhikrToggle.disabled = !permGranted;
+      if (generalDhikrValueInput && generalDhikrUnitSelect) {
+        const savedMin = settings.generalDhikr.intervalMinutes;
+        if (savedMin % 60 === 0) {
+          generalDhikrUnitSelect.value = 'hours';
+          generalDhikrValueInput.value = savedMin / 60;
+        } else {
+          generalDhikrUnitSelect.value = 'minutes';
+          generalDhikrValueInput.value = savedMin;
+        }
+        generalDhikrValueInput.disabled = !permGranted || !settings.generalDhikr.enabled;
+        generalDhikrUnitSelect.disabled = !permGranted || !settings.generalDhikr.enabled;
+      }
+      const currentGeneralDhikrInterval = () => {
+        const raw = Math.max(1, Number(generalDhikrValueInput?.value) || 2);
+        return generalDhikrUnitSelect?.value === 'hours' ? raw * 60 : raw;
+      };
+      generalDhikrToggle.onchange = () => {
+        const s = getReminderSettings();
+        if (!s.generalDhikr) s.generalDhikr = { enabled: true, intervalMinutes: 120 };
+        s.generalDhikr.enabled = generalDhikrToggle.checked;
+        s.generalDhikr.intervalMinutes = currentGeneralDhikrInterval();
+        saveReminderSettings(s);
+        if (generalDhikrValueInput) generalDhikrValueInput.disabled = !permGranted || !generalDhikrToggle.checked;
+        if (generalDhikrUnitSelect) generalDhikrUnitSelect.disabled = !permGranted || !generalDhikrToggle.checked;
+        scheduleAllOsNotifications();
+        if (generalDhikrToggle.checked) showToast('تم تفعيل إشعارات الذكر المتنوع');
+      };
+      const onGeneralDhikrIntervalChange = () => {
+        const s = getReminderSettings();
+        if (!s.generalDhikr) s.generalDhikr = { enabled: true, intervalMinutes: 120 };
+        s.generalDhikr.intervalMinutes = currentGeneralDhikrInterval();
+        saveReminderSettings(s);
+        scheduleAllOsNotifications();
+      };
+      generalDhikrValueInput?.addEventListener('change', onGeneralDhikrIntervalChange);
+      generalDhikrUnitSelect?.addEventListener('change', onGeneralDhikrIntervalChange);
+    }
+
     // تذكير الصلاة على النبي ﷺ: مفتاح تفعيل + فترة تكرار يحددها المستخدم بنفسه (بالدقائق أو الساعات)
     const salawatToggle = $('#toggle-salawat');
     const salawatValueInput = $('#salawat-interval-value');
@@ -27380,7 +27428,8 @@
   const OS_NOTIF_IDS = {
     sabah: 9010, masaa: 9020, wird: 9030, naom: 9040, kahf: 9003,
     fajr: 9101, dhuhr: 9102, asr: 9103, maghrib: 9104, isha: 9105,
-    mayyitBase: 9200 // 9200..9389 — مساحة محجوزة لدفعة قادمة من تذكير الفقيد (راجع MAYYIT_MAX_SLOTS)
+    mayyitBase: 9200, // 9200..9389 — مساحة محجوزة لدفعة قادمة من تذكير موتى المسلمين
+    generalDhikrBase: 9600 // 9600..9789 — إشعارات الذكر المتنوعة للمنصات غير أندرويد
     // ملحوظة: تذكير "صلِّ على محمد ﷺ" ما بقاش بيستخدم دفعة LocalNotifications
     // زي ده خالص — بقى منبّه أصلي ذاتي التجديد (SalawatAlarm)، راجع
     // scheduleNativeSalawatAlarm / SalawatAlarmService.java
@@ -27408,6 +27457,23 @@
   const MAYYIT_MAX_SLOTS = 190;
   const MAYYIT_SCHEDULE_BATCH_SIZE = 25;
   const MAYYIT_TARGET_HOURS = 48;
+  const MAYYIT_DUA_VARIATIONS = [
+    'اللَّهُمَّ اغْفِرْ لِمَوْتَى الْمُسْلِمِينَ وَارْحَمْهُمْ، وَعَافِهِمْ وَاعْفُ عَنْهُمْ.',
+    'اللَّهُمَّ اغْفِرْ لِحَيِّنَا وَمَيِّتِنَا، وَشَاهِدِنَا وَغَائِبِنَا، وَصَغِيرِنَا وَكَبِيرِنَا، وَذَكَرِنَا وَأُنْثَانَا.',
+    'اللَّهُمَّ مَنْ أَحْيَيْتَهُ مِنَّا فَأَحْيِهِ عَلَى الْإِسْلَامِ، وَمَنْ تَوَفَّيْتَهُ مِنَّا فَتَوَفَّهُ عَلَى الْإِيمَانِ.',
+    'رَبَّنَا اغْفِرْ لَنَا وَلِإِخْوَانِنَا الَّذِينَ سَبَقُونَا بِالْإِيمَانِ، وَلَا تَجْعَلْ فِي قُلُوبِنَا غِلًّا لِلَّذِينَ آمَنُوا.',
+    'اللَّهُمَّ لَا تَحْرِمْنَا أَجْرَهُمْ، وَلَا تَفْتِنَّا بَعْدَهُمْ، وَاغْفِرْ لَنَا وَلَهُمْ.',
+    'اللَّهُمَّ ارْحَمْ مُوتَى الْمُسْلِمِينَ، وَنَوِّرْ قُبُورَهُمْ، وَاجْمَعْنَا بِهِمْ فِي جَنَّاتِ النَّعِيمِ.',
+    'اللَّهُمَّ اغْفِرْ لِلْمُؤْمِنِينَ وَالْمُؤْمِنَاتِ، وَالْمُسْلِمِينَ وَالْمُسْلِمَاتِ، الْأَحْيَاءِ مِنْهُمْ وَالْأَمْوَاتِ.'
+  ];
+  const GENERAL_DHIKR_MESSAGES = [
+    'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.',
+    'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
+    'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ.',
+    'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ.',
+    'سُبْحَانَ اللَّهِ، وَالْحَمْدُ لِلَّهِ، وَلَا إِلَهَ إِلَّا اللَّهُ، وَاللَّهُ أَكْبَرُ.',
+    'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ.'
+  ];
   function mayyitSlotsForInterval(intervalMinutes) {
     const target = Math.ceil((MAYYIT_TARGET_HOURS * 60) / Math.max(1, intervalMinutes));
     return Math.min(MAYYIT_MAX_SLOTS, Math.max(MAYYIT_MIN_SLOTS, target));
@@ -27549,7 +27615,7 @@
   // يفتح فيها المستخدم التطبيق عشان الدفعة متخلصش. عدد المرات دلوقتي
   // ديناميكي (راجع mayyitSlotsForInterval) بدل رقم ثابت (20) كان بيخلي
   // التذكير يقف تمامًا بعد 5 ساعات بس مع فاصل 15 دقيقة لو التطبيق فضل مقفول
-  async function scheduleOsMayyit(intervalMinutes, title, body) {
+  async function scheduleOsMayyit(intervalMinutes) {
     const ln = getLocalNotifPlugin();
     if (!ln) return;
     // بنلغي أقصى مساحة محجوزة (MAYYIT_MAX_SLOTS) دايمًا، مش بس العدد الحالي،
@@ -27561,10 +27627,16 @@
 
     const slots = mayyitSlotsForInterval(intervalMinutes);
     const notifications = [];
+    let previousVariant = -1;
     for (let i = 0; i < slots; i++) {
+      let variant = Math.floor(Math.random() * MAYYIT_DUA_VARIATIONS.length);
+      if (MAYYIT_DUA_VARIATIONS.length > 1 && variant === previousVariant) {
+        variant = (variant + 1 + Math.floor(Math.random() * (MAYYIT_DUA_VARIATIONS.length - 1))) % MAYYIT_DUA_VARIATIONS.length;
+      }
+      previousVariant = variant;
       notifications.push({
         id: OS_NOTIF_IDS.mayyitBase + i,
-        title, body,
+        title: 'دعاء لموتى المسلمين 🕊️', body: MAYYIT_DUA_VARIATIONS[variant],
         channelId: 'mushaf-heads-up',
         sound: 'notify.mp3',
         // isExactNotification: true — كانت false، وده كان بيسمح لأندرويد يأخّر
@@ -27583,6 +27655,47 @@
       } catch (e) {
         console.warn(`[notifications] تعذرت جدولة دفعة دعاء الفقيد ${offset}..${offset + MAYYIT_SCHEDULE_BATCH_SIZE - 1}:`, e);
       }
+    }
+  }
+
+  async function scheduleOsGeneralDhikr(intervalMinutes, enabled) {
+    const plugin = getAdhkarAlarmPlugin();
+    if (window.Capacitor && window.Capacitor.getPlatform?.() === 'android' && plugin && plugin.configure) {
+      try {
+        await plugin.configure({ kind: 'general', enabled: !!enabled, intervalMinutes });
+        return;
+      } catch (e) { console.warn('[notifications] تعذر تحديث منبّه الذكر الأصلي:', e); }
+    }
+
+    // احتياطي لأنظمة iOS وWebView التي لا تحتوي على منبّه أندرويد المتجدد ذاتيًا.
+    const ln = getLocalNotifPlugin();
+    if (!ln) return;
+    const cancelIds = [];
+    for (let i = 0; i < MAYYIT_MAX_SLOTS; i++) cancelIds.push({ id: OS_NOTIF_IDS.generalDhikrBase + i });
+    await cancelOsNotificationsInBatches(cancelIds, 'الذكر المتنوع');
+    if (!enabled) return;
+    const slots = mayyitSlotsForInterval(intervalMinutes);
+    const notifications = [];
+    let previousVariant = -1;
+    for (let i = 0; i < slots; i++) {
+      let variant = Math.floor(Math.random() * GENERAL_DHIKR_MESSAGES.length);
+      if (GENERAL_DHIKR_MESSAGES.length > 1 && variant === previousVariant) {
+        variant = (variant + 1 + Math.floor(Math.random() * (GENERAL_DHIKR_MESSAGES.length - 1))) % GENERAL_DHIKR_MESSAGES.length;
+      }
+      previousVariant = variant;
+      notifications.push({
+        id: OS_NOTIF_IDS.generalDhikrBase + i,
+        title: 'ذَكِّرِ اللَّهَ 📿',
+        body: GENERAL_DHIKR_MESSAGES[variant],
+        channelId: 'mushaf-general-dhikr-v1',
+        schedule: { at: new Date(Date.now() + (i + 1) * intervalMinutes * 60 * 1000), allowWhileIdle: true },
+        isExactNotification: true,
+        extra: { kind: 'general-dhikr' }
+      });
+    }
+    for (let offset = 0; offset < notifications.length; offset += MAYYIT_SCHEDULE_BATCH_SIZE) {
+      try { await ln.schedule({ notifications: notifications.slice(offset, offset + MAYYIT_SCHEDULE_BATCH_SIZE) }); }
+      catch (e) { console.warn(`[notifications] تعذرت جدولة إشعارات الذكر ${offset}:`, e); }
     }
   }
 
@@ -28009,6 +28122,10 @@
           await scheduleAdhkarReminder('sabah', settings);
           await scheduleAdhkarReminder('masaa', settings);
 
+          const generalDhikr = settings.generalDhikr || { enabled: false, intervalMinutes: 120 };
+          const generalDhikrInterval = Number(generalDhikr.intervalMinutes) > 0 ? Number(generalDhikr.intervalMinutes) : 120;
+          await scheduleOsGeneralDhikr(generalDhikrInterval, !!generalDhikr.enabled);
+
           if (settings.kahf && settings.kahf.enabled) {
             const { hour, minute } = timeToHM(settings.kahf.time);
             await scheduleOsWeekly(OS_NOTIF_IDS.kahf, 6, hour, minute, 'سورة الكهف 📖', 'اليوم الجمعة، لا تنسَ قراءة سورة الكهف بارك الله فيك.');
@@ -28018,7 +28135,7 @@
 
           if (settings.mayyit4h && settings.mayyit4h.enabled) {
             const interval = Number(settings.mayyit4h.intervalMinutes) > 0 ? Number(settings.mayyit4h.intervalMinutes) : 15;
-            await scheduleOsMayyit(interval, 'دعاء للفقيد 🕊️', 'اللهم اغفر لأشرف أحمد جاهين وارحمه وأسكنه فسيح جناتك — قل: اللهم اغفر له وارحمه.');
+            await scheduleOsMayyit(interval);
           } else {
             const cancelIds = [];
             for (let i = 0; i < MAYYIT_MAX_SLOTS; i++) cancelIds.push({ id: OS_NOTIF_IDS.mayyitBase + i });

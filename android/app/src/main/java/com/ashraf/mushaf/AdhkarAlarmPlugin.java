@@ -11,10 +11,20 @@ public class AdhkarAlarmPlugin extends Plugin {
     public void configure(PluginCall call) {
         String kind = call.getString("kind");
         if (!AdhkarAlarmScheduler.isValidKind(kind)) {
-            call.reject("kind must be sabah or masaa");
+            call.reject("kind must be sabah, masaa, or general");
             return;
         }
         Boolean enabledValue = call.getBoolean("enabled", true);
+        if ("general".equals(kind)) {
+            Integer intervalValue = call.getInt("intervalMinutes", 120);
+            if (intervalValue == null || intervalValue <= 0 || intervalValue > 59940) {
+                call.reject("intervalMinutes must be between 1 and 59940");
+                return;
+            }
+            AdhkarAlarmScheduler.configureInterval(getContext(), Boolean.TRUE.equals(enabledValue), intervalValue);
+            call.resolve();
+            return;
+        }
         Integer hourValue = call.getInt("hour");
         Integer minuteValue = call.getInt("minute");
         if (hourValue == null || minuteValue == null || hourValue < 0 || hourValue > 23 || minuteValue < 0 || minuteValue > 59) {

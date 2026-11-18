@@ -13,11 +13,34 @@ final class AdhkarAlarmScheduler {
     static final String PREFS_NAME = "MushafAdhkarAlarm";
     private static final int SABAH_REQUEST_ID = 10610;
     private static final int MASAA_REQUEST_ID = 10611;
+    private static final int GENERAL_REQUEST_ID = 10612;
 
     private AdhkarAlarmScheduler() { }
 
     static boolean isValidKind(String kind) {
-        return "sabah".equals(kind) || "masaa".equals(kind);
+        return "sabah".equals(kind) || "masaa".equals(kind) || "general".equals(kind);
+    }
+
+    static void configureInterval(Context context, boolean enabled, int intervalMinutes) {
+        String prefix = "general.";
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        if (intervalMinutes <= 0) intervalMinutes = 120;
+        boolean sameInterval = prefs.getBoolean(prefix + "enabled", false)
+            && prefs.getInt(prefix + "intervalMinutes", 0) == intervalMinutes;
+        long nextAt = prefs.getLong(prefix + "nextAt", 0L);
+        prefs.edit()
+            .putBoolean(prefix + "enabled", enabled)
+            .putInt(prefix + "intervalMinutes", intervalMinutes)
+            .apply();
+        if (!enabled) {
+            cancel(context, "general");
+            prefs.edit().putLong(prefix + "nextAt", 0L).apply();
+            return;
+        }
+        if (!sameInterval || nextAt <= System.currentTimeMillis()) {
+            nextAt = System.currentTimeMillis() + intervalMinutes * 60_000L;
+        }
+        scheduleAt(context, "general", nextAt);
     }
 
     static void configure(Context context, String kind, boolean enabled, int hour, int minute) {
@@ -49,6 +72,12 @@ final class AdhkarAlarmScheduler {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String prefix = kind + ".";
         if (!prefs.getBoolean(prefix + "enabled", false)) return;
+        if ("general".equals(kind)) {
+            long nextAt = prefs.getLong(prefix + "nextAt", 0L);
+            if (nextAt <= System.currentTimeMillis()) nextAt = System.currentTimeMillis() + 60_000L;
+            scheduleAt(context, kind, nextAt);
+            return;
+        }
         int hour = prefs.getInt(prefix + "hour", "sabah".equals(kind) ? 8 : 17);
         int minute = prefs.getInt(prefix + "minute", 0);
         long nextAt = prefs.getLong(prefix + "nextAt", 0L);
@@ -71,6 +100,13 @@ final class AdhkarAlarmScheduler {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String prefix = kind + ".";
         if (!prefs.getBoolean(prefix + "enabled", false)) return;
+        if ("general".equals(kind)) {
+            int intervalMinutes = prefs.getInt(prefix + "intervalMinutes", 120);
+            if (intervalMinutes <= 0) intervalMinutes = 120;
+            scheduleAt(context, kind, System.currentTimeMillis() + intervalMinutes * 60_000L);
+            AdhkarAlarmNotifications.showGeneral(context);
+            return;
+        }
         int hour = prefs.getInt(prefix + "hour", "sabah".equals(kind) ? 8 : 17);
         int minute = prefs.getInt(prefix + "minute", 0);
 
@@ -109,7 +145,9 @@ final class AdhkarAlarmScheduler {
     }
 
     private static int requestId(String kind) {
-        return "sabah".equals(kind) ? SABAH_REQUEST_ID : MASAA_REQUEST_ID;
+        if ("sabah".equals(kind)) return SABAH_REQUEST_ID;
+        if ("masaa".equals(kind)) return MASAA_REQUEST_ID;
+        return GENERAL_REQUEST_ID;
     }
 
     private static long nextOccurrence(int hour, int minute, long nowMillis) {

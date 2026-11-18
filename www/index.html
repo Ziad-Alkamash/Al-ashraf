@@ -2905,8 +2905,8 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
           <div class="settings-card-label">
             <span class="settings-card-icon">🕊️</span>
             <div class="settings-card-text">
-              <span class="settings-card-title"><span data-i18n="reminders.mayyit_title_prefix">دعاء للفقيد</span> أشرف أحمد جاهين</span>
-              <span class="settings-card-sub" data-i18n="reminders.mayyit_sub">تذكير متكرر بالدعاء له رحمه الله — حدّد كل قد إيه</span>
+              <span class="settings-card-title" data-i18n="reminders.mayyit_title">الدعاء لموتى المسلمين</span>
+              <span class="settings-card-sub" data-i18n="reminders.mayyit_sub">تذكير متكرر بأدعية متنوعة لموتى المسلمين — حدّد كل قد إيه</span>
             </div>
           </div>
           <div class="settings-control">
@@ -2919,6 +2919,29 @@ c-178 285 -307 456 -379 504 -88 58 -163 60 -229 4 -26 -22 -33 -23 -68 -14
             </div>
             <label class="switch">
               <input type="checkbox" id="toggle-mayyit4h" checked>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-card-row" data-reminder-row="generalDhikr">
+          <div class="settings-card-label">
+            <span class="settings-card-icon">📿</span>
+            <div class="settings-card-text">
+              <span class="settings-card-title" data-i18n="reminders.general_dhikr_title">إشعار ذكر متنوع</span>
+              <span class="settings-card-sub" data-i18n="reminders.general_dhikr_sub">يصل ذكر مختلف على فترات، حتى لو التطبيق مغلق</span>
+            </div>
+          </div>
+          <div class="settings-control">
+            <div class="interval-control">
+              <input type="number" id="general-dhikr-interval-value" class="interval-num-input" min="1" max="999" value="2" inputmode="numeric">
+              <select id="general-dhikr-interval-unit" class="interval-unit-select">
+                <option value="hours" selected data-i18n="reminders.unit_hour">ساعة</option>
+                <option value="minutes" data-i18n="reminders.unit_minute">دقيقة</option>
+              </select>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="toggle-general-dhikr" checked>
               <span class="switch-track"><span class="switch-thumb"></span></span>
             </label>
           </div>

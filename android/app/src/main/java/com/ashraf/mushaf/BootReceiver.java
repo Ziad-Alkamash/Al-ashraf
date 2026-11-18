@@ -50,9 +50,11 @@ public class BootReceiver extends BroadcastReceiver {
         if (isTimeChange) {
             AdhkarAlarmScheduler.rescheduleForLocalTime(context, "sabah");
             AdhkarAlarmScheduler.rescheduleForLocalTime(context, "masaa");
+            AdhkarAlarmScheduler.restore(context, "general");
         } else {
             AdhkarAlarmScheduler.restore(context, "sabah");
             AdhkarAlarmScheduler.restore(context, "masaa");
+            AdhkarAlarmScheduler.restore(context, "general");
         }
     }
 
